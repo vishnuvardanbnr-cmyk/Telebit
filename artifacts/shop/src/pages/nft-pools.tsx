@@ -69,6 +69,9 @@ const PLACEHOLDER_POOLS = [
   { level: 4, title: "Platinum Pool", size: "50,000", dailyYield: "2.5%" },
 ];
 
+const DAILY_YIELD: Record<number, string> = { 1: "0.8%", 2: "1.2%", 3: "1.8%", 4: "2.5%" };
+const getDailyYield = (level: number) => DAILY_YIELD[level] ?? `${(level * 0.4 + 0.4).toFixed(1)}%`;
+
 function PlaceholderPoolCard({ level, title, size, dailyYield }: { level: number; title: string; size: string; dailyYield: string }) {
   const t = getTheme(level);
   return (
@@ -183,8 +186,8 @@ function PoolCard({ pool, onBid }: { pool: NftPoolWithNft; onBid: (p: NftPoolWit
             <p className="font-bold text-sm mt-0.5">${fmtUsdt(pool.poolSize)}</p>
           </div>
           <div className="bg-muted/40 rounded-xl p-2.5 text-center">
-            <p className="text-[9px] text-muted-foreground uppercase font-semibold tracking-wide">Filled</p>
-            <p className="font-bold text-sm mt-0.5">${fmtUsdt(pool.poolAmount)}</p>
+            <p className="text-[9px] text-muted-foreground uppercase font-semibold tracking-wide">Daily Yield</p>
+            <p className="font-bold text-sm mt-0.5 text-emerald-600">{getDailyYield(pool.level)}</p>
           </div>
           <div className={`rounded-xl p-2.5 text-center ${isFull ? "bg-muted/40" : "bg-emerald-50 border border-emerald-100"}`}>
             <p className="text-[9px] text-muted-foreground uppercase font-semibold tracking-wide">Left</p>
