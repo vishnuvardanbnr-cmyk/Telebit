@@ -1189,6 +1189,21 @@ paths:
               schema:
                 $ref: "#/components/schemas/NftHolding"
 
+  /nft/purchases:
+    get:
+      operationId: listNftPurchases
+      tags: [nft]
+      summary: List current user's V2 token purchase history
+      responses:
+        "200":
+          description: Purchase transaction list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NftPurchaseTransaction"
+
   /nft/holdings/claim:
     post:
       operationId: claimNftHoldings
@@ -2105,6 +2120,16 @@ components:
           type: string
           enum: [active, inactive, completed]
         poolLimit: { type: string }
+
+    NftPurchaseTransaction:
+      type: object
+      required: [id, amount, tokensReceived, buyPrice, createdAt]
+      properties:
+        id: { type: string }
+        amount: { type: string }
+        tokensReceived: { type: string }
+        buyPrice: { type: string }
+        createdAt: { type: string, format: date-time }
 
     UserNftActivation:
       type: object

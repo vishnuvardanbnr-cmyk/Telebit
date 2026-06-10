@@ -54,6 +54,7 @@ export * from './nftPoolStatus';
 export * from './nftPoolStatusUpdate';
 export * from './nftPoolStatusUpdateStatus';
 export * from './nftPoolWithNft';
+export * from './nftPurchaseTransaction';
 export * from './nftUpdateRequest';
 export * from './nftUpdateRequestStatus';
 export * from './nftWithPools';

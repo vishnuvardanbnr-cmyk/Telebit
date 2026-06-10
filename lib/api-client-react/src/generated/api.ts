@@ -61,6 +61,7 @@ import type {
   NftPoolCreateRequest,
   NftPoolStatusUpdate,
   NftPoolWithNft,
+  NftPurchaseTransaction,
   NftUpdateRequest,
   NftWithPools,
   Order,
@@ -4315,6 +4316,83 @@ export function useGetNftHoldings<TData = Awaited<ReturnType<typeof getNftHoldin
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetNftHoldingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListNftPurchasesUrl = () => {
+
+
+
+
+  return `/api/nft/purchases`
+}
+
+/**
+ * @summary List current user's V2 token purchase history
+ */
+export const listNftPurchases = async ( options?: RequestInit): Promise<NftPurchaseTransaction[]> => {
+
+  return customFetch<NftPurchaseTransaction[]>(getListNftPurchasesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListNftPurchasesQueryKey = () => {
+    return [
+    `/api/nft/purchases`
+    ] as const;
+    }
+
+
+export const getListNftPurchasesQueryOptions = <TData = Awaited<ReturnType<typeof listNftPurchases>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNftPurchases>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListNftPurchasesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listNftPurchases>>> = ({ signal }) => listNftPurchases({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listNftPurchases>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListNftPurchasesQueryResult = NonNullable<Awaited<ReturnType<typeof listNftPurchases>>>
+export type ListNftPurchasesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List current user's V2 token purchase history
+ */
+
+export function useListNftPurchases<TData = Awaited<ReturnType<typeof listNftPurchases>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNftPurchases>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListNftPurchasesQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

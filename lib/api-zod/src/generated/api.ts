@@ -1500,6 +1500,19 @@ export const GetNftHoldingsResponse = zod.object({
 
 
 /**
+ * @summary List current user's V2 token purchase history
+ */
+export const ListNftPurchasesResponseItem = zod.object({
+  "id": zod.string(),
+  "amount": zod.string(),
+  "tokensReceived": zod.string(),
+  "buyPrice": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+export const ListNftPurchasesResponse = zod.array(ListNftPurchasesResponseItem)
+
+
+/**
  * @summary Claim NFT token rewards to wallet
  */
 export const ClaimNftHoldingsBody = zod.object({

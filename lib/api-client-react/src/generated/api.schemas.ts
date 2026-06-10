@@ -716,6 +716,14 @@ export interface NftPoolStatusUpdate {
   poolLimit?: string;
 }
 
+export interface NftPurchaseTransaction {
+  id: string;
+  amount: string;
+  tokensReceived: string;
+  buyPrice: string;
+  createdAt: string;
+}
+
 export interface UserNftActivation {
   investedUsdt: string;
 }

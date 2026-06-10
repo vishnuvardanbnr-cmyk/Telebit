@@ -76,9 +76,19 @@ export const nftIncomeQueuesTable = pgTable("nft_income_queues", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
+export const nftPurchaseTransactionsTable = pgTable("nft_purchase_transactions", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id").notNull().references(() => usersTable.id),
+  amount: numeric("amount", { precision: 20, scale: 8 }).notNull(),
+  tokensReceived: numeric("tokens_received", { precision: 20, scale: 8 }).notNull(),
+  buyPrice: numeric("buy_price", { precision: 20, scale: 8 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type GlobalAmountV2 = typeof globalAmountsV2Table.$inferSelect;
 export type Nft = typeof nftsTable.$inferSelect;
 export type NftPool = typeof nftPoolsTable.$inferSelect;
 export type NftPoolContributedUser = typeof nftPoolContributedUsersTable.$inferSelect;
 export type NftHolding = typeof nftHoldingsTable.$inferSelect;
 export type NftIncomeQueue = typeof nftIncomeQueuesTable.$inferSelect;
+export type NftPurchaseTransaction = typeof nftPurchaseTransactionsTable.$inferSelect;

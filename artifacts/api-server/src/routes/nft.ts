@@ -8,6 +8,7 @@ import {
   nftPoolContributedUsersTable,
   nftHoldingsTable,
   nftIncomeQueuesTable,
+  nftPurchaseTransactionsTable,
 } from "@workspace/db";
 import { eq, and, gte, sql, lt } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../lib/auth";
@@ -223,6 +224,14 @@ router.post("/nft/buy", requireAuth, async (req, res): Promise<void> => {
       .where(eq(nftHoldingsTable.userId, user.id));
   }
 
+  const tokensReceived = (amount * 0.88) / parseFloat(global.buyPrice);
+  await db.insert(nftPurchaseTransactionsTable).values({
+    userId: user.id,
+    amount: String(amount),
+    tokensReceived: String(tokensReceived),
+    buyPrice: global.buyPrice,
+  });
+
   const updatedGlobal = await getGlobal();
   res.json({
     success: true,
@@ -230,6 +239,18 @@ router.post("/nft/buy", requireAuth, async (req, res): Promise<void> => {
     newWalletBalance: String(newWallet),
     global: updatedGlobal,
   });
+});
+
+router.get("/nft/purchases", requireAuth, async (req, res): Promise<void> => {
+  const user = (req as any).dbUser;
+  const { desc } = await import("drizzle-orm");
+  const txs = await db
+    .select()
+    .from(nftPurchaseTransactionsTable)
+    .where(eq(nftPurchaseTransactionsTable.userId, user.id))
+    .orderBy(desc(nftPurchaseTransactionsTable.createdAt))
+    .limit(50);
+  res.json(txs);
 });
 
 router.get("/nft/nfts", requireAuth, async (_req, res): Promise<void> => {

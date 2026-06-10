@@ -4,6 +4,7 @@ import {
   useGetNftHoldings,
   useBuyNftTokens,
   useGetMe,
+  useListNftPurchases,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,8 +13,8 @@ import { fmtUsdt } from "@/lib/utils";
 import { toast } from "sonner";
 import { Link } from "wouter";
 import {
-  AlertCircle, Zap, Coins, TrendingUp, ArrowLeft,
-  ChevronRight, Shield, Users, BarChart3, Wallet, Lock, Clock,
+  AlertCircle, Zap, ArrowLeft,
+  ChevronRight, Shield, Lock, Coins,
 } from "lucide-react";
 
 const QUICK = [10, 50, 100, 500];
@@ -22,6 +23,7 @@ export default function NftBuyPage() {
   const { data: global, isLoading: globalLoading } = useGetNftGlobal();
   const { data: holdings, isLoading: holdingsLoading } = useGetNftHoldings();
   const { data: user } = useGetMe();
+  const { data: purchases, isLoading: purchasesLoading } = useListNftPurchases();
   const buyMutation = useBuyNftTokens();
   const [amount, setAmount] = useState("");
 
@@ -245,41 +247,50 @@ export default function NftBuyPage() {
           </button>
         </div>
 
-        {/* How it works */}
-        <div className="bg-white rounded-2xl border border-border p-5 space-y-4">
-          <p className="font-bold text-base">How It Works</p>
-          <div className="space-y-4">
-            {[
-              { icon: Wallet, title: "Invest multiples of $10", desc: "Up to $1,000 per transaction · $10,000 lifetime cap per account." },
-              { icon: Coins, title: "Receive TBT tokens at buy price", desc: "88% of your investment is allocated as tokens at the current buy rate." },
-              { icon: TrendingUp, title: "Price rises with adoption", desc: "Buy price increases with each new investment — early investors earn more." },
-              { icon: Users, title: "Earn from your network", desc: "Up to 10 upline sponsors earn token bonuses when you invest." },
-              { icon: BarChart3, title: "Claim at sell price", desc: "Redeem tokens from the Holdings page at 90% of the current buy price." },
-            ].map((step, i) => (
-              <div key={i} className="flex gap-3.5">
-                <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                  <step.icon className="h-4 w-4 text-primary" />
-                </div>
-                <div className="pt-0.5">
-                  <p className="text-sm font-semibold leading-snug">{step.title}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{step.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+        {/* Purchase Transactions */}
+        <div className="bg-white rounded-2xl border border-border p-5 space-y-3">
+          <p className="font-bold text-base">Purchase Transactions</p>
 
-          {/* Referral grid */}
-          <div className="bg-muted/40 rounded-xl p-4 mt-1">
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">Referral Bonus Rates</p>
-            <div className="grid grid-cols-3 gap-2 text-xs">
-              {[["Level 1", "5%"], ["Level 2", "1%"], ["Levels 3–10", "0.5% ea"]].map(([l, r]) => (
-                <div key={l} className="bg-white rounded-xl p-3 text-center border border-border">
-                  <p className="text-muted-foreground text-[10px] font-medium">{l}</p>
-                  <p className="font-extrabold text-primary mt-1">{r}</p>
-                </div>
+          {purchasesLoading ? (
+            <div className="space-y-2.5">
+              {[1, 2, 3].map(i => (
+                <Skeleton key={i} className="h-14 w-full rounded-xl" />
               ))}
             </div>
-          </div>
+          ) : !purchases || purchases.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 gap-2">
+              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                <Coins className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <p className="text-sm text-muted-foreground font-medium">No purchases yet</p>
+              <p className="text-xs text-muted-foreground/70">Your V2 token buys will appear here</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {purchases.map((tx) => {
+                const date = new Date(tx.createdAt);
+                const dateStr = date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+                const timeStr = date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+                return (
+                  <div key={tx.id} className="flex items-center justify-between bg-muted/30 rounded-xl px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                        <Coins className="h-4 w-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">{fmtUsdt(tx.amount)} USDT</p>
+                        <p className="text-[11px] text-muted-foreground">{dateStr} · {timeStr}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-primary">+{parseFloat(tx.tokensReceived).toFixed(4)} TBT</p>
+                      <p className="text-[11px] text-muted-foreground">@ ${parseFloat(tx.buyPrice).toFixed(4)}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* CTA */}
