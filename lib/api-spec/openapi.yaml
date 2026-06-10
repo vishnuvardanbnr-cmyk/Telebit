@@ -3,13 +3,25 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: CryptoVault Exchange API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: users
+    description: User profile and wallet operations
+  - name: deposits
+    description: USDT deposit operations
+  - name: withdrawals
+    description: USDT withdrawal operations
+  - name: p2p
+    description: P2P internal transfers
+  - name: admin
+    description: Admin management operations
+  - name: settings
+    description: Platform settings
 paths:
   /healthz:
     get:
@@ -24,6 +36,423 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /users/me:
+    get:
+      operationId: getMe
+      tags: [users]
+      summary: Get current user profile and wallet info
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+
+  /users/me/dashboard:
+    get:
+      operationId: getDashboard
+      tags: [users]
+      summary: Get dashboard summary (balances, recent activity, totals)
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+        "401":
+          description: Unauthorized
+
+  /deposits:
+    get:
+      operationId: listDeposits
+      tags: [deposits]
+      summary: List user deposit history
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: Deposit list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Deposit"
+        "401":
+          description: Unauthorized
+
+  /deposits/check:
+    post:
+      operationId: checkDeposit
+      tags: [deposits]
+      summary: Check for on-chain USDT deposit and credit balance
+      responses:
+        "200":
+          description: Deposit check result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DepositCheckResult"
+        "401":
+          description: Unauthorized
+
+  /withdrawals:
+    get:
+      operationId: listWithdrawals
+      tags: [withdrawals]
+      summary: List user withdrawal history
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: Withdrawal list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Withdrawal"
+        "401":
+          description: Unauthorized
+    post:
+      operationId: createWithdrawal
+      tags: [withdrawals]
+      summary: Request a USDT withdrawal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WithdrawalRequest"
+      responses:
+        "201":
+          description: Withdrawal created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Withdrawal"
+        "400":
+          description: Validation error
+        "401":
+          description: Unauthorized
+
+  /p2p:
+    get:
+      operationId: listP2PTransfers
+      tags: [p2p]
+      summary: List user P2P transfer history
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: P2P transfer list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/P2PTransfer"
+        "401":
+          description: Unauthorized
+    post:
+      operationId: createP2PTransfer
+      tags: [p2p]
+      summary: Send USDT internally to another user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/P2PTransferRequest"
+      responses:
+        "201":
+          description: Transfer created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/P2PTransfer"
+        "400":
+          description: Validation error
+        "401":
+          description: Unauthorized
+
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get platform settings (public safe subset)
+      responses:
+        "200":
+          description: Platform settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicSettings"
+
+  /admin/users:
+    get:
+      operationId: adminListUsers
+      tags: [admin]
+      summary: List all users (admin only)
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminUser"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /admin/users/{userId}/block:
+    patch:
+      operationId: adminToggleUserBlock
+      tags: [admin]
+      summary: Toggle withdrawal block on user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BlockToggle"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /admin/deposits:
+    get:
+      operationId: adminListDeposits
+      tags: [admin]
+      summary: List all deposits (admin only)
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deposit list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Deposit"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /admin/withdrawals:
+    get:
+      operationId: adminListWithdrawals
+      tags: [admin]
+      summary: List all withdrawals (admin only)
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Withdrawal list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Withdrawal"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /admin/withdrawals/{id}/approve:
+    post:
+      operationId: adminApproveWithdrawal
+      tags: [admin]
+      summary: Approve a pending withdrawal (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Withdrawal approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Withdrawal"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /admin/withdrawals/{id}/reject:
+    post:
+      operationId: adminRejectWithdrawal
+      tags: [admin]
+      summary: Reject a pending withdrawal (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Withdrawal rejected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Withdrawal"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /admin/settings:
+    get:
+      operationId: adminGetSettings
+      tags: [admin]
+      summary: Get all platform settings (admin only)
+      responses:
+        "200":
+          description: All settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformSettings"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+    put:
+      operationId: adminUpdateSettings
+      tags: [admin]
+      summary: Update platform settings (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SettingsUpdate"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformSettings"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /admin/stats:
+    get:
+      operationId: adminGetStats
+      tags: [admin]
+      summary: Get platform-wide statistics (admin only)
+      responses:
+        "200":
+          description: Platform stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +463,335 @@ components:
       required:
         - status
 
+    User:
+      type: object
+      required: [id, clerkId, email, walletBalance, earningsBalance, depositAddress, referralCode, isAdmin, withdrawalBlocked, createdAt]
+      properties:
+        id:
+          type: string
+        clerkId:
+          type: string
+        email:
+          type: string
+        fullName:
+          type: ["string", "null"]
+        walletBalance:
+          type: string
+          description: USDT balance as decimal string
+        earningsBalance:
+          type: string
+          description: Earnings balance as decimal string
+        depositAddress:
+          type: string
+          description: User's unique BSC deposit wallet address
+        referralCode:
+          type: string
+        isAdmin:
+          type: boolean
+        withdrawalBlocked:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    AdminUser:
+      type: object
+      required: [id, clerkId, email, walletBalance, earningsBalance, depositAddress, referralCode, isAdmin, withdrawalBlocked, createdAt]
+      properties:
+        id:
+          type: string
+        clerkId:
+          type: string
+        email:
+          type: string
+        fullName:
+          type: ["string", "null"]
+        walletBalance:
+          type: string
+        earningsBalance:
+          type: string
+        depositAddress:
+          type: string
+        referralCode:
+          type: string
+        isAdmin:
+          type: boolean
+        withdrawalBlocked:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        totalDeposited:
+          type: string
+        totalWithdrawn:
+          type: string
+
+    DashboardSummary:
+      type: object
+      required: [walletBalance, earningsBalance, depositAddress, totalDeposited, totalWithdrawn, pendingWithdrawals, recentDeposits, recentWithdrawals, recentP2P]
+      properties:
+        walletBalance:
+          type: string
+        earningsBalance:
+          type: string
+        depositAddress:
+          type: string
+        totalDeposited:
+          type: string
+        totalWithdrawn:
+          type: string
+        pendingWithdrawals:
+          type: string
+        recentDeposits:
+          type: array
+          items:
+            $ref: "#/components/schemas/Deposit"
+        recentWithdrawals:
+          type: array
+          items:
+            $ref: "#/components/schemas/Withdrawal"
+        recentP2P:
+          type: array
+          items:
+            $ref: "#/components/schemas/P2PTransfer"
+
+    Deposit:
+      type: object
+      required: [id, userId, amount, fee, netAmount, status, txHash, createdAt]
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        amount:
+          type: string
+          description: Raw on-chain USDT amount
+        fee:
+          type: string
+          description: Platform fee deducted
+        netAmount:
+          type: string
+          description: Amount credited to wallet
+        status:
+          type: string
+          enum: [pending, sweeping, credited, failed]
+        txHash:
+          type: ["string", "null"]
+          description: Blockchain transaction hash
+        sweepTxHash:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        creditedAt:
+          type: ["string", "null"]
+
+    DepositCheckResult:
+      type: object
+      required: [found, message]
+      properties:
+        found:
+          type: boolean
+        amount:
+          type: ["string", "null"]
+        credited:
+          type: ["string", "null"]
+        message:
+          type: string
+        deposit:
+          $ref: "#/components/schemas/Deposit"
+
+    Withdrawal:
+      type: object
+      required: [id, userId, amount, fee, netAmount, destinationAddress, status, createdAt]
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        amount:
+          type: string
+        fee:
+          type: string
+        netAmount:
+          type: string
+        destinationAddress:
+          type: string
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+        txHash:
+          type: ["string", "null"]
+        rejectionReason:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        processedAt:
+          type: ["string", "null"]
+
+    WithdrawalRequest:
+      type: object
+      required: [amount, destinationAddress]
+      properties:
+        amount:
+          type: string
+          description: USDT amount to withdraw
+        destinationAddress:
+          type: string
+          description: BSC wallet address to send to
+
+    P2PTransfer:
+      type: object
+      required: [id, senderId, receiverId, amount, createdAt]
+      properties:
+        id:
+          type: string
+        senderId:
+          type: string
+        receiverId:
+          type: string
+        senderEmail:
+          type: ["string", "null"]
+        receiverEmail:
+          type: ["string", "null"]
+        amount:
+          type: string
+        note:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    P2PTransferRequest:
+      type: object
+      required: [amount, recipientIdentifier]
+      properties:
+        amount:
+          type: string
+          description: USDT amount to send
+        recipientIdentifier:
+          type: string
+          description: Recipient referral code or user ID
+        note:
+          type: ["string", "null"]
+
+    PublicSettings:
+      type: object
+      required: [minDepositUsdt, depositFeeFlat, depositFeePercent, withdrawFeeFlat, withdrawFeePercent, withdrawFeeMode, withdrawalEnabled, otpWithdrawalEnabled]
+      properties:
+        minDepositUsdt:
+          type: string
+        depositFeeFlat:
+          type: string
+        depositFeePercent:
+          type: string
+        withdrawFeeFlat:
+          type: string
+        withdrawFeePercent:
+          type: string
+        withdrawFeeMode:
+          type: string
+          enum: [deduct_from_amount, deduct_from_balance]
+        withdrawalEnabled:
+          type: boolean
+        otpWithdrawalEnabled:
+          type: boolean
+
+    PlatformSettings:
+      type: object
+      required: [minDepositUsdt, depositFeeFlat, depositFeePercent, withdrawFeeFlat, withdrawFeePercent, withdrawFeeMode, withdrawalMode, withdrawalEnabled, otpWithdrawalEnabled, adminMasterWallet, bscRpcUrl]
+      properties:
+        minDepositUsdt:
+          type: string
+        depositFeeFlat:
+          type: string
+        depositFeePercent:
+          type: string
+        withdrawFeeFlat:
+          type: string
+        withdrawFeePercent:
+          type: string
+        withdrawFeeMode:
+          type: string
+          enum: [deduct_from_amount, deduct_from_balance]
+        withdrawalMode:
+          type: string
+          enum: [manual, auto]
+        withdrawalEnabled:
+          type: boolean
+        otpWithdrawalEnabled:
+          type: boolean
+        adminMasterWallet:
+          type: string
+        bscRpcUrl:
+          type: string
+        gasWalletAddress:
+          type: ["string", "null"]
+          description: Gas wallet address (private key not exposed)
+
+    SettingsUpdate:
+      type: object
+      properties:
+        minDepositUsdt:
+          type: string
+        depositFeeFlat:
+          type: string
+        depositFeePercent:
+          type: string
+        withdrawFeeFlat:
+          type: string
+        withdrawFeePercent:
+          type: string
+        withdrawFeeMode:
+          type: string
+          enum: [deduct_from_amount, deduct_from_balance]
+        withdrawalMode:
+          type: string
+          enum: [manual, auto]
+        withdrawalEnabled:
+          type: boolean
+        otpWithdrawalEnabled:
+          type: boolean
+        adminMasterWallet:
+          type: string
+        bscRpcUrl:
+          type: string
+        gasWalletPrivateKey:
+          type: string
+        withdrawWalletPrivateKey:
+          type: string
+
+    BlockToggle:
+      type: object
+      required: [blocked]
+      properties:
+        blocked:
+          type: boolean
+
+    AdminStats:
+      type: object
+      required: [totalUsers, totalDeposited, totalWithdrawn, pendingWithdrawals, totalP2P, depositCount, withdrawalCount]
+      properties:
+        totalUsers:
+          type: integer
+        totalDeposited:
+          type: string
+        totalWithdrawn:
+          type: string
+        pendingWithdrawals:
+          type: string
+        totalP2P:
+          type: string
+        depositCount:
+          type: integer
+        withdrawalCount:
+          type: integer
+        recentDeposits:
+          type: array
+          items:
+            $ref: "#/components/schemas/Deposit"
+        recentWithdrawals:
+          type: array
+          items:
+            $ref: "#/components/schemas/Withdrawal"

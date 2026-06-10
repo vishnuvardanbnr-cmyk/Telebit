@@ -1,0 +1,59 @@
+Prompt: Deposit & Withdrawal System
+Build a full-stack deposit and withdrawal system for an investment platform with the following features:
+
+DEPOSIT SYSTEM (USDT BEP-20 Blockchain)
+Each user gets a unique BSC wallet address auto-generated on registration. Private key stored encrypted in DB.
+User sends USDT to their assigned address.
+User clicks "Check for Deposit" — backend calls BSC RPC to read on-chain USDT balance.
+If balance ≥ minDepositUsdt setting:
+Calculate platform fee (flat + percentage, configurable in admin settings)
+Send gas (BNB) from a gas wallet to user's deposit address to cover sweep fee
+Sweep the fee amount to a platform fee address
+Sweep remaining USDT to admin master wallet
+Recover leftover BNB back to gas wallet
+Credit user's walletBalance in DB
+Save deposit record with status credited
+WITHDRAWAL SYSTEM
+User Side
+
+User enters amount + destination wallet address
+Fee calculated: flat fee + percentage (configurable), deducted from amount or balance (configurable mode)
+Optional OTP email verification before submission (toggle in settings)
+Checks: sufficient earnings balance, no withdrawal block on account
+Record saved with status pending
+Admin Approval
+
+Manual mode: Admin reviews and clicks Approve / Reject
+Auto mode: On approval, system executes on-chain USDT transfer:
+Uses withdrawWalletPrivateKey to send USDT
+Tops up withdrawal wallet with BNB gas if needed
+Sends USDT to user's provided address
+Records txHash, updates status to approved
+P2P TRANSFER
+User sends USDT internally to another user via their referral code or user ID
+Atomic DB transaction (debit sender, credit receiver)
+DATABASE TABLES
+Table	Purpose
+users	walletBalance, depositAddress, depositPrivateKey
+deposits	Blockchain deposit history
+withdrawals	Withdrawal requests (pending / approved / rejected)
+p2p_transfers	Internal P2P transfer history
+platform_settings	All fee/price/toggle configuration
+PLATFORM SETTINGS (Admin Configurable)
+Setting	Purpose
+minDepositUsdt	Minimum on-chain deposit to trigger sweep
+depositFeeFlat + depositFeePercent	Deposit platform fees
+withdrawFeeFlat + withdrawFeePercent	Withdrawal fees
+withdrawFeeMode	deduct_from_amount or deduct_from_balance
+withdrawalMode	manual or auto
+adminMasterWallet	Destination for swept USDT
+gasWalletPrivateKey	Pays BNB gas for sweep
+withdrawWalletPrivateKey	Executes outgoing withdrawals
+bscRpcUrl	BSC node endpoint
+otpWithdrawalEnabled	Require OTP before withdrawal
+withdrawalEnabled	Global toggle to disable all withdrawals
+TECH STACK
+Backend: Node.js + Express + TypeScript
+DB ORM: Drizzle ORM + PostgreSQL
+Blockchain: ethers.js (BSC / BEP-20 USDT)
+Auth: JWT session middleware
