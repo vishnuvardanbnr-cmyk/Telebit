@@ -111,7 +111,13 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 function SignInPage() {
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4">
-      <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
+      <SignIn
+        routing="path"
+        path={`${basePath}/sign-in`}
+        signUpUrl={`${basePath}/sign-up`}
+        afterSignInUrl={`${basePath}/dashboard`}
+        fallbackRedirectUrl={`${basePath}/dashboard`}
+      />
     </div>
   );
 }
@@ -119,7 +125,13 @@ function SignInPage() {
 function SignUpPage() {
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4">
-      <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
+      <SignUp
+        routing="path"
+        path={`${basePath}/sign-up`}
+        signInUrl={`${basePath}/sign-in`}
+        afterSignUpUrl={`${basePath}/dashboard`}
+        fallbackRedirectUrl={`${basePath}/dashboard`}
+      />
     </div>
   );
 }
