@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { useGetFeatured, useListCategories } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ShoppingCart, Star, TrendingUp, Tag, Zap, Coins, ChevronRight } from "lucide-react";
+import { ShoppingCart, Star, TrendingUp, Tag, Zap } from "lucide-react";
 import { fmtUsdt } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -85,40 +85,15 @@ export default function Home() {
           <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-xl">
             Seamlessly purchase premium goods directly from your Telebit USDT balance. Zero off-ramping, immediate settlement.
           </p>
-          <div className="flex flex-wrap gap-4">
+          <div className="flex gap-4">
             <Link href="/products">
               <Button size="lg" className="rounded-none uppercase tracking-wider font-bold h-14 px-8">
                 Browse Catalog
               </Button>
             </Link>
-            <a href="/exchange/dashboard">
-              <Button size="lg" variant="outline" className="rounded-none uppercase tracking-wider font-bold h-14 px-8 gap-2">
-                <Coins className="h-5 w-5" />
-                Go to Exchange ↗
-              </Button>
-            </a>
           </div>
         </div>
       </section>
-
-      {/* Exchange Banner */}
-      <a href="/exchange/dashboard" className="block mb-16 group">
-        <div className="border border-primary/30 bg-primary/5 rounded-none p-5 flex items-center justify-between hover:bg-primary/10 transition-colors cursor-pointer">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-primary/10 border border-primary/20 flex items-center justify-center rounded-none shrink-0">
-              <Coins className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <div className="font-bold uppercase tracking-wider text-sm">Telebit Exchange</div>
-              <div className="text-xs text-muted-foreground mt-0.5">Buy V2 Tokens · Bid on NFT Pools · Manage Holdings</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs uppercase text-primary hidden sm:block font-medium">Open Exchange</span>
-            <ChevronRight className="h-4 w-4 text-primary group-hover:translate-x-0.5 transition-transform" />
-          </div>
-        </div>
-      </a>
 
       {/* Categories Grid */}
       <section className="mb-16">

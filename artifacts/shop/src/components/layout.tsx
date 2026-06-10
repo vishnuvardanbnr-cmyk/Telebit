@@ -34,9 +34,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Link href="/products" className={cn("transition-colors font-medium", location.startsWith("/products") ? "text-primary" : "text-muted-foreground hover:text-foreground")}>
               Catalog
             </Link>
-            <a href="/exchange/dashboard" className="transition-colors font-medium text-muted-foreground hover:text-foreground flex items-center gap-1">
-              Exchange ↗
-            </a>
           </nav>
 
           {/* Right actions */}
