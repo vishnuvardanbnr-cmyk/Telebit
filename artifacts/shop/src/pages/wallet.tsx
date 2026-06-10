@@ -9,21 +9,25 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
-import { Copy, RefreshCw, AlertCircle, Download, ArrowUpRight, ArrowDownLeft, ArrowUpRightSquare, Package, Clock, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import {
+  Copy, RefreshCw, AlertCircle, ArrowUpRight, ArrowDownLeft,
+  ArrowUpRightSquare, Package, Clock, CheckCircle2, XCircle, Loader2,
+  PlusCircle, MinusCircle,
+} from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { fmtUsdt } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
-type Tab = "deposit" | "withdraw";
 type HistoryTab = "deposits" | "withdrawals" | "orders";
 
-/* ─── Deposit tab ────────────────────────────────────────────── */
-function DepositTab() {
+/* ─── Deposit modal content ──────────────────────────────────── */
+function DepositContent() {
   const { data: user, isLoading } = useGetMe();
   const checkDeposit = useCheckDeposit();
 
@@ -43,13 +47,9 @@ function DepositTab() {
   };
 
   if (isLoading) return <Skeleton className="h-72 w-full rounded-xl" />;
-
   if (!user) return (
-    <Alert>
-      <AlertCircle className="h-4 w-4" />
-      <AlertTitle>Error</AlertTitle>
-      <AlertDescription>Failed to load deposit info</AlertDescription>
-    </Alert>
+    <Alert><AlertCircle className="h-4 w-4" /><AlertTitle>Error</AlertTitle>
+      <AlertDescription>Failed to load deposit info</AlertDescription></Alert>
   );
 
   return (
@@ -61,7 +61,7 @@ function DepositTab() {
         </CardHeader>
         <CardContent className="pt-5 flex flex-col items-center gap-4">
           <div className="p-3 bg-white border border-border rounded-xl">
-            <QRCodeSVG value={user.depositAddress} size={160} level="M" />
+            <QRCodeSVG value={user.depositAddress} size={180} level="M" />
           </div>
           <div className="w-full">
             <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1.5">
@@ -98,7 +98,7 @@ function DepositTab() {
   );
 }
 
-/* ─── Withdraw tab ───────────────────────────────────────────── */
+/* ─── Withdraw modal content ─────────────────────────────────── */
 const withdrawSchema = z.object({
   amount: z
     .string()
@@ -112,7 +112,7 @@ const withdrawSchema = z.object({
 });
 type WithdrawForm = z.infer<typeof withdrawSchema>;
 
-function WithdrawTab() {
+function WithdrawContent({ onSuccess }: { onSuccess: () => void }) {
   const { data: user } = useGetMe();
   const { data: settings, isLoading } = useGetSettings();
   const createWithdrawal = useCreateWithdrawal();
@@ -139,7 +139,11 @@ function WithdrawTab() {
   const onSubmit = (values: WithdrawForm) => {
     if (overBalance) { toast.error("Insufficient balance"); return; }
     createWithdrawal.mutate({ data: values }, {
-      onSuccess: () => { toast.success("Withdrawal request submitted — pending admin approval"); form.reset(); },
+      onSuccess: () => {
+        toast.success("Withdrawal request submitted — pending admin approval");
+        form.reset();
+        onSuccess();
+      },
       onError: (err: any) => toast.error(err.message ?? "Failed to submit"),
     });
   };
@@ -171,68 +175,61 @@ function WithdrawTab() {
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-3 border-b border-border bg-muted/20">
-        <div className="flex items-center justify-between">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">New Withdrawal</p>
-          <div className="text-right">
-            <p className="text-[10px] text-muted-foreground">Available</p>
-            <p className="text-sm font-bold text-primary">{fmtUsdt(user?.walletBalance)} USDT</p>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-5">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField control={form.control} name="destinationAddress" render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                  Destination Address (BSC BEP-20)
-                </FormLabel>
-                <FormControl><Input placeholder="0x…" className="font-mono text-xs" {...field} /></FormControl>
-                <FormMessage className="text-xs" />
-              </FormItem>
-            )} />
-            <FormField control={form.control} name="amount" render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex justify-between items-center">
-                  Amount (USDT)
-                  <button type="button" onClick={() => form.setValue("amount", user?.walletBalance ?? "0")}
-                    className="text-[11px] font-semibold text-primary hover:underline normal-case tracking-normal">MAX</button>
-                </FormLabel>
-                <FormControl>
-                  <Input type="number" step="0.0001" min="0" placeholder="0.0000" className="font-mono" {...field} />
-                </FormControl>
-                <FormMessage className="text-xs" />
-              </FormItem>
-            )} />
-            <div className={cn("rounded-lg border px-4 py-3 space-y-2 text-sm", overBalance ? "border-red-200 bg-red-50" : "border-border bg-muted/30")}>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground text-xs">Withdrawal Amount</span>
-                <span className="font-mono text-xs">{fmtUsdt(parsedAmount)} USDT</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground text-xs">Network Fee</span>
-                <span className="font-mono text-xs text-red-500">−{fmtUsdt(fee)} USDT</span>
-              </div>
-              <div className="border-t border-border pt-2 flex justify-between font-semibold">
-                <span className="text-xs">Total Deducted</span>
-                <span className={cn("font-mono text-xs", overBalance && "text-red-600")}>{fmtUsdt(totalDeducted)} USDT</span>
-              </div>
-              <div className="flex justify-between text-green-700">
-                <span className="text-xs">Recipient Gets</span>
-                <span className="font-mono text-xs font-semibold">{fmtUsdt(netAmount)} USDT</span>
-              </div>
-              {overBalance && <p className="text-[11px] text-red-600 font-medium">Insufficient balance</p>}
+    <div className="space-y-4">
+      <div className="flex items-center justify-between rounded-xl bg-primary/5 border border-primary/20 px-4 py-3">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Available Balance</p>
+        <p className="text-base font-bold text-primary">{fmtUsdt(user?.walletBalance)} USDT</p>
+      </div>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormField control={form.control} name="destinationAddress" render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Destination Address (BSC BEP-20)
+              </FormLabel>
+              <FormControl><Input placeholder="0x…" className="font-mono text-xs" {...field} /></FormControl>
+              <FormMessage className="text-xs" />
+            </FormItem>
+          )} />
+          <FormField control={form.control} name="amount" render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex justify-between items-center">
+                Amount (USDT)
+                <button type="button" onClick={() => form.setValue("amount", user?.walletBalance ?? "0")}
+                  className="text-[11px] font-semibold text-primary hover:underline normal-case tracking-normal">MAX</button>
+              </FormLabel>
+              <FormControl>
+                <Input type="number" step="0.0001" min="0" placeholder="0.0000" className="font-mono" {...field} />
+              </FormControl>
+              <FormMessage className="text-xs" />
+            </FormItem>
+          )} />
+          <div className={cn("rounded-lg border px-4 py-3 space-y-2 text-sm", overBalance ? "border-red-200 bg-red-50" : "border-border bg-muted/30")}>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground text-xs">Withdrawal Amount</span>
+              <span className="font-mono text-xs">{fmtUsdt(parsedAmount)} USDT</span>
             </div>
-            <Button type="submit" className="w-full font-semibold" disabled={createWithdrawal.isPending || overBalance}>
-              <ArrowUpRight className="w-4 h-4 mr-2" />
-              {createWithdrawal.isPending ? "Submitting…" : "Submit Withdrawal Request"}
-            </Button>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground text-xs">Network Fee</span>
+              <span className="font-mono text-xs text-red-500">−{fmtUsdt(fee)} USDT</span>
+            </div>
+            <div className="border-t border-border pt-2 flex justify-between font-semibold">
+              <span className="text-xs">Total Deducted</span>
+              <span className={cn("font-mono text-xs", overBalance && "text-red-600")}>{fmtUsdt(totalDeducted)} USDT</span>
+            </div>
+            <div className="flex justify-between text-green-700">
+              <span className="text-xs">Recipient Gets</span>
+              <span className="font-mono text-xs font-semibold">{fmtUsdt(netAmount)} USDT</span>
+            </div>
+            {overBalance && <p className="text-[11px] text-red-600 font-medium">Insufficient balance</p>}
+          </div>
+          <Button type="submit" className="w-full font-semibold" disabled={createWithdrawal.isPending || overBalance}>
+            <ArrowUpRight className="w-4 h-4 mr-2" />
+            {createWithdrawal.isPending ? "Submitting…" : "Submit Withdrawal Request"}
+          </Button>
+        </form>
+      </Form>
+    </div>
   );
 }
 
@@ -294,7 +291,6 @@ function TransactionHistory() {
     <div className="space-y-4">
       <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Transaction History</h2>
 
-      {/* Sub-tabs */}
       <div className="flex bg-muted/40 rounded-xl p-1 gap-1">
         {tabs.map((t) => (
           <button
@@ -315,7 +311,6 @@ function TransactionHistory() {
         ))}
       </div>
 
-      {/* Deposits */}
       {histTab === "deposits" && (
         <div className="space-y-2">
           {loadingDeps && <Skeleton className="h-16 w-full rounded-xl" />}
@@ -337,15 +332,11 @@ function TransactionHistory() {
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">{fmt(d.createdAt)}</p>
-                  {d.txHash && (
-                    <p className="text-[10px] font-mono text-muted-foreground/60 truncate mt-0.5">{d.txHash}</p>
-                  )}
+                  {d.txHash && <p className="text-[10px] font-mono text-muted-foreground/60 truncate mt-0.5">{d.txHash}</p>}
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-sm font-bold text-green-600">+{fmtUsdt(d.amount)} USDT</p>
-                  {d.fee && parseFloat(d.fee) > 0 && (
-                    <p className="text-[10px] text-muted-foreground">fee: {fmtUsdt(d.fee)}</p>
-                  )}
+                  {d.fee && parseFloat(d.fee) > 0 && <p className="text-[10px] text-muted-foreground">fee: {fmtUsdt(d.fee)}</p>}
                 </div>
               </div>
             );
@@ -353,7 +344,6 @@ function TransactionHistory() {
         </div>
       )}
 
-      {/* Withdrawals */}
       {histTab === "withdrawals" && (
         <div className="space-y-2">
           {loadingWds && <Skeleton className="h-16 w-full rounded-xl" />}
@@ -376,15 +366,11 @@ function TransactionHistory() {
                   </div>
                   <p className="text-xs text-muted-foreground font-mono truncate mt-0.5">{w.destinationAddress}</p>
                   <p className="text-[10px] text-muted-foreground">{fmt(w.createdAt)}</p>
-                  {w.rejectionReason && (
-                    <p className="text-[10px] text-red-500 mt-0.5">{w.rejectionReason}</p>
-                  )}
+                  {w.rejectionReason && <p className="text-[10px] text-red-500 mt-0.5">{w.rejectionReason}</p>}
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-sm font-bold text-red-500">−{fmtUsdt(w.amount)} USDT</p>
-                  {w.fee && parseFloat(w.fee) > 0 && (
-                    <p className="text-[10px] text-muted-foreground">fee: {fmtUsdt(w.fee)}</p>
-                  )}
+                  {w.fee && parseFloat(w.fee) > 0 && <p className="text-[10px] text-muted-foreground">fee: {fmtUsdt(w.fee)}</p>}
                 </div>
               </div>
             );
@@ -392,7 +378,6 @@ function TransactionHistory() {
         </div>
       )}
 
-      {/* Shop Orders */}
       {histTab === "orders" && (
         <div className="space-y-2">
           {loadingOrders && <Skeleton className="h-16 w-full rounded-xl" />}
@@ -407,21 +392,15 @@ function TransactionHistory() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold">
-                      {o.items.length} item{o.items.length !== 1 ? "s" : ""}
-                    </p>
+                    <p className="text-sm font-semibold">{o.items.length} item{o.items.length !== 1 ? "s" : ""}</p>
                     <Badge variant="outline" className={cn("text-[10px] font-semibold px-1.5 py-0 rounded-full border", s.bg, s.color)}>
                       <Icon className="w-2.5 h-2.5 mr-0.5 inline" />
                       {s.label}
                     </Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground truncate mt-0.5">
-                    {o.items.map(i => i.productName).join(", ")}
-                  </p>
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">{o.items.map(i => i.productName).join(", ")}</p>
                   <p className="text-[10px] text-muted-foreground">{fmt(o.createdAt)}</p>
-                  {o.trackingNumber && (
-                    <p className="text-[10px] text-muted-foreground font-mono">Track: {o.trackingNumber}</p>
-                  )}
+                  {o.trackingNumber && <p className="text-[10px] text-muted-foreground font-mono">Track: {o.trackingNumber}</p>}
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-sm font-bold text-foreground">−{fmtUsdt(o.totalUsdt)} USDT</p>
@@ -439,52 +418,73 @@ function TransactionHistory() {
 /* ─── Main Wallet page ───────────────────────────────────────── */
 export default function Wallet() {
   const { data: user } = useGetMe();
-  const [tab, setTab] = useState<Tab>("deposit");
+  const [depositOpen, setDepositOpen] = useState(false);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-xl font-bold tracking-tight">Wallet</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Deposit or withdraw USDT (BEP-20)</p>
+        <p className="text-sm text-muted-foreground mt-0.5">Your USDT balance &amp; transaction history</p>
       </div>
 
       {/* Balance card */}
-      <div className="flex items-center justify-between bg-primary/5 border border-primary/20 rounded-xl px-4 py-3">
-        <div>
-          <p className="text-xs text-muted-foreground font-medium">Total Balance</p>
-          <p className="font-bold text-2xl text-primary mt-0.5">
-            {fmtUsdt(user?.walletBalance)}{" "}
-            <span className="text-sm font-normal text-muted-foreground">USDT</span>
-          </p>
-        </div>
-        <Download className="w-8 h-8 text-primary/20" />
-      </div>
+      <div className="rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 px-5 py-5">
+        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-1">Total Balance</p>
+        <p className="font-black text-3xl text-primary">
+          {fmtUsdt(user?.walletBalance)}{" "}
+          <span className="text-base font-normal text-muted-foreground">USDT</span>
+        </p>
 
-      {/* Tab switcher */}
-      <div className="flex bg-muted/40 rounded-xl p-1 gap-1">
-        {(["deposit", "withdraw"] as Tab[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={cn(
-              "flex-1 py-2 rounded-lg text-sm font-semibold transition-all capitalize",
-              tab === t ? "bg-white shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground",
-            )}
+        {/* Action buttons */}
+        <div className="flex gap-3 mt-5">
+          <Button
+            onClick={() => setDepositOpen(true)}
+            className="flex-1 font-semibold gap-2 rounded-xl"
           >
-            {t}
-          </button>
-        ))}
+            <PlusCircle className="w-4 h-4" />
+            Deposit
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setWithdrawOpen(true)}
+            className="flex-1 font-semibold gap-2 rounded-xl border-primary/30 text-primary hover:bg-primary/5"
+          >
+            <MinusCircle className="w-4 h-4" />
+            Withdraw
+          </Button>
+        </div>
       </div>
-
-      {/* Tab content */}
-      {tab === "deposit" ? <DepositTab /> : <WithdrawTab />}
-
-      {/* Divider */}
-      <div className="border-t border-border" />
 
       {/* Transaction History */}
       <TransactionHistory />
+
+      {/* Deposit Modal */}
+      <Dialog open={depositOpen} onOpenChange={setDepositOpen}>
+        <DialogContent className="sm:max-w-md rounded-2xl border-border bg-background max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold flex items-center gap-2">
+              <ArrowDownLeft className="w-5 h-5 text-green-600" />
+              Deposit USDT
+            </DialogTitle>
+          </DialogHeader>
+          <DepositContent />
+        </DialogContent>
+      </Dialog>
+
+      {/* Withdraw Modal */}
+      <Dialog open={withdrawOpen} onOpenChange={setWithdrawOpen}>
+        <DialogContent className="sm:max-w-md rounded-2xl border-border bg-background">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold flex items-center gap-2">
+              <ArrowUpRight className="w-5 h-5 text-red-500" />
+              Withdraw USDT
+            </DialogTitle>
+          </DialogHeader>
+          <WithdrawContent onSuccess={() => setWithdrawOpen(false)} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
