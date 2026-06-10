@@ -37,12 +37,6 @@ jobs:
         env:
           BASE_PATH: /
           PORT: 3000
-          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
-
-      - name: Install Capacitor in shop
-        run: |
-          cd artifacts/shop
-          pnpm add -D @capacitor/cli @capacitor/core @capacitor/android
 
       - name: Initialise Capacitor Android platform
         run: |
