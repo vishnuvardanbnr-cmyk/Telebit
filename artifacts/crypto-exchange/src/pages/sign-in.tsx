@@ -3,8 +3,6 @@ import { useLocation, Redirect } from "wouter";
 import { useAuth } from "@/lib/auth-context";
 import { ShieldCheck, Send, FlaskConical, Phone, ArrowLeft } from "lucide-react";
 
-const BASE = import.meta.env.BASE_URL;
-
 type Step = "phone" | "code";
 
 export default function SignInPage() {
@@ -28,7 +26,7 @@ export default function SignInPage() {
     setError(null);
     setHint(null);
     try {
-      const res = await fetch(`${BASE}api/auth/otp/send`, {
+      const res = await fetch(`/api/auth/otp/send`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -54,7 +52,7 @@ export default function SignInPage() {
     setVerifying(true);
     setError(null);
     try {
-      const res = await fetch(`${BASE}api/auth/otp/verify`, {
+      const res = await fetch(`/api/auth/otp/verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -73,7 +71,7 @@ export default function SignInPage() {
     setDemoLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${BASE}api/auth/demo`, {
+      const res = await fetch(`/api/auth/demo`, {
         method: "POST",
         credentials: "include",
       });

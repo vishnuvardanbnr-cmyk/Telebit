@@ -13,10 +13,8 @@ import {
 } from "lucide-react";
 import { formatUsdt } from "@/lib/format";
 
-const BASE = import.meta.env.BASE_URL;
-
 async function apiFetch(path: string, opts?: RequestInit) {
-  const res = await fetch(`${BASE}api/utility${path}`, {
+  const res = await fetch(`/api/utility${path}`, {
     ...opts,
     credentials: "include",
     headers: { "Content-Type": "application/json", ...(opts?.headers ?? {}) },

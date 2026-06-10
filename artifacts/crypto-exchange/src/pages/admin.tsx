@@ -26,8 +26,8 @@ function SetWebhookButton() {
   const handleSetWebhook = async () => {
     setLoading(true);
     try {
-      const webhookUrl = `${window.location.origin}${BASE}api/auth/bot-webhook`;
-      const res = await fetch(`${BASE}api/auth/bot-webhook/setup`, {
+      const webhookUrl = `${window.location.origin}/api/auth/bot-webhook`;
+      const res = await fetch(`/api/auth/bot-webhook/setup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

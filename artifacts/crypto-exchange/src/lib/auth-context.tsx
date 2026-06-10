@@ -3,8 +3,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useGetMe, type User } from "@workspace/api-client-react";
 
-const BASE = import.meta.env.BASE_URL;
-
 type DbUser = User;
 
 interface AuthContextValue {
@@ -29,7 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   const signOut = useCallback(async () => {
-    await fetch(`${BASE}api/auth/logout`, { method: "POST", credentials: "include" });
+    await fetch(`/api/auth/logout`, { method: "POST", credentials: "include" });
     queryClient.clear();
     setLocation("/sign-in");
   }, [queryClient, setLocation]);
