@@ -191,13 +191,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <span>Orders</span>
               </Link>
 
-              <a
+              <Link
                 href="/services"
-                className="flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors text-muted-foreground hover:text-primary"
+                className={cn(
+                  "flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
+                  location.startsWith("/services") ? "text-primary" : "text-muted-foreground"
+                )}
               >
-                <Zap className="h-5 w-5" />
+                <Zap className={cn("h-5 w-5", location.startsWith("/services") && "stroke-[2.5px]")} />
                 <span>Services</span>
-              </a>
+              </Link>
             </>
           ) : (
             <Link

@@ -15,6 +15,7 @@ import Orders from "./pages/orders";
 import OrderDetail from "./pages/order-detail";
 import Wishlist from "./pages/wishlist";
 import Admin from "./pages/admin";
+import Services from "./pages/services";
 import ShopSignInPage from "./pages/sign-in";
 import { Layout } from "./components/layout";
 
@@ -122,6 +123,11 @@ function AppRoutes() {
       <Route path="/admin">
         <Layout>
           <ProtectedRoute component={Admin} />
+        </Layout>
+      </Route>
+      <Route path="/services">
+        <Layout>
+          <ProtectedRoute component={Services} />
         </Layout>
       </Route>
       <Route component={NotFound} />
