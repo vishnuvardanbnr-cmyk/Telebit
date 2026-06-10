@@ -83,7 +83,8 @@ export default function ShopSignInPage() {
       }
       const { token } = await res.json();
       const result = await signIn.create({ strategy: "ticket", ticket: token });
-      if (result.status !== "complete") throw new Error("Sign-in incomplete");
+      console.log("[demo] signIn.create result:", result.status, result.createdSessionId, JSON.stringify(result));
+      if (result.status !== "complete") throw new Error(`Sign-in status: ${result.status}`);
       await setActive!({ session: result.createdSessionId });
       setLocation("/products");
     } catch (e: any) {
