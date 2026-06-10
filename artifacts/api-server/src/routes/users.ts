@@ -7,6 +7,7 @@ const router = Router();
 
 router.get("/users/me", requireAuth, async (req, res): Promise<void> => {
   const user = (req as any).dbUser;
+  res.set("Cache-Control", "no-store");
   res.json({
     id: user.id,
     clerkId: user.clerkId,

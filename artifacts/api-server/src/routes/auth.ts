@@ -127,7 +127,21 @@ router.post("/auth/otp/verify", async (req, res): Promise<void> => {
   }
 
   setAuthCookie(res, user.id);
-  res.json({ success: true });
+  res.json({
+    user: {
+      id: user.id,
+      clerkId: user.clerkId,
+      email: user.email,
+      fullName: user.fullName,
+      walletBalance: user.walletBalance,
+      earningsBalance: user.earningsBalance,
+      depositAddress: user.depositAddress,
+      referralCode: user.referralCode,
+      isAdmin: user.isAdmin,
+      withdrawalBlocked: user.withdrawalBlocked,
+      createdAt: user.createdAt,
+    },
+  });
 });
 
 router.post("/auth/bot-webhook", async (req, res): Promise<void> => {
@@ -271,7 +285,21 @@ router.post("/auth/demo", async (req, res): Promise<void> => {
   }
 
   setAuthCookie(res, user.id);
-  res.json({ success: true });
+  res.json({
+    user: {
+      id: user.id,
+      clerkId: user.clerkId,
+      email: user.email,
+      fullName: user.fullName,
+      walletBalance: user.walletBalance,
+      earningsBalance: user.earningsBalance ?? "0.00",
+      depositAddress: user.depositAddress,
+      referralCode: user.referralCode,
+      isAdmin: user.isAdmin,
+      withdrawalBlocked: user.withdrawalBlocked,
+      createdAt: user.createdAt,
+    },
+  });
 });
 
 router.post("/auth/logout", (req, res): void => {

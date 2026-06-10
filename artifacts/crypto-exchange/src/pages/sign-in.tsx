@@ -60,10 +60,9 @@ export default function SignInPage() {
         credentials: "include",
         body: JSON.stringify({ phone, code }),
       });
-      const body = await res.json().catch(() => ({})) as { error?: string };
+      const body = await res.json().catch(() => ({})) as { error?: string; user?: any };
       if (!res.ok) throw new Error(body.error || "Verification failed");
-      await queryClient.invalidateQueries({ queryKey: ["getMe"] });
-      await queryClient.refetchQueries({ queryKey: ["getMe"] });
+      if (body.user) queryClient.setQueryData(["getMe"], body.user);
       setLocation("/dashboard");
     } catch (e: any) {
       setError(e.message);
@@ -79,10 +78,9 @@ export default function SignInPage() {
         method: "POST",
         credentials: "include",
       });
-      const body = await res.json().catch(() => ({})) as { error?: string };
+      const body = await res.json().catch(() => ({})) as { error?: string; user?: any };
       if (!res.ok) throw new Error(body.error || "Demo login failed");
-      await queryClient.invalidateQueries({ queryKey: ["getMe"] });
-      await queryClient.refetchQueries({ queryKey: ["getMe"] });
+      if (body.user) queryClient.setQueryData(["getMe"], body.user);
       setLocation("/dashboard");
     } catch (e: any) {
       setError(e.message);
