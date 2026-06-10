@@ -23,7 +23,7 @@ interface TelegramUser {
 export default function SignInPage() {
   const [, setLocation] = useLocation();
   const { data: config, isLoading } = useGetTelegramConfig();
-  const { signIn } = useSignIn();
+  const { signIn, setActive } = useSignIn();
   const widgetRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -49,19 +49,9 @@ export default function SignInPage() {
           throw new Error(body.error || "Authentication failed");
         }
         const { token } = await res.json();
-
-        // Step 2: use sign-in token via Clerk signals API
-        const ticketResult = await signIn!.ticket({ ticket: token });
-        if (ticketResult.error) {
-          throw new Error(ticketResult.error.message || "Clerk sign-in failed");
-        }
-
-        // Step 3: finalize to activate the session
-        const finalizeResult = await signIn!.finalize();
-        if (finalizeResult.error) {
-          throw new Error(finalizeResult.error.message || "Failed to finalize session");
-        }
-
+        const result = await signIn!.create({ strategy: "ticket", ticket: token });
+        if (result.status !== "complete") throw new Error("Sign-in incomplete");
+        await setActive!({ session: result.createdSessionId });
         setLocation("/dashboard");
       } catch (e: any) {
         setError(e.message || "Authentication failed. Please try again.");

@@ -23,7 +23,7 @@ interface TelegramUser {
 export default function ShopSignInPage() {
   const [, setLocation] = useLocation();
   const { data: config, isLoading } = useGetTelegramConfig();
-  const { signIn } = useSignIn();
+  const { signIn, setActive } = useSignIn();
   const widgetRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -49,10 +49,9 @@ export default function ShopSignInPage() {
           throw new Error(body.error || "Authentication failed");
         }
         const { token } = await res.json();
-        const ticketResult = await signIn!.ticket({ ticket: token });
-        if (ticketResult.error) throw new Error(ticketResult.error.message || "Clerk sign-in failed");
-        const finalizeResult = await signIn!.finalize();
-        if (finalizeResult.error) throw new Error(finalizeResult.error.message || "Failed to finalize session");
+        const result = await signIn!.create({ strategy: "ticket", ticket: token });
+        if (result.status !== "complete") throw new Error("Sign-in incomplete");
+        await setActive!({ session: result.createdSessionId });
         setLocation("/products");
       } catch (e: any) {
         setError(e.message || "Authentication failed. Please try again.");
@@ -83,10 +82,9 @@ export default function ShopSignInPage() {
         throw new Error(body.error || "Demo login failed");
       }
       const { token } = await res.json();
-      const ticketResult = await signIn.ticket({ ticket: token });
-      if (ticketResult.error) throw new Error(ticketResult.error.message || "Clerk sign-in failed");
-      const finalizeResult = await signIn.finalize();
-      if (finalizeResult.error) throw new Error(finalizeResult.error.message || "Failed to finalize session");
+      const result = await signIn.create({ strategy: "ticket", ticket: token });
+      if (result.status !== "complete") throw new Error("Sign-in incomplete");
+      await setActive!({ session: result.createdSessionId });
       setLocation("/products");
     } catch (e: any) {
       setError(e.message || "Demo login failed. Please try again.");
