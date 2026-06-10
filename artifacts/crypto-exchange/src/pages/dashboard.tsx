@@ -20,8 +20,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { formatUsdt, truncateAddress, formatDate } from "@/lib/format";
 import {
-  Copy, ArrowUpRight, ArrowDownRight, Send, RefreshCw, AlertCircle,
+  Copy, ArrowUpRight, Send, RefreshCw, AlertCircle,
   ArrowDownToLine, ArrowUpFromLine, ExternalLink,
+  Coins, LayoutGrid, BadgeCheck, ShoppingBag, History, ChevronRight,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
@@ -382,6 +383,47 @@ export default function Dashboard() {
                 <Link href="/history"><ArrowUpRight className="h-4 w-4" />Full History</Link>
               </Button>
             </div>
+
+            {/* ── Quick Access ── */}
+            <div className="space-y-3">
+              <h2 className="text-sm font-mono font-bold uppercase tracking-wider text-muted-foreground">Quick Access</h2>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {[
+                  { label: "V2 Tokens", desc: "Buy & sell tokens", href: "/nft/buy", icon: Coins, color: "text-blue-500", bg: "bg-blue-50 border-blue-200" },
+                  { label: "NFT Pools", desc: "Bid in live pools", href: "/nft/pools", icon: LayoutGrid, color: "text-purple-500", bg: "bg-purple-50 border-purple-200" },
+                  { label: "Holdings", desc: "Claim your income", href: "/nft/holdings", icon: BadgeCheck, color: "text-green-500", bg: "bg-green-50 border-green-200" },
+                  { label: "History", desc: "All transactions", href: "/history", icon: History, color: "text-orange-500", bg: "bg-orange-50 border-orange-200" },
+                ].map((item) => (
+                  <Link key={item.href} href={item.href}>
+                    <div className={`border rounded-none p-4 cursor-pointer hover:shadow-sm transition-shadow ${item.bg} group`}>
+                      <item.icon className={`h-6 w-6 mb-2 ${item.color}`} />
+                      <div className="font-mono font-bold text-sm uppercase tracking-wide">{item.label}</div>
+                      <div className="font-mono text-[10px] text-muted-foreground mt-0.5">{item.desc}</div>
+                      <ChevronRight className="h-3 w-3 text-muted-foreground mt-2 group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Shop Banner ── */}
+            <Link href="/" target="_blank" onClick={(e) => { e.preventDefault(); window.open("/", "_blank"); }}>
+              <div className="border border-primary/30 bg-primary/5 rounded-none p-5 flex items-center justify-between cursor-pointer hover:bg-primary/10 transition-colors group">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-primary/10 border border-primary/20 flex items-center justify-center rounded-none">
+                    <ShoppingBag className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <div className="font-mono font-bold uppercase tracking-wider text-sm">Telebit Shop</div>
+                    <div className="font-mono text-xs text-muted-foreground mt-0.5">Browse products, place orders, earn rewards</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs uppercase text-primary hidden sm:block">Visit Store</span>
+                  <ChevronRight className="h-4 w-4 text-primary group-hover:translate-x-0.5 transition-transform" />
+                </div>
+              </div>
+            </Link>
 
             {/* ── Transaction history ── */}
             <div className="space-y-3">
