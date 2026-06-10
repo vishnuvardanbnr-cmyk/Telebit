@@ -5,6 +5,7 @@ import { useGetCart } from "@workspace/api-client-react";
 import { useAuth } from "@/lib/auth-context";
 import { fmtUsdt } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { AccountSwitcher } from "@/components/account-switcher";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, isSignedIn, signOut } = useAuth();
@@ -40,11 +41,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2 sm:gap-3 ml-auto">
             {isSignedIn ? (
               <>
-                {/* Wallet balance — desktop only */}
-                <div className="hidden md:flex items-center gap-1.5 text-xs bg-muted/60 rounded-full px-3 py-1.5">
-                  <span className="text-muted-foreground">Balance:</span>
-                  <span className="font-semibold text-foreground">{fmtUsdt(user?.walletBalance)} USDT</span>
-                </div>
+                {/* Account switcher (Telegram-linked users) */}
+                {user && <AccountSwitcher user={user} />}
+
+                {/* Wallet balance — desktop only (hide when switcher shown) */}
+                {!user?.telegramChatId && (
+                  <div className="hidden md:flex items-center gap-1.5 text-xs bg-muted/60 rounded-full px-3 py-1.5">
+                    <span className="text-muted-foreground">Balance:</span>
+                    <span className="font-semibold text-foreground">{fmtUsdt(user?.walletBalance)} USDT</span>
+                  </div>
+                )}
 
                 {user?.isAdmin && (
                   <Link href="/admin" className="hidden md:flex text-muted-foreground hover:text-primary transition-colors p-1.5 rounded-md hover:bg-muted/50">

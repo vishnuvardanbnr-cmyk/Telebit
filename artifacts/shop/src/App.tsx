@@ -20,6 +20,9 @@ import LotteryDetail from "./pages/lottery-detail";
 import P2P from "./pages/p2p";
 import ShopSignInPage from "./pages/sign-in";
 import Home from "./pages/home";
+import NftBuy from "./pages/nft-buy";
+import NftPools from "./pages/nft-pools";
+import NftHoldings from "./pages/nft-holdings";
 import { Layout } from "./components/layout";
 import { AuthProvider, useAuth } from "./lib/auth-context";
 
@@ -126,6 +129,21 @@ function AppRoutes() {
       <Route path="/p2p">
         <Layout>
           <ProtectedRoute component={P2P} />
+        </Layout>
+      </Route>
+      <Route path="/nft/buy">
+        <Layout>
+          <ProtectedRoute component={NftBuy} />
+        </Layout>
+      </Route>
+      <Route path="/nft/pools">
+        <Layout>
+          <ProtectedRoute component={NftPools} />
+        </Layout>
+      </Route>
+      <Route path="/nft/holdings">
+        <Layout>
+          <ProtectedRoute component={NftHoldings} />
         </Layout>
       </Route>
       <Route component={NotFound} />
