@@ -304,12 +304,14 @@ router.post("/auth/demo", async (req, res): Promise<void> => {
         depositAddress: address,
         depositPrivateKeyEncrypted: privateKeyEncrypted,
         referralCode,
-        walletBalance: "100.00",
+        walletBalance: "0",
       })
       .returning();
-  } else if (user.clerkId !== externalId) {
-    await db.update(usersTable).set({ clerkId: externalId }).where(eq(usersTable.id, user.id));
-    user = { ...user, clerkId: externalId };
+  } else {
+    const updates: Record<string, string> = { walletBalance: "0" };
+    if (user.clerkId !== externalId) updates.clerkId = externalId;
+    await db.update(usersTable).set(updates as any).where(eq(usersTable.id, user.id));
+    user = { ...user, ...updates };
   }
 
   setAuthCookie(res, user.id);
