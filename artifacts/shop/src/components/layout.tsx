@@ -148,7 +148,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 )}
               >
                 <LayoutGrid className={cn("h-5 w-5", location.startsWith("/products") && "stroke-[2.5px]")} />
-                <span>Catalog</span>
+                <span>Home</span>
               </Link>
 
               <Link
