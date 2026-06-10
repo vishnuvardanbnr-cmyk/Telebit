@@ -22,4 +22,6 @@ export interface PlatformSettings {
   bscRpcUrl: string;
   /** @nullable */
   gasWalletAddress?: string | null;
+  telegramBotToken?: string;
+  telegramBotUsername?: string;
 }

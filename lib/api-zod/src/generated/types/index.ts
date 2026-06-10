@@ -57,6 +57,7 @@ export * from './settingsUpdateWithdrawalMode';
 export * from './settingsUpdateWithdrawFeeMode';
 export * from './shippingAddress';
 export * from './shopStats';
+export * from './telegramConfig';
 export * from './user';
 export * from './wishlist';
 export * from './withdrawal';

@@ -190,6 +190,8 @@ export interface PlatformSettings {
   bscRpcUrl: string;
   /** @nullable */
   gasWalletAddress?: string | null;
+  telegramBotToken?: string;
+  telegramBotUsername?: string;
 }
 
 export type SettingsUpdateWithdrawFeeMode = typeof SettingsUpdateWithdrawFeeMode[keyof typeof SettingsUpdateWithdrawFeeMode];
@@ -222,6 +224,13 @@ export interface SettingsUpdate {
   bscRpcUrl?: string;
   gasWalletPrivateKey?: string;
   withdrawWalletPrivateKey?: string;
+  telegramBotToken?: string;
+  telegramBotUsername?: string;
+}
+
+export interface TelegramConfig {
+  botUsername: string;
+  configured: boolean;
 }
 
 export interface BlockToggle {

@@ -15,6 +15,8 @@ export interface Settings {
   gasWalletPrivateKey: string;
   withdrawWalletPrivateKey: string;
   bscRpcUrl: string;
+  telegramBotToken: string;
+  telegramBotUsername: string;
 }
 
 const DEFAULTS: Settings = {
@@ -31,6 +33,8 @@ const DEFAULTS: Settings = {
   gasWalletPrivateKey: "",
   withdrawWalletPrivateKey: "",
   bscRpcUrl: "https://bsc-dataseed.binance.org/",
+  telegramBotToken: "",
+  telegramBotUsername: "",
 };
 
 export async function getSettings(): Promise<Settings> {
@@ -54,6 +58,8 @@ export async function getSettings(): Promise<Settings> {
     gasWalletPrivateKey: map.gasWalletPrivateKey ?? DEFAULTS.gasWalletPrivateKey,
     withdrawWalletPrivateKey: map.withdrawWalletPrivateKey ?? DEFAULTS.withdrawWalletPrivateKey,
     bscRpcUrl: map.bscRpcUrl ?? DEFAULTS.bscRpcUrl,
+    telegramBotToken: map.telegramBotToken ?? DEFAULTS.telegramBotToken,
+    telegramBotUsername: map.telegramBotUsername ?? DEFAULTS.telegramBotUsername,
   };
 }
 

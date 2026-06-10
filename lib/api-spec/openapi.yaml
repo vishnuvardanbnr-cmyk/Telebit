@@ -883,6 +883,19 @@ paths:
         "403":
           description: Forbidden
 
+  /settings/telegram:
+    get:
+      operationId: getTelegramConfig
+      tags: [settings]
+      summary: Get public Telegram bot config (no auth required)
+      responses:
+        "200":
+          description: Telegram bot config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TelegramConfig"
+
   /admin/settings:
     get:
       operationId: adminGetSettings
@@ -1108,6 +1121,8 @@ components:
         adminMasterWallet: { type: string }
         bscRpcUrl: { type: string }
         gasWalletAddress: { type: ["string", "null"] }
+        telegramBotToken: { type: string }
+        telegramBotUsername: { type: string }
 
     SettingsUpdate:
       type: object
@@ -1129,6 +1144,15 @@ components:
         bscRpcUrl: { type: string }
         gasWalletPrivateKey: { type: string }
         withdrawWalletPrivateKey: { type: string }
+        telegramBotToken: { type: string }
+        telegramBotUsername: { type: string }
+
+    TelegramConfig:
+      type: object
+      required: [botUsername, configured]
+      properties:
+        botUsername: { type: string }
+        configured: { type: boolean }
 
     BlockToggle:
       type: object

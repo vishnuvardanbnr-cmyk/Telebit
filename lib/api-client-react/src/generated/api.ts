@@ -59,6 +59,7 @@ import type {
   ReviewInput,
   SettingsUpdate,
   ShopStats,
+  TelegramConfig,
   User,
   Wishlist,
   Withdrawal,
@@ -3186,6 +3187,83 @@ export const useAdminRejectWithdrawal = <TError = ErrorType<void>,
       > => {
       return useMutation(getAdminRejectWithdrawalMutationOptions(options));
     }
+
+export const getGetTelegramConfigUrl = () => {
+
+
+
+
+  return `/api/settings/telegram`
+}
+
+/**
+ * @summary Get public Telegram bot config (no auth required)
+ */
+export const getTelegramConfig = async ( options?: RequestInit): Promise<TelegramConfig> => {
+
+  return customFetch<TelegramConfig>(getGetTelegramConfigUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTelegramConfigQueryKey = () => {
+    return [
+    `/api/settings/telegram`
+    ] as const;
+    }
+
+
+export const getGetTelegramConfigQueryOptions = <TData = Awaited<ReturnType<typeof getTelegramConfig>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTelegramConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTelegramConfigQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTelegramConfig>>> = ({ signal }) => getTelegramConfig({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTelegramConfig>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTelegramConfigQueryResult = NonNullable<Awaited<ReturnType<typeof getTelegramConfig>>>
+export type GetTelegramConfigQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get public Telegram bot config (no auth required)
+ */
+
+export function useGetTelegramConfig<TData = Awaited<ReturnType<typeof getTelegramConfig>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTelegramConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTelegramConfigQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getAdminGetSettingsUrl = () => {
 

@@ -270,7 +270,7 @@ export default function Admin() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {products?.map((product) => (
+                {products?.products?.map((product) => (
                   <TableRow key={product.id} className="border-border">
                     <TableCell className="font-bold text-sm">{product.name}</TableCell>
                     <TableCell className="text-xs uppercase tracking-widest text-muted-foreground">{product.categoryName}</TableCell>

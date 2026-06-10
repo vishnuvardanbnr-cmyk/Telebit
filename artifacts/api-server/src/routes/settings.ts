@@ -17,4 +17,12 @@ router.get("/settings", async (_req, res): Promise<void> => {
   });
 });
 
+router.get("/settings/telegram", async (_req, res): Promise<void> => {
+  const settings = await getSettings();
+  res.json({
+    botUsername: settings.telegramBotUsername,
+    configured: !!settings.telegramBotUsername && !!settings.telegramBotToken,
+  });
+});
+
 export default router;

@@ -28,6 +28,8 @@ const settingsSchema = z.object({
   withdrawalMode: z.enum(["auto", "manual"]).optional(),
   withdrawalEnabled: z.boolean().optional(),
   adminMasterWallet: z.string().optional(),
+  telegramBotToken: z.string().optional(),
+  telegramBotUsername: z.string().optional(),
 });
 
 function SettingsTab() {
@@ -52,6 +54,8 @@ function SettingsTab() {
         withdrawalMode: settings.withdrawalMode as any,
         withdrawalEnabled: settings.withdrawalEnabled,
         adminMasterWallet: settings.adminMasterWallet,
+        telegramBotToken: settings.telegramBotToken ?? "",
+        telegramBotUsername: settings.telegramBotUsername ?? "",
       });
       initializedRef.current = true;
     }
@@ -139,6 +143,30 @@ function SettingsTab() {
                   </FormControl>
                 </FormItem>
               )} />
+
+            {/* Telegram Configuration */}
+            <div className="border border-border rounded-none p-4 space-y-4">
+              <h3 className="font-mono uppercase text-xs tracking-widest text-muted-foreground font-semibold">Telegram Login</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField control={form.control} name="telegramBotUsername" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-mono uppercase text-xs">Bot Username</FormLabel>
+                    <FormControl><Input className="rounded-none font-mono" placeholder="MyExchangeBot" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="telegramBotToken" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-mono uppercase text-xs">Bot Token</FormLabel>
+                    <FormControl><Input className="rounded-none font-mono" type="password" placeholder="123456:ABC-DEF…" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Create a bot via @BotFather on Telegram. Set the bot username (without @) and the HTTP API token here to enable Telegram login.
+              </p>
+            </div>
 
             <Button type="submit" className="rounded-none font-mono uppercase tracking-wider" disabled={updateSettings.isPending}>
               {updateSettings.isPending ? "Saving..." : "Save Settings"}

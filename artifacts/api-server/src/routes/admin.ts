@@ -195,6 +195,8 @@ router.get("/admin/settings", requireAuth, requireAdmin, async (_req, res): Prom
     adminMasterWallet: settings.adminMasterWallet,
     bscRpcUrl: settings.bscRpcUrl,
     gasWalletAddress: null,
+    telegramBotToken: settings.telegramBotToken,
+    telegramBotUsername: settings.telegramBotUsername,
   });
 });
 
@@ -214,6 +216,8 @@ router.put("/admin/settings", requireAuth, requireAdmin, async (req, res): Promi
     adminMasterWallet: settings.adminMasterWallet,
     bscRpcUrl: settings.bscRpcUrl,
     gasWalletAddress: null,
+    telegramBotToken: settings.telegramBotToken,
+    telegramBotUsername: settings.telegramBotUsername,
   });
 });
 

@@ -23,7 +23,7 @@ export default function ProductDetail() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  const { data: user } = useGetMe({ query: { retry: false } });
+  const { data: user } = useGetMe({ query: { retry: false, queryKey: ["/api/users/me"] } });
   const { data: product, isLoading } = useGetProduct(id);
   const { data: reviews } = useListProductReviews(id);
   
@@ -94,7 +94,7 @@ export default function ProductDetail() {
       });
       return;
     }
-    addToWishlist.mutate({ data: { productId: id } });
+    addToWishlist.mutate({ productId: id });
   };
 
   const handleReviewSubmit = (e: React.FormEvent) => {

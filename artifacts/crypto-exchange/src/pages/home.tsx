@@ -7,26 +7,23 @@ export default function Home() {
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <header className="flex items-center justify-between px-6 py-4 border-b border-border bg-card">
         <div className="flex items-center gap-2 font-mono font-bold uppercase tracking-widest text-primary text-xl">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLineLinejoin="round" className="h-8 w-8">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
             <path d="M8 11h8" />
             <path d="M12 7v8" />
           </svg>
           CryptoVault
         </div>
-        <div className="flex gap-4">
-          <Button variant="outline" className="font-mono uppercase tracking-widest rounded-none border-border" asChild>
+        <div className="flex gap-3">
+          <Button className="font-mono uppercase tracking-widest rounded-md text-sm px-4" asChild>
             <Link href="/sign-in">Sign In</Link>
-          </Button>
-          <Button className="font-mono uppercase tracking-widest rounded-none" asChild>
-            <Link href="/sign-up">Sign Up</Link>
           </Button>
         </div>
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center p-6 text-center max-w-5xl mx-auto w-full">
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-1000">
-          <h1 className="text-5xl md:text-7xl font-bold font-mono tracking-tighter uppercase text-white leading-tight">
+          <h1 className="text-5xl md:text-7xl font-bold font-mono tracking-tighter uppercase text-foreground leading-tight">
             Institutional-Grade <br />
             <span className="text-primary">USDT Settlement</span>
           </h1>
@@ -34,9 +31,9 @@ export default function Home() {
             A precision-engineered platform for managing BEP-20 USDT operations. Secure deposits, automated withdrawals, and instantaneous P2P transfers.
           </p>
           <div className="pt-8">
-            <Button size="lg" className="font-mono uppercase tracking-widest text-lg px-8 h-14 rounded-none" asChild>
-              <Link href="/sign-up" className="flex items-center gap-2">
-                Open Terminal <ArrowRight className="w-5 h-5" />
+            <Button size="lg" className="font-semibold text-base px-8 h-12 rounded-md" asChild>
+              <Link href="/sign-in" className="flex items-center gap-2">
+                Get Started <ArrowRight className="w-5 h-5" />
               </Link>
             </Button>
           </div>

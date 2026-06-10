@@ -1167,6 +1167,15 @@ export const AdminRejectWithdrawalResponse = zod.object({
 
 
 /**
+ * @summary Get public Telegram bot config (no auth required)
+ */
+export const GetTelegramConfigResponse = zod.object({
+  "botUsername": zod.string(),
+  "configured": zod.boolean()
+})
+
+
+/**
  * @summary Get all platform settings (admin)
  */
 export const AdminGetSettingsResponse = zod.object({
@@ -1181,7 +1190,9 @@ export const AdminGetSettingsResponse = zod.object({
   "otpWithdrawalEnabled": zod.boolean(),
   "adminMasterWallet": zod.string(),
   "bscRpcUrl": zod.string(),
-  "gasWalletAddress": zod.string().nullish()
+  "gasWalletAddress": zod.string().nullish(),
+  "telegramBotToken": zod.string().optional(),
+  "telegramBotUsername": zod.string().optional()
 })
 
 
@@ -1201,7 +1212,9 @@ export const AdminUpdateSettingsBody = zod.object({
   "adminMasterWallet": zod.string().optional(),
   "bscRpcUrl": zod.string().optional(),
   "gasWalletPrivateKey": zod.string().optional(),
-  "withdrawWalletPrivateKey": zod.string().optional()
+  "withdrawWalletPrivateKey": zod.string().optional(),
+  "telegramBotToken": zod.string().optional(),
+  "telegramBotUsername": zod.string().optional()
 })
 
 export const AdminUpdateSettingsResponse = zod.object({
@@ -1216,7 +1229,9 @@ export const AdminUpdateSettingsResponse = zod.object({
   "otpWithdrawalEnabled": zod.boolean(),
   "adminMasterWallet": zod.string(),
   "bscRpcUrl": zod.string(),
-  "gasWalletAddress": zod.string().nullish()
+  "gasWalletAddress": zod.string().nullish(),
+  "telegramBotToken": zod.string().optional(),
+  "telegramBotUsername": zod.string().optional()
 })
 
 

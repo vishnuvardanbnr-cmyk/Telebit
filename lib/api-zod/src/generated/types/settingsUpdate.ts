@@ -22,4 +22,6 @@ export interface SettingsUpdate {
   bscRpcUrl?: string;
   gasWalletPrivateKey?: string;
   withdrawWalletPrivateKey?: string;
+  telegramBotToken?: string;
+  telegramBotUsername?: string;
 }
