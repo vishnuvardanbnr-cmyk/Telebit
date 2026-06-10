@@ -237,9 +237,6 @@ export default function ShopSignInPage() {
                 )}
                 {demoLoading ? "Signing in…" : "Try Demo Account"}
               </button>
-              <p className="text-center text-[11px] text-muted-foreground mt-1.5">
-                100 USDT balance · no phone required
-              </p>
             </div>
           </div>
 
