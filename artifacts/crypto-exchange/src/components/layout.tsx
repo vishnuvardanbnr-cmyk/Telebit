@@ -185,19 +185,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Mobile bottom footer nav */}
       <nav className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-card border-t border-border">
-        <div className="grid grid-cols-5 h-16">
-          {navItems.slice(0, 5).map((item) => {
+        <div className="grid grid-cols-6 h-16">
+          {navItems.slice(0, 6).map((item) => {
             const isActive = location.startsWith(item.href);
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
+                  "flex flex-col items-center justify-center gap-0.5 text-[9px] font-medium transition-colors",
                   isActive ? "text-primary" : "text-muted-foreground"
                 )}
               >
-                <item.icon className={cn("h-5 w-5", isActive && "stroke-[2.5px]")} />
+                <item.icon className={cn("h-4 w-4", isActive && "stroke-[2.5px]")} />
                 <span>{item.name}</span>
               </Link>
             );
