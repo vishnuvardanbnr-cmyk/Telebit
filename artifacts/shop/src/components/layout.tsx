@@ -26,7 +26,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <Link href="/products" className="flex items-center gap-2 font-semibold text-foreground mr-6 shrink-0">
             <ShoppingCart className="h-5 w-5 text-primary" />
             <span className="hidden sm:inline text-sm font-bold tracking-tight">Telebit Shop</span>
-            <span className="sm:hidden text-sm font-bold tracking-tight">CV Shop</span>
+            <span className="sm:hidden text-sm font-bold tracking-tight">Telebit</span>
           </Link>
 
           {/* Desktop nav */}
