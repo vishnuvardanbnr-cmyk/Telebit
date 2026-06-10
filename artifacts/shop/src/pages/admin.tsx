@@ -27,8 +27,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Package, DollarSign, ShoppingCart, Tag, Edit, Trash2, Users, Ticket, ArrowLeftRight, Star, Ban, CheckCircle, Play, AlertTriangle } from "lucide-react";
-import { useEffect } from "react";
+import { Package, DollarSign, ShoppingCart, Tag, Edit, Trash2, Users, Ticket, ArrowLeftRight, Star, Ban, CheckCircle, Play, AlertTriangle, Settings, Eye, EyeOff } from "lucide-react";
+import { useEffect, useCallback } from "react";
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -623,6 +623,223 @@ function ReviewsTab() {
   );
 }
 
+// ─── Settings Tab ─────────────────────────────────────────────────────────────
+
+type AdminSettings = {
+  telegramBotToken: string;
+  telegramBotUsername: string;
+  bscRpcUrl: string;
+  adminMasterWallet: string;
+  gasWalletPrivateKey?: string;
+  withdrawWalletPrivateKey?: string;
+  withdrawFeeFlat: string;
+  withdrawFeePercent: string;
+  withdrawFeeMode: string;
+  withdrawalMode: string;
+  withdrawalEnabled: boolean;
+  minDepositUsdt: string;
+  depositFeeFlat: string;
+  depositFeePercent: string;
+};
+
+function SettingField({ label, hint, value, onChange, secret = false }: {
+  label: string; hint?: string; value: string; onChange: (v: string) => void; secret?: boolean;
+}) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="space-y-1.5">
+      <label className="text-xs font-bold uppercase tracking-wider text-foreground">{label}</label>
+      {hint && <p className="text-xs text-muted-foreground -mt-0.5">{hint}</p>}
+      <div className="relative">
+        <Input
+          type={secret && !show ? "password" : "text"}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="rounded-none bg-card font-mono text-xs pr-9"
+          placeholder={secret ? "••••••••" : undefined}
+        />
+        {secret && (
+          <button
+            type="button"
+            onClick={() => setShow((s) => !s)}
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {show ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SettingsTab() {
+  const { toast } = useToast();
+  const [cfg, setCfg] = useState<AdminSettings | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const data = await apiFetch("/admin/settings");
+      setCfg(data);
+    } catch {
+      toast({ title: "Failed to load settings", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const set = (key: keyof AdminSettings) => (v: string | boolean) =>
+    setCfg((prev) => prev ? { ...prev, [key]: v } : prev);
+
+  const save = async () => {
+    if (!cfg) return;
+    setSaving(true);
+    try {
+      await apiFetch("/admin/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(cfg),
+      });
+      toast({ title: "Settings saved" });
+    } catch {
+      toast({ title: "Failed to save settings", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading || !cfg) return (
+    <div className="space-y-4 py-8">
+      {[...Array(6)].map((_, i) => <div key={i} className="h-10 bg-muted/40 rounded animate-pulse" />)}
+    </div>
+  );
+
+  return (
+    <div className="space-y-8 max-w-2xl">
+      <h2 className="text-xl font-bold uppercase tracking-wider">Platform Settings</h2>
+
+      {/* Telegram */}
+      <div className="bg-card border border-border p-5 space-y-4">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-7 h-7 rounded bg-[#2AABEE]/10 flex items-center justify-center">
+            <svg className="w-4 h-4 text-[#2AABEE]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8l-1.67 7.86c-.12.56-.46.7-.93.43l-2.58-1.9-1.24 1.2c-.14.14-.26.26-.52.26l.18-2.62 4.74-4.28c.21-.18-.04-.28-.32-.1l-5.86 3.69-2.52-.79c-.55-.17-.56-.55.11-.81l9.84-3.79c.46-.17.86.11.77.85z"/></svg>
+          </div>
+          <h3 className="font-bold uppercase tracking-wider text-sm">Telegram Bot</h3>
+        </div>
+        <SettingField
+          label="Bot Token"
+          hint="From @BotFather — used for Telegram login and notifications"
+          value={cfg.telegramBotToken}
+          onChange={set("telegramBotToken")}
+          secret
+        />
+        <SettingField
+          label="Bot Username"
+          hint="Without the @ symbol, e.g. TelebitShopBot"
+          value={cfg.telegramBotUsername}
+          onChange={set("telegramBotUsername")}
+        />
+      </div>
+
+      {/* Blockchain */}
+      <div className="bg-card border border-border p-5 space-y-4">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-7 h-7 rounded bg-amber-500/10 flex items-center justify-center">
+            <svg className="w-4 h-4 text-amber-500" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          </div>
+          <h3 className="font-bold uppercase tracking-wider text-sm">Blockchain (BSC)</h3>
+        </div>
+        <SettingField
+          label="BSC RPC URL"
+          hint="Binance Smart Chain RPC endpoint"
+          value={cfg.bscRpcUrl}
+          onChange={set("bscRpcUrl")}
+        />
+        <SettingField
+          label="Admin Master Wallet"
+          hint="Address that receives swept deposits"
+          value={cfg.adminMasterWallet}
+          onChange={set("adminMasterWallet")}
+        />
+        <SettingField
+          label="Gas Wallet Private Key"
+          hint="Funds BNB gas for sweep transactions"
+          value={cfg.gasWalletPrivateKey ?? ""}
+          onChange={set("gasWalletPrivateKey" as keyof AdminSettings)}
+          secret
+        />
+        <SettingField
+          label="Withdrawal Wallet Private Key"
+          hint="Signs approved USDT withdrawal transactions"
+          value={cfg.withdrawWalletPrivateKey ?? ""}
+          onChange={set("withdrawWalletPrivateKey" as keyof AdminSettings)}
+          secret
+        />
+      </div>
+
+      {/* Fees */}
+      <div className="bg-card border border-border p-5 space-y-4">
+        <h3 className="font-bold uppercase tracking-wider text-sm">Fees &amp; Limits</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <SettingField label="Deposit Fee (flat USDT)" value={cfg.depositFeeFlat} onChange={set("depositFeeFlat")} />
+          <SettingField label="Deposit Fee (%)" value={cfg.depositFeePercent} onChange={set("depositFeePercent")} />
+          <SettingField label="Withdrawal Fee (flat USDT)" value={cfg.withdrawFeeFlat} onChange={set("withdrawFeeFlat")} />
+          <SettingField label="Withdrawal Fee (%)" value={cfg.withdrawFeePercent} onChange={set("withdrawFeePercent")} />
+          <SettingField label="Min Deposit (USDT)" value={cfg.minDepositUsdt} onChange={set("minDepositUsdt")} />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold uppercase tracking-wider">Withdrawal Fee Mode</label>
+          <Select value={cfg.withdrawFeeMode} onValueChange={set("withdrawFeeMode")}>
+            <SelectTrigger className="rounded-none h-9 text-xs font-bold uppercase tracking-wider w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="rounded-none">
+              <SelectItem value="deduct_from_amount" className="text-xs uppercase tracking-wider font-bold">Deduct from amount</SelectItem>
+              <SelectItem value="deduct_from_balance" className="text-xs uppercase tracking-wider font-bold">Deduct from balance</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold uppercase tracking-wider">Withdrawal Mode</label>
+          <Select value={cfg.withdrawalMode} onValueChange={set("withdrawalMode")}>
+            <SelectTrigger className="rounded-none h-9 text-xs font-bold uppercase tracking-wider w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="rounded-none">
+              <SelectItem value="manual" className="text-xs uppercase tracking-wider font-bold">Manual (admin approves)</SelectItem>
+              <SelectItem value="auto" className="text-xs uppercase tracking-wider font-bold">Automatic</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center justify-between pt-1">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider">Withdrawals Enabled</p>
+            <p className="text-xs text-muted-foreground">Allow users to submit withdrawal requests</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => set("withdrawalEnabled")(!cfg.withdrawalEnabled)}
+            className={`relative w-10 h-5 rounded-full transition-colors ${cfg.withdrawalEnabled ? "bg-primary" : "bg-muted"}`}
+          >
+            <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${cfg.withdrawalEnabled ? "translate-x-5" : ""}`} />
+          </button>
+        </div>
+      </div>
+
+      <Button
+        onClick={save}
+        disabled={saving}
+        className="rounded-none font-bold uppercase tracking-wider w-full sm:w-auto px-10"
+      >
+        {saving ? "Saving…" : "Save Settings"}
+      </Button>
+    </div>
+  );
+}
+
 // ─── Main Admin Page ──────────────────────────────────────────────────────────
 
 export default function Admin() {
@@ -773,6 +990,7 @@ export default function Admin() {
             { value: "lottery", label: "Lottery", icon: Ticket },
             { value: "p2p", label: "P2P", icon: ArrowLeftRight },
             { value: "reviews", label: "Reviews", icon: Star },
+            { value: "settings", label: "Settings", icon: Settings },
           ].map(({ value, label, icon: Icon }) => (
             <TabsTrigger key={value} value={value} className="rounded-none h-full px-4 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary uppercase tracking-wider font-bold text-xs whitespace-nowrap flex items-center gap-1.5">
               <Icon className="h-3.5 w-3.5" />{label}
@@ -894,6 +1112,7 @@ export default function Admin() {
         <TabsContent value="lottery"><LotteryTab /></TabsContent>
         <TabsContent value="p2p"><P2PTab /></TabsContent>
         <TabsContent value="reviews"><ReviewsTab /></TabsContent>
+        <TabsContent value="settings"><SettingsTab /></TabsContent>
       </Tabs>
 
       {/* Product Dialog */}
