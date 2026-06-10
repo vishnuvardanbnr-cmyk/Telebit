@@ -286,6 +286,8 @@ export const GetProductResponse = zod.object({
   "averageRating": zod.string(),
   "reviewCount": zod.number(),
   "createdAt": zod.coerce.date(),
+  "userHasPurchased": zod.boolean().optional(),
+  "userHasReviewed": zod.boolean().optional(),
   "reviews": zod.array(zod.object({
   "id": zod.string(),
   "productId": zod.string(),

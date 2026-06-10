@@ -327,6 +327,8 @@ export interface ProductDetail {
   averageRating: string;
   reviewCount: number;
   createdAt: string;
+  userHasPurchased?: boolean;
+  userHasReviewed?: boolean;
   reviews: Review[];
 }
 

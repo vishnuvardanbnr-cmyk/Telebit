@@ -26,5 +26,7 @@ export interface ProductDetail {
   averageRating: string;
   reviewCount: number;
   createdAt: Date;
+  userHasPurchased?: boolean;
+  userHasReviewed?: boolean;
   reviews: Review[];
 }

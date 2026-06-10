@@ -234,7 +234,25 @@ export default function ProductDetail() {
         <h2 className="text-lg font-bold tracking-tight">Customer Reviews</h2>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Write review */}
-          {user ? (
+          {!user ? (
+            <Card className="rounded-xl shadow-sm flex flex-col items-center justify-center text-center p-8 gap-3">
+              <Package className="w-8 h-8 text-muted-foreground/30" />
+              <p className="text-sm text-muted-foreground font-medium">Sign in to write a review</p>
+              <Link href="/sign-in"><Button size="sm">Sign In</Button></Link>
+            </Card>
+          ) : product?.userHasReviewed ? (
+            <Card className="rounded-xl shadow-sm flex flex-col items-center justify-center text-center p-8 gap-3">
+              <Star className="w-8 h-8 fill-amber-400 text-amber-400" />
+              <p className="text-sm font-semibold">Review submitted</p>
+              <p className="text-xs text-muted-foreground">You've already reviewed this product. Thank you!</p>
+            </Card>
+          ) : !product?.userHasPurchased ? (
+            <Card className="rounded-xl shadow-sm flex flex-col items-center justify-center text-center p-8 gap-3">
+              <ShoppingCart className="w-8 h-8 text-muted-foreground/30" />
+              <p className="text-sm font-semibold">Purchase required</p>
+              <p className="text-xs text-muted-foreground">Only customers who have bought this product can leave a review.</p>
+            </Card>
+          ) : (
             <Card className="rounded-xl shadow-sm h-fit">
               <CardHeader className="pb-3 border-b border-border bg-muted/20">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Write a Review</p>
@@ -270,12 +288,6 @@ export default function ProductDetail() {
                   </Button>
                 </form>
               </CardContent>
-            </Card>
-          ) : (
-            <Card className="rounded-xl shadow-sm flex flex-col items-center justify-center text-center p-8 gap-3">
-              <Package className="w-8 h-8 text-muted-foreground/30" />
-              <p className="text-sm text-muted-foreground font-medium">Sign in to write a review</p>
-              <Link href="/sign-in"><Button size="sm">Sign In</Button></Link>
             </Card>
           )}
 

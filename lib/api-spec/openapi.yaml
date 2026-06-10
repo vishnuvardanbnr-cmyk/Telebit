@@ -1249,6 +1249,8 @@ components:
         averageRating: { type: string }
         reviewCount: { type: integer }
         createdAt: { type: string, format: date-time }
+        userHasPurchased: { type: boolean }
+        userHasReviewed: { type: boolean }
         reviews:
           type: array
           items: { $ref: "#/components/schemas/Review" }

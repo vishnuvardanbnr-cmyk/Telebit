@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { getAuth } from "@clerk/express";
 import { db, usersTable, shopCategories, shopProducts, shopCartItems, shopOrders, shopOrderItems, shopReviews, shopWishlist } from "@workspace/db";
 import { eq, desc, asc, and, ilike, gte, lte, sql, inArray } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../lib/auth";
@@ -185,8 +186,39 @@ router.get("/shop/products/:productId", async (req, res): Promise<void> => {
     .orderBy(desc(shopReviews.createdAt))
     .limit(20);
 
+  // Optional auth: check if the requesting user has purchased / already reviewed
+  let userHasPurchased = false;
+  let userHasReviewed = false;
+  const clerkId = getAuth(req)?.userId;
+  if (clerkId) {
+    const [dbUser] = await db.select({ id: usersTable.id })
+      .from(usersTable).where(eq(usersTable.clerkId, clerkId));
+    if (dbUser) {
+      const [purchased] = await db
+        .select({ id: shopOrderItems.id })
+        .from(shopOrderItems)
+        .innerJoin(shopOrders, eq(shopOrderItems.orderId, shopOrders.id))
+        .where(and(
+          eq(shopOrders.userId, dbUser.id),
+          eq(shopOrderItems.productId, productId),
+          sql`${shopOrders.status} != 'cancelled'`,
+        ))
+        .limit(1);
+      userHasPurchased = !!purchased;
+
+      const [reviewed] = await db
+        .select({ id: shopReviews.id })
+        .from(shopReviews)
+        .where(and(eq(shopReviews.userId, dbUser.id), eq(shopReviews.productId, productId)))
+        .limit(1);
+      userHasReviewed = !!reviewed;
+    }
+  }
+
   res.json({
     ...serializeProduct(row.product, row.categoryName),
+    userHasPurchased,
+    userHasReviewed,
     reviews: reviews.map((r) => ({
       id: r.id,
       productId: r.productId,
@@ -278,6 +310,35 @@ router.post("/shop/products/:productId/reviews", requireAuth, async (req, res): 
   const [product] = await db.select().from(shopProducts).where(eq(shopProducts.id, productId));
   if (!product) {
     res.status(404).json({ error: "Product not found" });
+    return;
+  }
+
+  // Only allow reviews from users who have purchased the product
+  const [purchased] = await db
+    .select({ id: shopOrderItems.id })
+    .from(shopOrderItems)
+    .innerJoin(shopOrders, eq(shopOrderItems.orderId, shopOrders.id))
+    .where(and(
+      eq(shopOrders.userId, user.id),
+      eq(shopOrderItems.productId, productId),
+      sql`${shopOrders.status} != 'cancelled'`,
+    ))
+    .limit(1);
+
+  if (!purchased) {
+    res.status(403).json({ error: "You must purchase this product before leaving a review." });
+    return;
+  }
+
+  // Prevent duplicate reviews
+  const [existing] = await db
+    .select({ id: shopReviews.id })
+    .from(shopReviews)
+    .where(and(eq(shopReviews.userId, user.id), eq(shopReviews.productId, productId)))
+    .limit(1);
+
+  if (existing) {
+    res.status(409).json({ error: "You have already reviewed this product." });
     return;
   }
 
