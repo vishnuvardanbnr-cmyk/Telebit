@@ -48,6 +48,12 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
   );
 }
 
+function ScrollToTop() {
+  const [location] = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [location]);
+  return null;
+}
+
 function ClerkQueryClientCacheInvalidator() {
   const { addListener } = useClerk();
   const queryClient = useQueryClient();
@@ -136,6 +142,7 @@ function ClerkProviderWithRoutes() {
       routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
     >
       <QueryClientProvider client={queryClient}>
+        <ScrollToTop />
         <ClerkQueryClientCacheInvalidator />
         <TooltipProvider>
           <AppRoutes />
