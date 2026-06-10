@@ -617,6 +617,10 @@ importers:
         version: 3.25.76
 
   artifacts/shop:
+    dependencies:
+      qrcode.react:
+        specifier: ^4.2.0
+        version: 4.2.0(react@19.1.0)
     devDependencies:
       '@clerk/react':
         specifier: ^6.7.3

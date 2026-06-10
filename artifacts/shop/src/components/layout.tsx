@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useUser } from "@clerk/react";
-import { ShoppingCart, Heart, Package, ShieldCheck, LogOut, Menu, X, LayoutGrid, Zap } from "lucide-react";
+import { ShoppingCart, Heart, Package, ShieldCheck, LogOut, Menu, X, LayoutGrid, Zap, Wallet } from "lucide-react";
 import { useGetCart, useGetMe } from "@workspace/api-client-react";
 import { useClerk } from "@clerk/react";
 import { fmtUsdt } from "@/lib/utils";
@@ -152,21 +152,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </Link>
 
               <Link
-                href="/cart"
+                href="/wallet"
                 className={cn(
-                  "flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors relative",
-                  location.startsWith("/cart") ? "text-primary" : "text-muted-foreground"
+                  "flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
+                  location.startsWith("/wallet") ? "text-primary" : "text-muted-foreground"
                 )}
               >
-                <span className="relative">
-                  <ShoppingCart className={cn("h-5 w-5", location.startsWith("/cart") && "stroke-[2.5px]")} />
-                  {!!cartCount && (
-                    <span className="absolute -top-1.5 -right-1.5 bg-primary text-primary-foreground text-[8px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center leading-none">
-                      {cartCount > 9 ? "9+" : cartCount}
-                    </span>
-                  )}
-                </span>
-                <span>Cart</span>
+                <Wallet className={cn("h-5 w-5", location.startsWith("/wallet") && "stroke-[2.5px]")} />
+                <span>Wallet</span>
               </Link>
 
               <Link

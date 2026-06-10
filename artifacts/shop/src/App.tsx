@@ -16,6 +16,7 @@ import OrderDetail from "./pages/order-detail";
 import Wishlist from "./pages/wishlist";
 import Admin from "./pages/admin";
 import Services from "./pages/services";
+import Wallet from "./pages/wallet";
 import ShopSignInPage from "./pages/sign-in";
 import { Layout } from "./components/layout";
 
@@ -128,6 +129,11 @@ function AppRoutes() {
       <Route path="/services">
         <Layout>
           <ProtectedRoute component={Services} />
+        </Layout>
+      </Route>
+      <Route path="/wallet">
+        <Layout>
+          <ProtectedRoute component={Wallet} />
         </Layout>
       </Route>
       <Route component={NotFound} />
