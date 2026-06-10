@@ -101,9 +101,9 @@ export default function Home() {
           parseFloat(holdings?.levelRewardAvailable ?? "0");
         const sellPrice = parseFloat(holdings?.sellPrice ?? nftGlobal?.sellPrice ?? "0");
         const tokenValueUsdt = totalTokens * sellPrice;
-        const biddingVolume = (pools ?? []).reduce(
-          (sum, p) => sum + parseFloat(p.poolAmount ?? "0"), 0
-        );
+        const currentPool = (pools ?? []).find((p) => p.status === "active") ?? (pools ?? [])[0];
+        const biddingVolume = parseFloat(currentPool?.poolAmount ?? "0");
+        const userPoolInvested = parseFloat(currentPool?.userBidAmount ?? "0");
         const lifetimePurchased = parseFloat(holdings?.lifetimePurchased ?? "0");
 
         return (
@@ -153,23 +153,16 @@ export default function Home() {
               </div>
 
               {/* ── Secondary metrics ── */}
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <div className="rounded-xl bg-muted/50 border border-border p-3">
                   <p className="text-[9px] text-muted-foreground font-semibold uppercase tracking-wide">Bidding Volume</p>
                   <p className="font-extrabold text-sm mt-1 tabular-nums">${fmtUsdt(String(biddingVolume))}</p>
-                  <p className="text-[9px] text-muted-foreground mt-0.5">all pools</p>
-                </div>
-                <div className="rounded-xl bg-muted/50 border border-border p-3">
-                  <p className="text-[9px] text-muted-foreground font-semibold uppercase tracking-wide">Buy Price</p>
-                  <p className="font-extrabold text-sm mt-1 tabular-nums">
-                    {nftGlobal ? `$${parseFloat(nftGlobal.buyPrice).toFixed(4)}` : "—"}
-                  </p>
-                  <p className="text-[9px] text-muted-foreground mt-0.5">per TBT</p>
+                  <p className="text-[9px] text-muted-foreground mt-0.5">current pool</p>
                 </div>
                 <div className="rounded-xl bg-muted/50 border border-border p-3">
                   <p className="text-[9px] text-muted-foreground font-semibold uppercase tracking-wide">Invested</p>
-                  <p className="font-extrabold text-sm mt-1 tabular-nums">${fmtUsdt(String(lifetimePurchased))}</p>
-                  <p className="text-[9px] text-muted-foreground mt-0.5">lifetime</p>
+                  <p className="font-extrabold text-sm mt-1 tabular-nums">${fmtUsdt(String(userPoolInvested))}</p>
+                  <p className="text-[9px] text-muted-foreground mt-0.5">current pool</p>
                 </div>
               </div>
 

@@ -272,7 +272,8 @@ router.get("/nft/nfts", requireAuth, async (_req, res): Promise<void> => {
   res.json(result);
 });
 
-router.get("/nft/pools", requireAuth, async (_req, res): Promise<void> => {
+router.get("/nft/pools", requireAuth, async (req, res): Promise<void> => {
+  const user = (req as any).dbUser;
   const pools = await db
     .select({
       pool: nftPoolsTable,
@@ -284,7 +285,27 @@ router.get("/nft/pools", requireAuth, async (_req, res): Promise<void> => {
       and(eq(nftPoolsTable.status, "active"), eq(nftsTable.status, "active"))
     );
 
-  res.json(pools.map((r) => ({ ...r.pool, nft: r.nft })));
+  const poolIds = pools.map((r) => r.pool.id);
+  const userBids =
+    poolIds.length > 0
+      ? await db
+          .select({
+            poolId: nftPoolContributedUsersTable.poolId,
+            total: sql<string>`COALESCE(SUM(${nftPoolContributedUsersTable.amount}::numeric), 0)::text`,
+          })
+          .from(nftPoolContributedUsersTable)
+          .where(
+            and(
+              eq(nftPoolContributedUsersTable.userId, user.id),
+              sql`${nftPoolContributedUsersTable.poolId} = ANY(${sql.raw(`ARRAY[${poolIds.map((id) => `'${id}'`).join(",")}]::text[]`)})`
+            )
+          )
+          .groupBy(nftPoolContributedUsersTable.poolId)
+      : [];
+
+  const bidMap = new Map(userBids.map((b) => [b.poolId, b.total]));
+
+  res.json(pools.map((r) => ({ ...r.pool, nft: r.nft, userBidAmount: bidMap.get(r.pool.id) ?? "0" })));
 });
 
 router.post("/nft/pools/:poolId/bid", requireAuth, async (req, res): Promise<void> => {

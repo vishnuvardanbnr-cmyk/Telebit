@@ -1990,6 +1990,7 @@ components:
         poolSize: { type: string }
         poolLimit: { type: string }
         poolAmount: { type: string }
+        userBidAmount: { type: string }
         status: { type: string, enum: [active, inactive, completed] }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }

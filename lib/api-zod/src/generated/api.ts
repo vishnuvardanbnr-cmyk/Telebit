@@ -1423,6 +1423,7 @@ export const ListNftsResponseItem = zod.object({
   "poolSize": zod.string(),
   "poolLimit": zod.string(),
   "poolAmount": zod.string(),
+  "userBidAmount": zod.string().optional(),
   "status": zod.enum(['active', 'inactive', 'completed']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -1441,6 +1442,7 @@ export const ListNftPoolsResponseItem = zod.object({
   "poolSize": zod.string(),
   "poolLimit": zod.string(),
   "poolAmount": zod.string(),
+  "userBidAmount": zod.string().optional(),
   "status": zod.enum(['active', 'inactive', 'completed']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -1597,6 +1599,7 @@ export const AdminListNftsResponseItem = zod.object({
   "poolSize": zod.string(),
   "poolLimit": zod.string(),
   "poolAmount": zod.string(),
+  "userBidAmount": zod.string().optional(),
   "status": zod.enum(['active', 'inactive', 'completed']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -1660,6 +1663,7 @@ export const AdminListNftPoolsResponseItem = zod.object({
   "poolSize": zod.string(),
   "poolLimit": zod.string(),
   "poolAmount": zod.string(),
+  "userBidAmount": zod.string().optional(),
   "status": zod.enum(['active', 'inactive', 'completed']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -1694,6 +1698,7 @@ export const AdminCreateNftPoolResponse = zod.object({
   "poolSize": zod.string(),
   "poolLimit": zod.string(),
   "poolAmount": zod.string(),
+  "userBidAmount": zod.string().optional(),
   "status": zod.enum(['active', 'inactive', 'completed']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -1719,6 +1724,7 @@ export const AdminUpdateNftPoolResponse = zod.object({
   "poolSize": zod.string(),
   "poolLimit": zod.string(),
   "poolAmount": zod.string(),
+  "userBidAmount": zod.string().optional(),
   "status": zod.enum(['active', 'inactive', 'completed']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
