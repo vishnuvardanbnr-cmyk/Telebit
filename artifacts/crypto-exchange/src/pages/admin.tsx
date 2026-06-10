@@ -1,5 +1,11 @@
 import { Layout } from "@/components/layout";
-import { useGetMe, useAdminGetStats, useAdminListUsers, useAdminListDeposits, useAdminListWithdrawals, useAdminGetSettings, useAdminUpdateSettings, useAdminToggleUserBlock, useAdminApproveWithdrawal, useAdminRejectWithdrawal } from "@workspace/api-client-react";
+import {
+  useGetMe, useAdminGetStats, useAdminListUsers, useAdminListDeposits, useAdminListWithdrawals,
+  useAdminGetSettings, useAdminUpdateSettings, useAdminToggleUserBlock,
+  useAdminApproveWithdrawal, useAdminRejectWithdrawal,
+  useAdminGetNftGlobal, useAdminUpdateNftGlobal, useAdminListNfts, useAdminCreateNft,
+  useAdminListNftPools, useAdminCreateNftPool, useAdminSetUserNft,
+} from "@workspace/api-client-react";
 import { Redirect } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -322,6 +328,222 @@ function WithdrawalsTab() {
   );
 }
 
+function NftAdminTab() {
+  const { data: global, refetch: refetchGlobal } = useAdminGetNftGlobal();
+  const { data: nfts, refetch: refetchNfts } = useAdminListNfts();
+  const { data: pools, refetch: refetchPools } = useAdminListNftPools();
+  const updateGlobal = useAdminUpdateNftGlobal();
+  const createNft = useAdminCreateNft();
+  const createPool = useAdminCreateNftPool();
+  const activateUser = useAdminSetUserNft();
+
+  const [newNftTitle, setNewNftTitle] = useState("");
+  const [newPoolNftId, setNewPoolNftId] = useState("");
+  const [newPoolLevel, setNewPoolLevel] = useState("1");
+  const [newPoolSize, setNewPoolSize] = useState("");
+  const [activateUserId, setActivateUserId] = useState("");
+  const [activateAmount, setActivateAmount] = useState("");
+
+  const handleToggleInvest = () => {
+    updateGlobal.mutate(
+      { data: { canInvest: !global?.canInvest } as any },
+      { onSuccess: () => { toast.success("Updated"); refetchGlobal(); } }
+    );
+  };
+
+  const handleInitGlobal = () => {
+    updateGlobal.mutate(
+      { data: { canInvest: false, buyPrice: "1", sellPrice: "0.9", liquidity: "0", expenses: "0" } as any },
+      { onSuccess: () => { toast.success("NFT system initialized"); refetchGlobal(); } }
+    );
+  };
+
+  const handleCreateNft = () => {
+    if (!newNftTitle) return;
+    createNft.mutate(
+      { data: { title: newNftTitle } as any },
+      { onSuccess: () => { toast.success("NFT created"); setNewNftTitle(""); refetchNfts(); } }
+    );
+  };
+
+  const handleCreatePool = () => {
+    if (!newPoolNftId || !newPoolSize) return;
+    createPool.mutate(
+      { data: { nftId: newPoolNftId, level: parseInt(newPoolLevel), poolSize: newPoolSize } as any },
+      { onSuccess: () => { toast.success("Pool created"); setNewPoolNftId(""); setNewPoolSize(""); refetchPools(); } }
+    );
+  };
+
+  const handleActivateUser = () => {
+    if (!activateUserId || !activateAmount) return;
+    activateUser.mutate(
+      { id: activateUserId, data: { investedUsdt: activateAmount } },
+      { onSuccess: () => { toast.success("User NFT investment activated"); setActivateUserId(""); setActivateAmount(""); } }
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Global Economy */}
+      <Card className="rounded-none border-border">
+        <CardHeader className="border-b border-border bg-muted/20">
+          <CardTitle className="font-mono uppercase tracking-wider text-sm">Token Economy</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4 space-y-4">
+          {!global ? (
+            <div className="flex items-center gap-3">
+              <p className="font-mono text-sm text-muted-foreground">NFT system not initialized.</p>
+              <Button size="sm" className="rounded-none font-mono uppercase text-xs" onClick={handleInitGlobal}>
+                Initialize
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { label: "Buy Price", val: `$${parseFloat(global.buyPrice).toFixed(6)}` },
+                  { label: "Sell Price", val: `$${parseFloat(global.sellPrice).toFixed(6)}` },
+                  { label: "Liquidity", val: `$${formatUsdt(global.liquidity)}` },
+                  { label: "Total Purchased", val: `$${formatUsdt(global.totalPurchase)}` },
+                ].map((s) => (
+                  <div key={s.label} className="border border-border p-3">
+                    <p className="font-mono text-[10px] text-muted-foreground uppercase">{s.label}</p>
+                    <p className="font-mono font-bold text-sm">{s.val}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="font-mono text-sm">V2 Purchases: </span>
+                <span className={`font-mono font-bold text-sm ${global.canInvest ? "text-green-600" : "text-destructive"}`}>
+                  {global.canInvest ? "ENABLED" : "DISABLED"}
+                </span>
+                <Button size="sm" variant="outline" className="rounded-none font-mono uppercase text-xs" onClick={handleToggleInvest} disabled={updateGlobal.isPending}>
+                  {global.canInvest ? "Disable" : "Enable"}
+                </Button>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Create NFT + Pools */}
+      <div className="grid md:grid-cols-2 gap-4">
+        <Card className="rounded-none border-border">
+          <CardHeader className="border-b border-border bg-muted/20 py-3">
+            <CardTitle className="font-mono uppercase tracking-wider text-xs">Create NFT</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4 space-y-3">
+            <div className="space-y-1.5">
+              <label className="font-mono text-[10px] text-muted-foreground uppercase font-bold">NFT Title</label>
+              <Input className="rounded-none font-mono text-sm" placeholder="e.g. Telebit Gold" value={newNftTitle} onChange={(e) => setNewNftTitle(e.target.value)} />
+            </div>
+            <Button size="sm" className="w-full rounded-none font-mono uppercase text-xs" onClick={handleCreateNft} disabled={!newNftTitle || createNft.isPending}>
+              Create NFT
+            </Button>
+            {nfts && nfts.length > 0 && (
+              <div className="space-y-1 max-h-32 overflow-auto">
+                {(nfts as any[]).map((n: any) => (
+                  <div key={n.id} className="flex justify-between font-mono text-xs border border-border p-1.5">
+                    <span>{n.title}</span>
+                    <span className="text-muted-foreground text-[10px] truncate max-w-[100px]">{n.id}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-none border-border">
+          <CardHeader className="border-b border-border bg-muted/20 py-3">
+            <CardTitle className="font-mono uppercase tracking-wider text-xs">Create Pool</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4 space-y-3">
+            <div className="space-y-1.5">
+              <label className="font-mono text-[10px] text-muted-foreground uppercase font-bold">NFT ID</label>
+              <Input className="rounded-none font-mono text-sm" placeholder="NFT UUID" value={newPoolNftId} onChange={(e) => setNewPoolNftId(e.target.value)} />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1.5">
+                <label className="font-mono text-[10px] text-muted-foreground uppercase font-bold">Level</label>
+                <Input type="number" className="rounded-none font-mono text-sm" value={newPoolLevel} onChange={(e) => setNewPoolLevel(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <label className="font-mono text-[10px] text-muted-foreground uppercase font-bold">Pool Size (USDT)</label>
+                <Input type="number" className="rounded-none font-mono text-sm" placeholder="1000" value={newPoolSize} onChange={(e) => setNewPoolSize(e.target.value)} />
+              </div>
+            </div>
+            <Button size="sm" className="w-full rounded-none font-mono uppercase text-xs" onClick={handleCreatePool} disabled={!newPoolNftId || !newPoolSize || createPool.isPending}>
+              Create Pool
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Pools list */}
+      {pools && (pools as any[]).length > 0 && (
+        <Card className="rounded-none border-border">
+          <CardHeader className="border-b border-border bg-muted/20 py-3">
+            <CardTitle className="font-mono uppercase tracking-wider text-xs">All Pools</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader className="bg-muted/20">
+                <TableRow>
+                  <TableHead className="font-mono uppercase text-[10px]">NFT</TableHead>
+                  <TableHead className="font-mono uppercase text-[10px]">Level</TableHead>
+                  <TableHead className="font-mono uppercase text-[10px]">Size</TableHead>
+                  <TableHead className="font-mono uppercase text-[10px]">Filled</TableHead>
+                  <TableHead className="font-mono uppercase text-[10px]">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(pools as any[]).map((p: any) => (
+                  <TableRow key={p.id} className="border-border">
+                    <TableCell className="font-mono text-xs">{p.nft?.title ?? p.nftId}</TableCell>
+                    <TableCell className="font-mono text-xs">{p.level}</TableCell>
+                    <TableCell className="font-mono text-xs">${formatUsdt(p.poolSize)}</TableCell>
+                    <TableCell className="font-mono text-xs">${formatUsdt(p.poolAmount)} / ${formatUsdt(p.poolSize)}</TableCell>
+                    <TableCell>
+                      <span className={`font-mono text-[10px] uppercase px-1.5 py-0.5 border ${p.status === "active" ? "border-green-300 bg-green-50 text-green-700" : "border-border bg-muted/20 text-muted-foreground"}`}>
+                        {p.status}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* User activation */}
+      <Card className="rounded-none border-border">
+        <CardHeader className="border-b border-border bg-muted/20 py-3">
+          <CardTitle className="font-mono uppercase tracking-wider text-xs">Manual User Activation</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4 space-y-3">
+          <p className="font-mono text-xs text-muted-foreground">
+            Deposits auto-activate users. Use this to manually set a user's investedUsdt for NFT eligibility.
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1.5">
+              <label className="font-mono text-[10px] text-muted-foreground uppercase font-bold">User ID</label>
+              <Input className="rounded-none font-mono text-sm" placeholder="uuid" value={activateUserId} onChange={(e) => setActivateUserId(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="font-mono text-[10px] text-muted-foreground uppercase font-bold">investedUsdt</label>
+              <Input type="number" className="rounded-none font-mono text-sm" placeholder="100" value={activateAmount} onChange={(e) => setActivateAmount(e.target.value)} />
+            </div>
+          </div>
+          <Button size="sm" className="rounded-none font-mono uppercase text-xs" onClick={handleActivateUser} disabled={!activateUserId || !activateAmount || activateUser.isPending}>
+            Set investedUsdt
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function Admin() {
   const { data: user, isLoading } = useGetMe();
   const { data: stats } = useAdminGetStats();
@@ -344,14 +566,16 @@ export default function Admin() {
         )}
 
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 rounded-none bg-muted/20 border border-border h-12">
-            <TabsTrigger value="users" className="font-mono uppercase tracking-wider data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-none h-full">Users</TabsTrigger>
-            <TabsTrigger value="withdrawals" className="font-mono uppercase tracking-wider data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-none h-full">Withdrawals</TabsTrigger>
-            <TabsTrigger value="settings" className="font-mono uppercase tracking-wider data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-none h-full">Settings</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 rounded-none bg-muted/20 border border-border h-12">
+            <TabsTrigger value="users" className="font-mono uppercase tracking-wider data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-none h-full text-xs">Users</TabsTrigger>
+            <TabsTrigger value="withdrawals" className="font-mono uppercase tracking-wider data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-none h-full text-xs">Withdrawals</TabsTrigger>
+            <TabsTrigger value="nft" className="font-mono uppercase tracking-wider data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-none h-full text-xs">NFT</TabsTrigger>
+            <TabsTrigger value="settings" className="font-mono uppercase tracking-wider data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-none h-full text-xs">Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="mt-4"><UsersTab /></TabsContent>
           <TabsContent value="withdrawals" className="mt-4"><WithdrawalsTab /></TabsContent>
+          <TabsContent value="nft" className="mt-4"><NftAdminTab /></TabsContent>
           <TabsContent value="settings" className="mt-4"><SettingsTab /></TabsContent>
         </Tabs>
       </div>

@@ -508,6 +508,197 @@ export interface ShopStats {
   topProducts?: Product[];
 }
 
+export interface NftGlobal {
+  id: string;
+  buyPrice: string;
+  sellPrice: string;
+  liquidity: string;
+  expenses: string;
+  nftPool: string;
+  totalPurchase: string;
+  reserveFund: string;
+  userDistributionPercent: string;
+  reserveFundDistributionPercent: string;
+  canInvest: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NftGlobalUpdate {
+  canInvest?: boolean;
+  userDistributionPercent?: string;
+  reserveFundDistributionPercent?: string;
+  buyPrice?: string;
+  sellPrice?: string;
+  liquidity?: string;
+  expenses?: string;
+}
+
+export type NftItemStatus = typeof NftItemStatus[keyof typeof NftItemStatus];
+
+
+export const NftItemStatus = {
+  active: 'active',
+  inactive: 'inactive',
+} as const;
+
+export interface NftItem {
+  id: string;
+  title: string;
+  image: string;
+  price: string;
+  status: NftItemStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type NftPoolStatus = typeof NftPoolStatus[keyof typeof NftPoolStatus];
+
+
+export const NftPoolStatus = {
+  active: 'active',
+  inactive: 'inactive',
+  completed: 'completed',
+} as const;
+
+export interface NftPool {
+  id: string;
+  nftId: string;
+  level: number;
+  poolSize: string;
+  poolLimit: string;
+  poolAmount: string;
+  status: NftPoolStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type NftWithPools = NftItem & {
+  pools: NftPool[];
+};
+
+export type NftPoolWithNft = NftPool & {
+  nft: NftItem;
+};
+
+export interface NftHolding {
+  id?: string;
+  userId?: string;
+  poolRewardAvailable: string;
+  poolRewardClaimed: string;
+  poolRewardClaimedUsdt: string;
+  referralRewardAvailable: string;
+  referralRewardClaimed: string;
+  referralRewardClaimedUsdt: string;
+  levelRewardAvailable: string;
+  levelRewardClaimed: string;
+  levelRewardClaimedUsdt: string;
+  lifetimePurchased: string;
+  holdingValueUsdt: string;
+  sellPrice: string;
+  buyPrice: string;
+}
+
+export interface NftBuyRequest {
+  /** USDT amount (multiple of 10, max 1000) */
+  amount: number;
+}
+
+export interface NftBuyResult {
+  success: boolean;
+  message: string;
+  newWalletBalance: string;
+  global?: NftGlobal;
+}
+
+export interface NftBidRequest {
+  /** Whole number USDT amount to bid */
+  amount: number;
+}
+
+export interface NftBidResult {
+  success: boolean;
+  message: string;
+  newWalletBalance: string;
+  contribution: number;
+}
+
+/**
+ * Which reward bucket to claim
+ */
+export type NftClaimRequestType = typeof NftClaimRequestType[keyof typeof NftClaimRequestType];
+
+
+export const NftClaimRequestType = {
+  pool: 'pool',
+  referral: 'referral',
+  level: 'level',
+} as const;
+
+export interface NftClaimRequest {
+  /** Which reward bucket to claim */
+  type: NftClaimRequestType;
+}
+
+export interface NftClaimResult {
+  success: boolean;
+  message: string;
+  claimed: number;
+  usdtCredited: number;
+  newWalletBalance: string;
+}
+
+export interface NftCreateRequest {
+  title: string;
+  image?: string;
+  price?: string;
+}
+
+export type NftUpdateRequestStatus = typeof NftUpdateRequestStatus[keyof typeof NftUpdateRequestStatus];
+
+
+export const NftUpdateRequestStatus = {
+  active: 'active',
+  inactive: 'inactive',
+} as const;
+
+export interface NftUpdateRequest {
+  title?: string;
+  image?: string;
+  price?: string;
+  status?: NftUpdateRequestStatus;
+}
+
+export interface NftPoolCreateRequest {
+  nftId: string;
+  level?: number;
+  poolSize: string;
+  poolLimit?: string;
+}
+
+export type NftPoolStatusUpdateStatus = typeof NftPoolStatusUpdateStatus[keyof typeof NftPoolStatusUpdateStatus];
+
+
+export const NftPoolStatusUpdateStatus = {
+  active: 'active',
+  inactive: 'inactive',
+  completed: 'completed',
+} as const;
+
+export interface NftPoolStatusUpdate {
+  status?: NftPoolStatusUpdateStatus;
+  poolLimit?: string;
+}
+
+export interface UserNftActivation {
+  investedUsdt: string;
+}
+
+export interface UserNftActivationResult {
+  success?: boolean;
+  investedUsdt?: string;
+}
+
 export type ListDepositsParams = {
 limit?: number;
 offset?: number;

@@ -81,12 +81,18 @@ router.post("/deposits/check", requireAuth, async (req, res): Promise<void> => {
       logger.warn({ err }, "Sweep failed, crediting anyway");
     }
 
-    // Credit user wallet
+    // Credit user wallet + update NFT-related deposit tracking
     const currentBalance = parseFloat(user.walletBalance);
     const newBalance = currentBalance + netAmount;
+    const newDepositedAmount = parseFloat(user.userDepositedAmount ?? "0") + netAmount;
+    const newInvestedUsdt = parseFloat(user.investedUsdt ?? "0") + netAmount;
 
     await db.update(usersTable)
-      .set({ walletBalance: String(newBalance) })
+      .set({
+        walletBalance: String(newBalance),
+        userDepositedAmount: String(newDepositedAmount),
+        investedUsdt: String(newInvestedUsdt),
+      } as any)
       .where(eq(usersTable.id, user.id));
 
     const [deposit] = await db.insert(depositsTable).values({

@@ -14,6 +14,9 @@ import History from "./pages/history";
 import Admin from "./pages/admin";
 import Services from "./pages/services";
 import SignInPage from "./pages/sign-in";
+import NftBuy from "./pages/nft-buy";
+import NftPools from "./pages/nft-pools";
+import NftHoldings from "./pages/nft-holdings";
 import { AuthProvider, useAuth } from "./lib/auth-context";
 
 const queryClient = new QueryClient({
@@ -69,6 +72,9 @@ function AppWithAuth() {
             <Route path="/history"><ProtectedRoute component={History} /></Route>
             <Route path="/admin"><ProtectedRoute component={Admin} /></Route>
             <Route path="/services"><ProtectedRoute component={Services} /></Route>
+            <Route path="/nft/buy"><ProtectedRoute component={NftBuy} /></Route>
+            <Route path="/nft/pools"><ProtectedRoute component={NftPools} /></Route>
+            <Route path="/nft/holdings"><ProtectedRoute component={NftHoldings} /></Route>
             <Route component={NotFound} />
           </Switch>
           <Toaster position="bottom-right" />

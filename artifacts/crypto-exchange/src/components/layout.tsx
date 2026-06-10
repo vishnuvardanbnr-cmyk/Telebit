@@ -11,6 +11,7 @@ import {
   Menu,
   X,
   LayoutGrid,
+  Coins,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
@@ -25,6 +26,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { name: "Deposit", href: "/deposit", icon: ArrowDownToLine },
     { name: "Withdraw", href: "/withdraw", icon: ArrowUpFromLine },
     { name: "P2P", href: "/p2p", icon: Send },
+    { name: "V2 Tokens", href: "/nft/buy", icon: Coins },
+    { name: "NFT Pools", href: "/nft/pools", icon: LayoutGrid },
+    { name: "Holdings", href: "/nft/holdings", icon: Coins },
     { name: "Services", href: "/services", icon: LayoutGrid },
     { name: "History", href: "/history", icon: History },
   ];

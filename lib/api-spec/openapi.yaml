@@ -17,6 +17,8 @@ tags:
   - name: settings
   - name: shop
   - name: shop-admin
+  - name: nft
+  - name: nft-admin
 paths:
   /healthz:
     get:
@@ -1018,6 +1020,304 @@ paths:
         "403":
           description: Forbidden
 
+  # ─── NFT / V2 Token Economy ──────────────────────────────────────────────────
+
+  /nft/global:
+    get:
+      operationId: getNftGlobal
+      tags: [nft]
+      summary: Get global NFT token economy state
+      responses:
+        "200":
+          description: Global amounts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NftGlobal"
+        "404":
+          description: Not initialized
+
+  /nft/buy:
+    post:
+      operationId: buyNftTokens
+      tags: [nft]
+      summary: Purchase V2 tokens (Flow 2)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NftBuyRequest"
+      responses:
+        "200":
+          description: Purchase successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NftBuyResult"
+        "400":
+          description: Validation error
+
+  /nft/nfts:
+    get:
+      operationId: listNfts
+      tags: [nft]
+      summary: List active NFTs with their pools
+      responses:
+        "200":
+          description: NFT list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NftWithPools"
+
+  /nft/pools:
+    get:
+      operationId: listNftPools
+      tags: [nft]
+      summary: List active NFT pools
+      responses:
+        "200":
+          description: Pool list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NftPoolWithNft"
+
+  /nft/pools/{poolId}/bid:
+    post:
+      operationId: bidNftPool
+      tags: [nft]
+      summary: Bid in an NFT pool (Flow 3)
+      parameters:
+        - name: poolId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NftBidRequest"
+      responses:
+        "200":
+          description: Bid successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NftBidResult"
+        "400":
+          description: Validation error
+        "404":
+          description: Pool not found
+
+  /nft/holdings:
+    get:
+      operationId: getNftHoldings
+      tags: [nft]
+      summary: Get current user's NFT holdings
+      responses:
+        "200":
+          description: Holdings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NftHolding"
+
+  /nft/holdings/claim:
+    post:
+      operationId: claimNftHoldings
+      tags: [nft]
+      summary: Claim NFT token rewards to wallet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NftClaimRequest"
+      responses:
+        "200":
+          description: Claim successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NftClaimResult"
+        "400":
+          description: No tokens to claim
+
+  /admin/nft/global:
+    get:
+      operationId: adminGetNftGlobal
+      tags: [nft-admin]
+      summary: Get NFT global config (admin)
+      responses:
+        "200":
+          description: Global config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NftGlobal"
+    put:
+      operationId: adminUpdateNftGlobal
+      tags: [nft-admin]
+      summary: Create or update NFT global config (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NftGlobalUpdate"
+      responses:
+        "200":
+          description: Updated config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NftGlobal"
+
+  /admin/nft/nfts:
+    get:
+      operationId: adminListNfts
+      tags: [nft-admin]
+      summary: List all NFTs (admin)
+      responses:
+        "200":
+          description: NFT list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NftWithPools"
+    post:
+      operationId: adminCreateNft
+      tags: [nft-admin]
+      summary: Create a new NFT (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NftCreateRequest"
+      responses:
+        "200":
+          description: Created NFT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NftItem"
+
+  /admin/nft/nfts/{nftId}:
+    patch:
+      operationId: adminUpdateNft
+      tags: [nft-admin]
+      summary: Update NFT (admin)
+      parameters:
+        - name: nftId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NftUpdateRequest"
+      responses:
+        "200":
+          description: Updated NFT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NftItem"
+        "404":
+          description: Not found
+
+  /admin/nft/pools:
+    get:
+      operationId: adminListNftPools
+      tags: [nft-admin]
+      summary: List all NFT pools (admin)
+      responses:
+        "200":
+          description: Pool list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NftPoolWithNft"
+    post:
+      operationId: adminCreateNftPool
+      tags: [nft-admin]
+      summary: Create a pool for an NFT (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NftPoolCreateRequest"
+      responses:
+        "200":
+          description: Created pool
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NftPool"
+
+  /admin/nft/pools/{poolId}:
+    patch:
+      operationId: adminUpdateNftPool
+      tags: [nft-admin]
+      summary: Update NFT pool status (admin)
+      parameters:
+        - name: poolId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NftPoolStatusUpdate"
+      responses:
+        "200":
+          description: Updated pool
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NftPool"
+
+  /admin/users/{id}/nft:
+    patch:
+      operationId: adminSetUserNft
+      tags: [nft-admin]
+      summary: Set user investedUsdt (activate NFT eligibility)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserNftActivation"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserNftActivationResult"
+
 components:
   schemas:
     HealthStatus:
@@ -1538,3 +1838,199 @@ components:
         topProducts:
           type: array
           items: { $ref: "#/components/schemas/Product" }
+
+    # ─── NFT Schemas ────────────────────────────────────────────────────────────
+
+    NftGlobal:
+      type: object
+      required: [id, buyPrice, sellPrice, liquidity, expenses, nftPool, totalPurchase, reserveFund, userDistributionPercent, reserveFundDistributionPercent, canInvest, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        buyPrice: { type: string }
+        sellPrice: { type: string }
+        liquidity: { type: string }
+        expenses: { type: string }
+        nftPool: { type: string }
+        totalPurchase: { type: string }
+        reserveFund: { type: string }
+        userDistributionPercent: { type: string }
+        reserveFundDistributionPercent: { type: string }
+        canInvest: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    NftGlobalUpdate:
+      type: object
+      properties:
+        canInvest: { type: boolean }
+        userDistributionPercent: { type: string }
+        reserveFundDistributionPercent: { type: string }
+        buyPrice: { type: string }
+        sellPrice: { type: string }
+        liquidity: { type: string }
+        expenses: { type: string }
+
+    NftItem:
+      type: object
+      required: [id, title, image, price, status, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        image: { type: string }
+        price: { type: string }
+        status: { type: string, enum: [active, inactive] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    NftPool:
+      type: object
+      required: [id, nftId, level, poolSize, poolLimit, poolAmount, status, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        nftId: { type: string }
+        level: { type: integer }
+        poolSize: { type: string }
+        poolLimit: { type: string }
+        poolAmount: { type: string }
+        status: { type: string, enum: [active, inactive, completed] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    NftWithPools:
+      allOf:
+        - $ref: "#/components/schemas/NftItem"
+        - type: object
+          required: [pools]
+          properties:
+            pools:
+              type: array
+              items:
+                $ref: "#/components/schemas/NftPool"
+
+    NftPoolWithNft:
+      allOf:
+        - $ref: "#/components/schemas/NftPool"
+        - type: object
+          required: [nft]
+          properties:
+            nft:
+              $ref: "#/components/schemas/NftItem"
+
+    NftHolding:
+      type: object
+      required: [poolRewardAvailable, poolRewardClaimed, poolRewardClaimedUsdt, referralRewardAvailable, referralRewardClaimed, referralRewardClaimedUsdt, levelRewardAvailable, levelRewardClaimed, levelRewardClaimedUsdt, lifetimePurchased, holdingValueUsdt, sellPrice, buyPrice]
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        poolRewardAvailable: { type: string }
+        poolRewardClaimed: { type: string }
+        poolRewardClaimedUsdt: { type: string }
+        referralRewardAvailable: { type: string }
+        referralRewardClaimed: { type: string }
+        referralRewardClaimedUsdt: { type: string }
+        levelRewardAvailable: { type: string }
+        levelRewardClaimed: { type: string }
+        levelRewardClaimedUsdt: { type: string }
+        lifetimePurchased: { type: string }
+        holdingValueUsdt: { type: string }
+        sellPrice: { type: string }
+        buyPrice: { type: string }
+
+    NftBuyRequest:
+      type: object
+      required: [amount]
+      properties:
+        amount:
+          type: number
+          description: USDT amount (multiple of 10, max 1000)
+
+    NftBuyResult:
+      type: object
+      required: [success, message, newWalletBalance]
+      properties:
+        success: { type: boolean }
+        message: { type: string }
+        newWalletBalance: { type: string }
+        global:
+          $ref: "#/components/schemas/NftGlobal"
+
+    NftBidRequest:
+      type: object
+      required: [amount]
+      properties:
+        amount:
+          type: number
+          description: Whole number USDT amount to bid
+
+    NftBidResult:
+      type: object
+      required: [success, message, newWalletBalance, contribution]
+      properties:
+        success: { type: boolean }
+        message: { type: string }
+        newWalletBalance: { type: string }
+        contribution: { type: number }
+
+    NftClaimRequest:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          enum: [pool, referral, level]
+          description: Which reward bucket to claim
+
+    NftClaimResult:
+      type: object
+      required: [success, message, claimed, usdtCredited, newWalletBalance]
+      properties:
+        success: { type: boolean }
+        message: { type: string }
+        claimed: { type: number }
+        usdtCredited: { type: number }
+        newWalletBalance: { type: string }
+
+    NftCreateRequest:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string }
+        image: { type: string }
+        price: { type: string }
+
+    NftUpdateRequest:
+      type: object
+      properties:
+        title: { type: string }
+        image: { type: string }
+        price: { type: string }
+        status: { type: string, enum: [active, inactive] }
+
+    NftPoolCreateRequest:
+      type: object
+      required: [nftId, poolSize]
+      properties:
+        nftId: { type: string }
+        level: { type: integer }
+        poolSize: { type: string }
+        poolLimit: { type: string }
+
+    NftPoolStatusUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [active, inactive, completed]
+        poolLimit: { type: string }
+
+    UserNftActivation:
+      type: object
+      required: [investedUsdt]
+      properties:
+        investedUsdt: { type: string }
+
+    UserNftActivationResult:
+      type: object
+      properties:
+        success: { type: boolean }
+        investedUsdt: { type: string }

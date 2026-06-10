@@ -1301,3 +1301,377 @@ export const AdminGetStatsResponse = zod.object({
 })
 
 
+/**
+ * @summary Get global NFT token economy state
+ */
+export const GetNftGlobalResponse = zod.object({
+  "id": zod.string(),
+  "buyPrice": zod.string(),
+  "sellPrice": zod.string(),
+  "liquidity": zod.string(),
+  "expenses": zod.string(),
+  "nftPool": zod.string(),
+  "totalPurchase": zod.string(),
+  "reserveFund": zod.string(),
+  "userDistributionPercent": zod.string(),
+  "reserveFundDistributionPercent": zod.string(),
+  "canInvest": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Purchase V2 tokens (Flow 2)
+ */
+export const BuyNftTokensBody = zod.object({
+  "amount": zod.number().describe('USDT amount (multiple of 10, max 1000)')
+})
+
+export const BuyNftTokensResponse = zod.object({
+  "success": zod.boolean(),
+  "message": zod.string(),
+  "newWalletBalance": zod.string(),
+  "global": zod.object({
+  "id": zod.string(),
+  "buyPrice": zod.string(),
+  "sellPrice": zod.string(),
+  "liquidity": zod.string(),
+  "expenses": zod.string(),
+  "nftPool": zod.string(),
+  "totalPurchase": zod.string(),
+  "reserveFund": zod.string(),
+  "userDistributionPercent": zod.string(),
+  "reserveFundDistributionPercent": zod.string(),
+  "canInvest": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}).optional()
+})
+
+
+/**
+ * @summary List active NFTs with their pools
+ */
+export const ListNftsResponseItem = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "image": zod.string(),
+  "price": zod.string(),
+  "status": zod.enum(['active', 'inactive']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}).and(zod.object({
+  "pools": zod.array(zod.object({
+  "id": zod.string(),
+  "nftId": zod.string(),
+  "level": zod.number(),
+  "poolSize": zod.string(),
+  "poolLimit": zod.string(),
+  "poolAmount": zod.string(),
+  "status": zod.enum(['active', 'inactive', 'completed']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))
+}))
+export const ListNftsResponse = zod.array(ListNftsResponseItem)
+
+
+/**
+ * @summary List active NFT pools
+ */
+export const ListNftPoolsResponseItem = zod.object({
+  "id": zod.string(),
+  "nftId": zod.string(),
+  "level": zod.number(),
+  "poolSize": zod.string(),
+  "poolLimit": zod.string(),
+  "poolAmount": zod.string(),
+  "status": zod.enum(['active', 'inactive', 'completed']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}).and(zod.object({
+  "nft": zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "image": zod.string(),
+  "price": zod.string(),
+  "status": zod.enum(['active', 'inactive']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+}))
+export const ListNftPoolsResponse = zod.array(ListNftPoolsResponseItem)
+
+
+/**
+ * @summary Bid in an NFT pool (Flow 3)
+ */
+export const BidNftPoolParams = zod.object({
+  "poolId": zod.coerce.string()
+})
+
+export const BidNftPoolBody = zod.object({
+  "amount": zod.number().describe('Whole number USDT amount to bid')
+})
+
+export const BidNftPoolResponse = zod.object({
+  "success": zod.boolean(),
+  "message": zod.string(),
+  "newWalletBalance": zod.string(),
+  "contribution": zod.number()
+})
+
+
+/**
+ * @summary Get current user's NFT holdings
+ */
+export const GetNftHoldingsResponse = zod.object({
+  "id": zod.string().optional(),
+  "userId": zod.string().optional(),
+  "poolRewardAvailable": zod.string(),
+  "poolRewardClaimed": zod.string(),
+  "poolRewardClaimedUsdt": zod.string(),
+  "referralRewardAvailable": zod.string(),
+  "referralRewardClaimed": zod.string(),
+  "referralRewardClaimedUsdt": zod.string(),
+  "levelRewardAvailable": zod.string(),
+  "levelRewardClaimed": zod.string(),
+  "levelRewardClaimedUsdt": zod.string(),
+  "lifetimePurchased": zod.string(),
+  "holdingValueUsdt": zod.string(),
+  "sellPrice": zod.string(),
+  "buyPrice": zod.string()
+})
+
+
+/**
+ * @summary Claim NFT token rewards to wallet
+ */
+export const ClaimNftHoldingsBody = zod.object({
+  "type": zod.enum(['pool', 'referral', 'level']).describe('Which reward bucket to claim')
+})
+
+export const ClaimNftHoldingsResponse = zod.object({
+  "success": zod.boolean(),
+  "message": zod.string(),
+  "claimed": zod.number(),
+  "usdtCredited": zod.number(),
+  "newWalletBalance": zod.string()
+})
+
+
+/**
+ * @summary Get NFT global config (admin)
+ */
+export const AdminGetNftGlobalResponse = zod.object({
+  "id": zod.string(),
+  "buyPrice": zod.string(),
+  "sellPrice": zod.string(),
+  "liquidity": zod.string(),
+  "expenses": zod.string(),
+  "nftPool": zod.string(),
+  "totalPurchase": zod.string(),
+  "reserveFund": zod.string(),
+  "userDistributionPercent": zod.string(),
+  "reserveFundDistributionPercent": zod.string(),
+  "canInvest": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Create or update NFT global config (admin)
+ */
+export const AdminUpdateNftGlobalBody = zod.object({
+  "canInvest": zod.boolean().optional(),
+  "userDistributionPercent": zod.string().optional(),
+  "reserveFundDistributionPercent": zod.string().optional(),
+  "buyPrice": zod.string().optional(),
+  "sellPrice": zod.string().optional(),
+  "liquidity": zod.string().optional(),
+  "expenses": zod.string().optional()
+})
+
+export const AdminUpdateNftGlobalResponse = zod.object({
+  "id": zod.string(),
+  "buyPrice": zod.string(),
+  "sellPrice": zod.string(),
+  "liquidity": zod.string(),
+  "expenses": zod.string(),
+  "nftPool": zod.string(),
+  "totalPurchase": zod.string(),
+  "reserveFund": zod.string(),
+  "userDistributionPercent": zod.string(),
+  "reserveFundDistributionPercent": zod.string(),
+  "canInvest": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary List all NFTs (admin)
+ */
+export const AdminListNftsResponseItem = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "image": zod.string(),
+  "price": zod.string(),
+  "status": zod.enum(['active', 'inactive']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}).and(zod.object({
+  "pools": zod.array(zod.object({
+  "id": zod.string(),
+  "nftId": zod.string(),
+  "level": zod.number(),
+  "poolSize": zod.string(),
+  "poolLimit": zod.string(),
+  "poolAmount": zod.string(),
+  "status": zod.enum(['active', 'inactive', 'completed']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))
+}))
+export const AdminListNftsResponse = zod.array(AdminListNftsResponseItem)
+
+
+/**
+ * @summary Create a new NFT (admin)
+ */
+export const AdminCreateNftBody = zod.object({
+  "title": zod.string(),
+  "image": zod.string().optional(),
+  "price": zod.string().optional()
+})
+
+export const AdminCreateNftResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "image": zod.string(),
+  "price": zod.string(),
+  "status": zod.enum(['active', 'inactive']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update NFT (admin)
+ */
+export const AdminUpdateNftParams = zod.object({
+  "nftId": zod.coerce.string()
+})
+
+export const AdminUpdateNftBody = zod.object({
+  "title": zod.string().optional(),
+  "image": zod.string().optional(),
+  "price": zod.string().optional(),
+  "status": zod.enum(['active', 'inactive']).optional()
+})
+
+export const AdminUpdateNftResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "image": zod.string(),
+  "price": zod.string(),
+  "status": zod.enum(['active', 'inactive']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary List all NFT pools (admin)
+ */
+export const AdminListNftPoolsResponseItem = zod.object({
+  "id": zod.string(),
+  "nftId": zod.string(),
+  "level": zod.number(),
+  "poolSize": zod.string(),
+  "poolLimit": zod.string(),
+  "poolAmount": zod.string(),
+  "status": zod.enum(['active', 'inactive', 'completed']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}).and(zod.object({
+  "nft": zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "image": zod.string(),
+  "price": zod.string(),
+  "status": zod.enum(['active', 'inactive']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+}))
+export const AdminListNftPoolsResponse = zod.array(AdminListNftPoolsResponseItem)
+
+
+/**
+ * @summary Create a pool for an NFT (admin)
+ */
+export const AdminCreateNftPoolBody = zod.object({
+  "nftId": zod.string(),
+  "level": zod.number().optional(),
+  "poolSize": zod.string(),
+  "poolLimit": zod.string().optional()
+})
+
+export const AdminCreateNftPoolResponse = zod.object({
+  "id": zod.string(),
+  "nftId": zod.string(),
+  "level": zod.number(),
+  "poolSize": zod.string(),
+  "poolLimit": zod.string(),
+  "poolAmount": zod.string(),
+  "status": zod.enum(['active', 'inactive', 'completed']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update NFT pool status (admin)
+ */
+export const AdminUpdateNftPoolParams = zod.object({
+  "poolId": zod.coerce.string()
+})
+
+export const AdminUpdateNftPoolBody = zod.object({
+  "status": zod.enum(['active', 'inactive', 'completed']).optional(),
+  "poolLimit": zod.string().optional()
+})
+
+export const AdminUpdateNftPoolResponse = zod.object({
+  "id": zod.string(),
+  "nftId": zod.string(),
+  "level": zod.number(),
+  "poolSize": zod.string(),
+  "poolLimit": zod.string(),
+  "poolAmount": zod.string(),
+  "status": zod.enum(['active', 'inactive', 'completed']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Set user investedUsdt (activate NFT eligibility)
+ */
+export const AdminSetUserNftParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AdminSetUserNftBody = zod.object({
+  "investedUsdt": zod.string()
+})
+
+export const AdminSetUserNftResponse = zod.object({
+  "success": zod.boolean().optional(),
+  "investedUsdt": zod.string().optional()
+})
+
+

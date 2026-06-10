@@ -45,6 +45,23 @@ import type {
   ListP2PTransfersParams,
   ListProductsParams,
   ListWithdrawalsParams,
+  NftBidRequest,
+  NftBidResult,
+  NftBuyRequest,
+  NftBuyResult,
+  NftClaimRequest,
+  NftClaimResult,
+  NftCreateRequest,
+  NftGlobal,
+  NftGlobalUpdate,
+  NftHolding,
+  NftItem,
+  NftPool,
+  NftPoolCreateRequest,
+  NftPoolStatusUpdate,
+  NftPoolWithNft,
+  NftUpdateRequest,
+  NftWithPools,
   Order,
   OrderStatusUpdate,
   OtpSendRequest,
@@ -66,6 +83,8 @@ import type {
   ShopStats,
   TelegramConfig,
   User,
+  UserNftActivation,
+  UserNftActivationResult,
   Wishlist,
   Withdrawal,
   WithdrawalRequest
@@ -3636,4 +3655,1186 @@ export function useAdminGetStats<TData = Awaited<ReturnType<typeof adminGetStats
 
 
 
+
+export const getGetNftGlobalUrl = () => {
+
+
+
+
+  return `/api/nft/global`
+}
+
+/**
+ * @summary Get global NFT token economy state
+ */
+export const getNftGlobal = async ( options?: RequestInit): Promise<NftGlobal> => {
+
+  return customFetch<NftGlobal>(getGetNftGlobalUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetNftGlobalQueryKey = () => {
+    return [
+    `/api/nft/global`
+    ] as const;
+    }
+
+
+export const getGetNftGlobalQueryOptions = <TData = Awaited<ReturnType<typeof getNftGlobal>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNftGlobal>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetNftGlobalQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getNftGlobal>>> = ({ signal }) => getNftGlobal({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getNftGlobal>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetNftGlobalQueryResult = NonNullable<Awaited<ReturnType<typeof getNftGlobal>>>
+export type GetNftGlobalQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get global NFT token economy state
+ */
+
+export function useGetNftGlobal<TData = Awaited<ReturnType<typeof getNftGlobal>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNftGlobal>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetNftGlobalQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getBuyNftTokensUrl = () => {
+
+
+
+
+  return `/api/nft/buy`
+}
+
+/**
+ * @summary Purchase V2 tokens (Flow 2)
+ */
+export const buyNftTokens = async (nftBuyRequest: NftBuyRequest, options?: RequestInit): Promise<NftBuyResult> => {
+
+  return customFetch<NftBuyResult>(getBuyNftTokensUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      nftBuyRequest,)
+  }
+);}
+
+
+
+
+export const getBuyNftTokensMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyNftTokens>>, TError,{data: BodyType<NftBuyRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof buyNftTokens>>, TError,{data: BodyType<NftBuyRequest>}, TContext> => {
+
+const mutationKey = ['buyNftTokens'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyNftTokens>>, {data: BodyType<NftBuyRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  buyNftTokens(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyNftTokensMutationResult = NonNullable<Awaited<ReturnType<typeof buyNftTokens>>>
+    export type BuyNftTokensMutationBody = BodyType<NftBuyRequest>
+    export type BuyNftTokensMutationError = ErrorType<void>
+
+    /**
+ * @summary Purchase V2 tokens (Flow 2)
+ */
+export const useBuyNftTokens = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyNftTokens>>, TError,{data: BodyType<NftBuyRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof buyNftTokens>>,
+        TError,
+        {data: BodyType<NftBuyRequest>},
+        TContext
+      > => {
+      return useMutation(getBuyNftTokensMutationOptions(options));
+    }
+
+export const getListNftsUrl = () => {
+
+
+
+
+  return `/api/nft/nfts`
+}
+
+/**
+ * @summary List active NFTs with their pools
+ */
+export const listNfts = async ( options?: RequestInit): Promise<NftWithPools[]> => {
+
+  return customFetch<NftWithPools[]>(getListNftsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListNftsQueryKey = () => {
+    return [
+    `/api/nft/nfts`
+    ] as const;
+    }
+
+
+export const getListNftsQueryOptions = <TData = Awaited<ReturnType<typeof listNfts>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNfts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListNftsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listNfts>>> = ({ signal }) => listNfts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listNfts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListNftsQueryResult = NonNullable<Awaited<ReturnType<typeof listNfts>>>
+export type ListNftsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List active NFTs with their pools
+ */
+
+export function useListNfts<TData = Awaited<ReturnType<typeof listNfts>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNfts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListNftsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListNftPoolsUrl = () => {
+
+
+
+
+  return `/api/nft/pools`
+}
+
+/**
+ * @summary List active NFT pools
+ */
+export const listNftPools = async ( options?: RequestInit): Promise<NftPoolWithNft[]> => {
+
+  return customFetch<NftPoolWithNft[]>(getListNftPoolsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListNftPoolsQueryKey = () => {
+    return [
+    `/api/nft/pools`
+    ] as const;
+    }
+
+
+export const getListNftPoolsQueryOptions = <TData = Awaited<ReturnType<typeof listNftPools>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNftPools>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListNftPoolsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listNftPools>>> = ({ signal }) => listNftPools({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listNftPools>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListNftPoolsQueryResult = NonNullable<Awaited<ReturnType<typeof listNftPools>>>
+export type ListNftPoolsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List active NFT pools
+ */
+
+export function useListNftPools<TData = Awaited<ReturnType<typeof listNftPools>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNftPools>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListNftPoolsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getBidNftPoolUrl = (poolId: string,) => {
+
+
+
+
+  return `/api/nft/pools/${poolId}/bid`
+}
+
+/**
+ * @summary Bid in an NFT pool (Flow 3)
+ */
+export const bidNftPool = async (poolId: string,
+    nftBidRequest: NftBidRequest, options?: RequestInit): Promise<NftBidResult> => {
+
+  return customFetch<NftBidResult>(getBidNftPoolUrl(poolId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      nftBidRequest,)
+  }
+);}
+
+
+
+
+export const getBidNftPoolMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bidNftPool>>, TError,{poolId: string;data: BodyType<NftBidRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof bidNftPool>>, TError,{poolId: string;data: BodyType<NftBidRequest>}, TContext> => {
+
+const mutationKey = ['bidNftPool'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bidNftPool>>, {poolId: string;data: BodyType<NftBidRequest>}> = (props) => {
+          const {poolId,data} = props ?? {};
+
+          return  bidNftPool(poolId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BidNftPoolMutationResult = NonNullable<Awaited<ReturnType<typeof bidNftPool>>>
+    export type BidNftPoolMutationBody = BodyType<NftBidRequest>
+    export type BidNftPoolMutationError = ErrorType<void>
+
+    /**
+ * @summary Bid in an NFT pool (Flow 3)
+ */
+export const useBidNftPool = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bidNftPool>>, TError,{poolId: string;data: BodyType<NftBidRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof bidNftPool>>,
+        TError,
+        {poolId: string;data: BodyType<NftBidRequest>},
+        TContext
+      > => {
+      return useMutation(getBidNftPoolMutationOptions(options));
+    }
+
+export const getGetNftHoldingsUrl = () => {
+
+
+
+
+  return `/api/nft/holdings`
+}
+
+/**
+ * @summary Get current user's NFT holdings
+ */
+export const getNftHoldings = async ( options?: RequestInit): Promise<NftHolding> => {
+
+  return customFetch<NftHolding>(getGetNftHoldingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetNftHoldingsQueryKey = () => {
+    return [
+    `/api/nft/holdings`
+    ] as const;
+    }
+
+
+export const getGetNftHoldingsQueryOptions = <TData = Awaited<ReturnType<typeof getNftHoldings>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNftHoldings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetNftHoldingsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getNftHoldings>>> = ({ signal }) => getNftHoldings({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getNftHoldings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetNftHoldingsQueryResult = NonNullable<Awaited<ReturnType<typeof getNftHoldings>>>
+export type GetNftHoldingsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get current user's NFT holdings
+ */
+
+export function useGetNftHoldings<TData = Awaited<ReturnType<typeof getNftHoldings>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNftHoldings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetNftHoldingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getClaimNftHoldingsUrl = () => {
+
+
+
+
+  return `/api/nft/holdings/claim`
+}
+
+/**
+ * @summary Claim NFT token rewards to wallet
+ */
+export const claimNftHoldings = async (nftClaimRequest: NftClaimRequest, options?: RequestInit): Promise<NftClaimResult> => {
+
+  return customFetch<NftClaimResult>(getClaimNftHoldingsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      nftClaimRequest,)
+  }
+);}
+
+
+
+
+export const getClaimNftHoldingsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof claimNftHoldings>>, TError,{data: BodyType<NftClaimRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof claimNftHoldings>>, TError,{data: BodyType<NftClaimRequest>}, TContext> => {
+
+const mutationKey = ['claimNftHoldings'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof claimNftHoldings>>, {data: BodyType<NftClaimRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  claimNftHoldings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ClaimNftHoldingsMutationResult = NonNullable<Awaited<ReturnType<typeof claimNftHoldings>>>
+    export type ClaimNftHoldingsMutationBody = BodyType<NftClaimRequest>
+    export type ClaimNftHoldingsMutationError = ErrorType<void>
+
+    /**
+ * @summary Claim NFT token rewards to wallet
+ */
+export const useClaimNftHoldings = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof claimNftHoldings>>, TError,{data: BodyType<NftClaimRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof claimNftHoldings>>,
+        TError,
+        {data: BodyType<NftClaimRequest>},
+        TContext
+      > => {
+      return useMutation(getClaimNftHoldingsMutationOptions(options));
+    }
+
+export const getAdminGetNftGlobalUrl = () => {
+
+
+
+
+  return `/api/admin/nft/global`
+}
+
+/**
+ * @summary Get NFT global config (admin)
+ */
+export const adminGetNftGlobal = async ( options?: RequestInit): Promise<NftGlobal> => {
+
+  return customFetch<NftGlobal>(getAdminGetNftGlobalUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetNftGlobalQueryKey = () => {
+    return [
+    `/api/admin/nft/global`
+    ] as const;
+    }
+
+
+export const getAdminGetNftGlobalQueryOptions = <TData = Awaited<ReturnType<typeof adminGetNftGlobal>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetNftGlobal>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetNftGlobalQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetNftGlobal>>> = ({ signal }) => adminGetNftGlobal({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetNftGlobal>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetNftGlobalQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetNftGlobal>>>
+export type AdminGetNftGlobalQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get NFT global config (admin)
+ */
+
+export function useAdminGetNftGlobal<TData = Awaited<ReturnType<typeof adminGetNftGlobal>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetNftGlobal>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetNftGlobalQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAdminUpdateNftGlobalUrl = () => {
+
+
+
+
+  return `/api/admin/nft/global`
+}
+
+/**
+ * @summary Create or update NFT global config (admin)
+ */
+export const adminUpdateNftGlobal = async (nftGlobalUpdate: NftGlobalUpdate, options?: RequestInit): Promise<NftGlobal> => {
+
+  return customFetch<NftGlobal>(getAdminUpdateNftGlobalUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      nftGlobalUpdate,)
+  }
+);}
+
+
+
+
+export const getAdminUpdateNftGlobalMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateNftGlobal>>, TError,{data: BodyType<NftGlobalUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminUpdateNftGlobal>>, TError,{data: BodyType<NftGlobalUpdate>}, TContext> => {
+
+const mutationKey = ['adminUpdateNftGlobal'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminUpdateNftGlobal>>, {data: BodyType<NftGlobalUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminUpdateNftGlobal(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminUpdateNftGlobalMutationResult = NonNullable<Awaited<ReturnType<typeof adminUpdateNftGlobal>>>
+    export type AdminUpdateNftGlobalMutationBody = BodyType<NftGlobalUpdate>
+    export type AdminUpdateNftGlobalMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create or update NFT global config (admin)
+ */
+export const useAdminUpdateNftGlobal = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateNftGlobal>>, TError,{data: BodyType<NftGlobalUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminUpdateNftGlobal>>,
+        TError,
+        {data: BodyType<NftGlobalUpdate>},
+        TContext
+      > => {
+      return useMutation(getAdminUpdateNftGlobalMutationOptions(options));
+    }
+
+export const getAdminListNftsUrl = () => {
+
+
+
+
+  return `/api/admin/nft/nfts`
+}
+
+/**
+ * @summary List all NFTs (admin)
+ */
+export const adminListNfts = async ( options?: RequestInit): Promise<NftWithPools[]> => {
+
+  return customFetch<NftWithPools[]>(getAdminListNftsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListNftsQueryKey = () => {
+    return [
+    `/api/admin/nft/nfts`
+    ] as const;
+    }
+
+
+export const getAdminListNftsQueryOptions = <TData = Awaited<ReturnType<typeof adminListNfts>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListNfts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListNftsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListNfts>>> = ({ signal }) => adminListNfts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListNfts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListNftsQueryResult = NonNullable<Awaited<ReturnType<typeof adminListNfts>>>
+export type AdminListNftsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all NFTs (admin)
+ */
+
+export function useAdminListNfts<TData = Awaited<ReturnType<typeof adminListNfts>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListNfts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListNftsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAdminCreateNftUrl = () => {
+
+
+
+
+  return `/api/admin/nft/nfts`
+}
+
+/**
+ * @summary Create a new NFT (admin)
+ */
+export const adminCreateNft = async (nftCreateRequest: NftCreateRequest, options?: RequestInit): Promise<NftItem> => {
+
+  return customFetch<NftItem>(getAdminCreateNftUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      nftCreateRequest,)
+  }
+);}
+
+
+
+
+export const getAdminCreateNftMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateNft>>, TError,{data: BodyType<NftCreateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminCreateNft>>, TError,{data: BodyType<NftCreateRequest>}, TContext> => {
+
+const mutationKey = ['adminCreateNft'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminCreateNft>>, {data: BodyType<NftCreateRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminCreateNft(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminCreateNftMutationResult = NonNullable<Awaited<ReturnType<typeof adminCreateNft>>>
+    export type AdminCreateNftMutationBody = BodyType<NftCreateRequest>
+    export type AdminCreateNftMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a new NFT (admin)
+ */
+export const useAdminCreateNft = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateNft>>, TError,{data: BodyType<NftCreateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminCreateNft>>,
+        TError,
+        {data: BodyType<NftCreateRequest>},
+        TContext
+      > => {
+      return useMutation(getAdminCreateNftMutationOptions(options));
+    }
+
+export const getAdminUpdateNftUrl = (nftId: string,) => {
+
+
+
+
+  return `/api/admin/nft/nfts/${nftId}`
+}
+
+/**
+ * @summary Update NFT (admin)
+ */
+export const adminUpdateNft = async (nftId: string,
+    nftUpdateRequest: NftUpdateRequest, options?: RequestInit): Promise<NftItem> => {
+
+  return customFetch<NftItem>(getAdminUpdateNftUrl(nftId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      nftUpdateRequest,)
+  }
+);}
+
+
+
+
+export const getAdminUpdateNftMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateNft>>, TError,{nftId: string;data: BodyType<NftUpdateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminUpdateNft>>, TError,{nftId: string;data: BodyType<NftUpdateRequest>}, TContext> => {
+
+const mutationKey = ['adminUpdateNft'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminUpdateNft>>, {nftId: string;data: BodyType<NftUpdateRequest>}> = (props) => {
+          const {nftId,data} = props ?? {};
+
+          return  adminUpdateNft(nftId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminUpdateNftMutationResult = NonNullable<Awaited<ReturnType<typeof adminUpdateNft>>>
+    export type AdminUpdateNftMutationBody = BodyType<NftUpdateRequest>
+    export type AdminUpdateNftMutationError = ErrorType<void>
+
+    /**
+ * @summary Update NFT (admin)
+ */
+export const useAdminUpdateNft = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateNft>>, TError,{nftId: string;data: BodyType<NftUpdateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminUpdateNft>>,
+        TError,
+        {nftId: string;data: BodyType<NftUpdateRequest>},
+        TContext
+      > => {
+      return useMutation(getAdminUpdateNftMutationOptions(options));
+    }
+
+export const getAdminListNftPoolsUrl = () => {
+
+
+
+
+  return `/api/admin/nft/pools`
+}
+
+/**
+ * @summary List all NFT pools (admin)
+ */
+export const adminListNftPools = async ( options?: RequestInit): Promise<NftPoolWithNft[]> => {
+
+  return customFetch<NftPoolWithNft[]>(getAdminListNftPoolsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListNftPoolsQueryKey = () => {
+    return [
+    `/api/admin/nft/pools`
+    ] as const;
+    }
+
+
+export const getAdminListNftPoolsQueryOptions = <TData = Awaited<ReturnType<typeof adminListNftPools>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListNftPools>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListNftPoolsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListNftPools>>> = ({ signal }) => adminListNftPools({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListNftPools>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListNftPoolsQueryResult = NonNullable<Awaited<ReturnType<typeof adminListNftPools>>>
+export type AdminListNftPoolsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all NFT pools (admin)
+ */
+
+export function useAdminListNftPools<TData = Awaited<ReturnType<typeof adminListNftPools>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListNftPools>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListNftPoolsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAdminCreateNftPoolUrl = () => {
+
+
+
+
+  return `/api/admin/nft/pools`
+}
+
+/**
+ * @summary Create a pool for an NFT (admin)
+ */
+export const adminCreateNftPool = async (nftPoolCreateRequest: NftPoolCreateRequest, options?: RequestInit): Promise<NftPool> => {
+
+  return customFetch<NftPool>(getAdminCreateNftPoolUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      nftPoolCreateRequest,)
+  }
+);}
+
+
+
+
+export const getAdminCreateNftPoolMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateNftPool>>, TError,{data: BodyType<NftPoolCreateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminCreateNftPool>>, TError,{data: BodyType<NftPoolCreateRequest>}, TContext> => {
+
+const mutationKey = ['adminCreateNftPool'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminCreateNftPool>>, {data: BodyType<NftPoolCreateRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminCreateNftPool(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminCreateNftPoolMutationResult = NonNullable<Awaited<ReturnType<typeof adminCreateNftPool>>>
+    export type AdminCreateNftPoolMutationBody = BodyType<NftPoolCreateRequest>
+    export type AdminCreateNftPoolMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a pool for an NFT (admin)
+ */
+export const useAdminCreateNftPool = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateNftPool>>, TError,{data: BodyType<NftPoolCreateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminCreateNftPool>>,
+        TError,
+        {data: BodyType<NftPoolCreateRequest>},
+        TContext
+      > => {
+      return useMutation(getAdminCreateNftPoolMutationOptions(options));
+    }
+
+export const getAdminUpdateNftPoolUrl = (poolId: string,) => {
+
+
+
+
+  return `/api/admin/nft/pools/${poolId}`
+}
+
+/**
+ * @summary Update NFT pool status (admin)
+ */
+export const adminUpdateNftPool = async (poolId: string,
+    nftPoolStatusUpdate: NftPoolStatusUpdate, options?: RequestInit): Promise<NftPool> => {
+
+  return customFetch<NftPool>(getAdminUpdateNftPoolUrl(poolId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      nftPoolStatusUpdate,)
+  }
+);}
+
+
+
+
+export const getAdminUpdateNftPoolMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateNftPool>>, TError,{poolId: string;data: BodyType<NftPoolStatusUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminUpdateNftPool>>, TError,{poolId: string;data: BodyType<NftPoolStatusUpdate>}, TContext> => {
+
+const mutationKey = ['adminUpdateNftPool'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminUpdateNftPool>>, {poolId: string;data: BodyType<NftPoolStatusUpdate>}> = (props) => {
+          const {poolId,data} = props ?? {};
+
+          return  adminUpdateNftPool(poolId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminUpdateNftPoolMutationResult = NonNullable<Awaited<ReturnType<typeof adminUpdateNftPool>>>
+    export type AdminUpdateNftPoolMutationBody = BodyType<NftPoolStatusUpdate>
+    export type AdminUpdateNftPoolMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update NFT pool status (admin)
+ */
+export const useAdminUpdateNftPool = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateNftPool>>, TError,{poolId: string;data: BodyType<NftPoolStatusUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminUpdateNftPool>>,
+        TError,
+        {poolId: string;data: BodyType<NftPoolStatusUpdate>},
+        TContext
+      > => {
+      return useMutation(getAdminUpdateNftPoolMutationOptions(options));
+    }
+
+export const getAdminSetUserNftUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/users/${id}/nft`
+}
+
+/**
+ * @summary Set user investedUsdt (activate NFT eligibility)
+ */
+export const adminSetUserNft = async (id: string,
+    userNftActivation: UserNftActivation, options?: RequestInit): Promise<UserNftActivationResult> => {
+
+  return customFetch<UserNftActivationResult>(getAdminSetUserNftUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      userNftActivation,)
+  }
+);}
+
+
+
+
+export const getAdminSetUserNftMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminSetUserNft>>, TError,{id: string;data: BodyType<UserNftActivation>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminSetUserNft>>, TError,{id: string;data: BodyType<UserNftActivation>}, TContext> => {
+
+const mutationKey = ['adminSetUserNft'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminSetUserNft>>, {id: string;data: BodyType<UserNftActivation>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminSetUserNft(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminSetUserNftMutationResult = NonNullable<Awaited<ReturnType<typeof adminSetUserNft>>>
+    export type AdminSetUserNftMutationBody = BodyType<UserNftActivation>
+    export type AdminSetUserNftMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Set user investedUsdt (activate NFT eligibility)
+ */
+export const useAdminSetUserNft = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminSetUserNft>>, TError,{id: string;data: BodyType<UserNftActivation>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminSetUserNft>>,
+        TError,
+        {id: string;data: BodyType<UserNftActivation>},
+        TContext
+      > => {
+      return useMutation(getAdminSetUserNftMutationOptions(options));
+    }
 
