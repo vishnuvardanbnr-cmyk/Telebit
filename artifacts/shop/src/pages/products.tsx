@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, SlidersHorizontal, Star, X } from "lucide-react";
+import { Search, SlidersHorizontal, Star, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+
+const PAGE_SIZE = 12;
 
 export default function Products() {
   const searchString = useSearch();
@@ -19,6 +21,7 @@ export default function Products() {
   const [sort, setSort] = useState(searchParams.get("sort") || "newest");
   const [debouncedSearch, setDebouncedSearch] = useState(searchTerm);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [page, setPage] = useState(1);
 
   const { data: categories } = useListCategories();
 
@@ -26,18 +29,39 @@ export default function Products() {
     search: debouncedSearch || undefined,
     categoryId: category !== "all" ? category : undefined,
     sort: sort as any,
-    limit: 24,
+    limit: PAGE_SIZE,
+    offset: (page - 1) * PAGE_SIZE,
   });
+
+  const total = productsData?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  const goToPage = (p: number) => {
+    setPage(Math.max(1, Math.min(p, totalPages)));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setDebouncedSearch(searchTerm);
+    setPage(1);
     setSearchOpen(false);
   };
 
   const clearSearch = () => {
     setSearchTerm("");
     setDebouncedSearch("");
+    setPage(1);
+  };
+
+  const handleCategoryChange = (cat: string) => {
+    setCategory(cat);
+    setPage(1);
+  };
+
+  const handleSortChange = (s: string) => {
+    setSort(s);
+    setPage(1);
   };
 
   const activeCategory = category === "all"
@@ -75,7 +99,7 @@ export default function Products() {
           <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Categories</h3>
           <div className="flex flex-col gap-0.5">
             <button
-              onClick={() => setCategory("all")}
+              onClick={() => handleCategoryChange("all")}
               className={cn(
                 "text-left text-sm py-1.5 px-2 rounded transition-colors",
                 category === "all"
@@ -88,7 +112,7 @@ export default function Products() {
             {categories?.map((cat) => (
               <button
                 key={cat.id}
-                onClick={() => setCategory(cat.id)}
+                onClick={() => handleCategoryChange(cat.id)}
                 className={cn(
                   "text-left text-sm py-1.5 px-2 rounded transition-colors flex items-center justify-between",
                   category === cat.id
@@ -139,7 +163,7 @@ export default function Products() {
               <div className="flex-1 overflow-x-auto scrollbar-none -mx-1 px-1">
                 <div className="flex gap-2 w-max">
                   <button
-                    onClick={() => setCategory("all")}
+                    onClick={() => handleCategoryChange("all")}
                     className={cn(
                       "shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors whitespace-nowrap",
                       category === "all"
@@ -152,7 +176,7 @@ export default function Products() {
                   {categories?.map((cat) => (
                     <button
                       key={cat.id}
-                      onClick={() => setCategory(cat.id)}
+                      onClick={() => handleCategoryChange(cat.id)}
                       className={cn(
                         "shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors whitespace-nowrap",
                         category === cat.id
@@ -180,7 +204,7 @@ export default function Products() {
             <span className="text-xs text-muted-foreground">
               {isLoading ? "Loading…" : `${productsData?.total ?? 0} items${activeCategory !== "All" ? ` in ${activeCategory}` : ""}`}
             </span>
-            <Select value={sort} onValueChange={setSort}>
+            <Select value={sort} onValueChange={handleSortChange}>
               <SelectTrigger className="h-8 w-auto text-xs rounded-full border-border bg-background px-3 gap-1.5 font-semibold">
                 <SlidersHorizontal className="h-3 w-3" />
                 <SelectValue />
@@ -218,7 +242,7 @@ export default function Products() {
           </div>
           <div className="flex items-center gap-2">
             <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-            <Select value={sort} onValueChange={setSort}>
+            <Select value={sort} onValueChange={handleSortChange}>
               <SelectTrigger className="w-[180px] rounded-none bg-card text-xs uppercase tracking-wider font-bold">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
@@ -252,7 +276,7 @@ export default function Products() {
                 variant="outline"
                 size="sm"
                 className="mt-4 rounded-none uppercase tracking-wider text-xs"
-                onClick={() => { setSearchTerm(""); setDebouncedSearch(""); setCategory("all"); }}
+                onClick={() => { setSearchTerm(""); setDebouncedSearch(""); setCategory("all"); setPage(1); }}
               >
                 Clear Filters
               </Button>
@@ -310,6 +334,60 @@ export default function Products() {
                   </Card>
                 </Link>
               ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {!isLoading && totalPages > 1 && (
+            <div className="flex items-center justify-between mt-8 pt-6 border-t border-border">
+              <p className="text-sm text-muted-foreground hidden sm:block">
+                Page {page} of {totalPages} &middot; {total} products
+              </p>
+              <div className="flex items-center gap-1 mx-auto sm:mx-0">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 rounded-md"
+                  disabled={page === 1}
+                  onClick={() => goToPage(page - 1)}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+
+                {/* Page number buttons */}
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
+                  .reduce<(number | "...")[]>((acc, p, i, arr) => {
+                    if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("...");
+                    acc.push(p);
+                    return acc;
+                  }, [])
+                  .map((item, i) =>
+                    item === "..." ? (
+                      <span key={`ellipsis-${i}`} className="px-1 text-muted-foreground text-sm">…</span>
+                    ) : (
+                      <Button
+                        key={item}
+                        variant={page === item ? "default" : "outline"}
+                        size="icon"
+                        className="h-8 w-8 rounded-md text-xs font-semibold"
+                        onClick={() => goToPage(item as number)}
+                      >
+                        {item}
+                      </Button>
+                    )
+                  )}
+
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 rounded-md"
+                  disabled={page === totalPages}
+                  onClick={() => goToPage(page + 1)}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           )}
         </div>
