@@ -2,7 +2,7 @@ import { Router } from "express";
 import { db, usersTable, shopP2pAdsTable, shopP2pOrdersTable, shopP2pMessagesTable } from "@workspace/db";
 import { eq, and, or, desc, sql, count } from "drizzle-orm";
 import { z } from "zod/v4";
-import { requireAuth } from "../lib/auth.js";
+import { requireAuth, requireAdmin } from "../lib/auth.js";
 
 const router = Router();
 
@@ -491,6 +491,67 @@ router.post("/shop/p2p/orders/:id/messages", requireAuth, async (req, res): Prom
   }).returning();
 
   res.status(201).json(msg);
+});
+
+// ─── Admin ────────────────────────────────────────────────────────────────────
+
+router.get("/shop/admin/p2p/ads", requireAuth, requireAdmin, async (req, res): Promise<void> => {
+  try {
+    const ads = await db.select().from(shopP2pAdsTable).orderBy(desc(shopP2pAdsTable.createdAt));
+    const enriched = await enrichAds(ads);
+    res.json(enriched);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get("/shop/admin/p2p/orders", requireAuth, requireAdmin, async (req, res): Promise<void> => {
+  try {
+    const orders = await db.select().from(shopP2pOrdersTable).orderBy(desc(shopP2pOrdersTable.createdAt)).limit(200);
+    const userIds = [...new Set([...orders.map(o => o.buyerUserId), ...orders.map(o => o.sellerUserId)])];
+    const users = userIds.length > 0 ? await db
+      .select({ id: usersTable.id, email: usersTable.email })
+      .from(usersTable)
+      .where(sql`${usersTable.id} = ANY(ARRAY[${sql.join(userIds.map(id => sql`${id}`), sql`, `)}]::text[])`) : [];
+    const userMap = new Map(users.map(u => [u.id, u.email?.split("@")[0] ?? "User"]));
+    res.json(orders.map(o => ({
+      ...o,
+      buyerName: userMap.get(o.buyerUserId) ?? "Unknown",
+      sellerName: userMap.get(o.sellerUserId) ?? "Unknown",
+    })));
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.patch("/shop/admin/p2p/orders/:id/resolve", requireAuth, requireAdmin, async (req, res): Promise<void> => {
+  try {
+    const dbUser = (req as any).dbUser;
+    const orderId = param(req, "id");
+    const { resolution, releaseToSeller } = req.body;
+    const [order] = await db.select().from(shopP2pOrdersTable).where(eq(shopP2pOrdersTable.id, orderId)).limit(1);
+    if (!order) { res.status(404).json({ error: "Order not found" }); return; }
+    if (order.status !== "disputed") { res.status(400).json({ error: "Order is not in disputed state" }); return; }
+    const amount = parseFloat(String(order.amount));
+    const recipientId = releaseToSeller ? order.sellerUserId : order.buyerUserId;
+    await db.update(usersTable)
+      .set({ walletBalance: sql`${usersTable.walletBalance} + ${String(amount)}` })
+      .where(eq(usersTable.id, recipientId));
+    const [updated] = await db.update(shopP2pOrdersTable)
+      .set({ status: "resolved", resolvedBy: dbUser.id, resolution: resolution ?? null, resolvedAt: new Date(), updatedAt: new Date() })
+      .where(eq(shopP2pOrdersTable.id, orderId))
+      .returning();
+    await db.insert(shopP2pMessagesTable).values({
+      orderId,
+      senderUserId: "system",
+      senderName: "System",
+      content: `Admin resolved dispute. ${releaseToSeller ? "Funds released to seller." : "Funds refunded to buyer."} Resolution: ${resolution ?? "No details provided."}`,
+      isSystem: true,
+    });
+    res.json(updated);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 export default router;

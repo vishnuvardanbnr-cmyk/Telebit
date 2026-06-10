@@ -845,4 +845,49 @@ router.patch("/shop/admin/orders/:orderId/status", requireAuth, requireAdmin, as
   res.json(serializeOrder(order, items));
 });
 
+
+// ─── Admin: list all reviews ────────────────────────────────────────────────
+
+router.get("/shop/admin/reviews", requireAuth, requireAdmin, async (req, res): Promise<void> => {
+  try {
+    const reviews = await db
+      .select({
+        id: shopReviews.id,
+        productId: shopReviews.productId,
+        productName: shopProducts.name,
+        userId: shopReviews.userId,
+        userFullName: usersTable.fullName,
+        rating: shopReviews.rating,
+        title: shopReviews.title,
+        body: shopReviews.body,
+        createdAt: shopReviews.createdAt,
+      })
+      .from(shopReviews)
+      .leftJoin(shopProducts, eq(shopReviews.productId, shopProducts.id))
+      .leftJoin(usersTable, eq(shopReviews.userId, usersTable.id))
+      .orderBy(desc(shopReviews.createdAt))
+      .limit(500);
+    res.json(reviews);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Admin: delete review ────────────────────────────────────────────────────
+
+router.delete("/shop/admin/reviews/:reviewId", requireAuth, requireAdmin, async (req, res): Promise<void> => {
+  const reviewId = Array.isArray(req.params.reviewId) ? req.params.reviewId[0] : req.params.reviewId;
+  const [deleted] = await db.delete(shopReviews).where(eq(shopReviews.id, reviewId)).returning();
+  if (!deleted) { res.status(404).json({ error: "Review not found" }); return; }
+  // Recalculate product rating
+  const [agg] = await db
+    .select({ avg: sql<string>`avg(rating)::numeric(3,2)`, count: sql<number>`count(*)::int` })
+    .from(shopReviews)
+    .where(eq(shopReviews.productId, deleted.productId));
+  await db.update(shopProducts)
+    .set({ averageRating: agg?.avg ?? "0", reviewCount: agg?.count ?? 0 })
+    .where(eq(shopProducts.id, deleted.productId));
+  res.json({ success: true });
+});
+
 export default router;

@@ -152,6 +152,21 @@ router.post("/lottery/:id/purchase", requireAuth, async (req, res): Promise<void
   }
 });
 
+/* ─── Admin: list all lotteries ───────────────────────────── */
+router.get("/admin/lottery", requireAuth, requireAdmin, async (req, res): Promise<void> => {
+  try {
+    const lotteries = await db.select().from(lotteriesTable).orderBy(desc(lotteriesTable.createdAt));
+    const counts = await db
+      .select({ lotteryId: lotteryTicketsTable.lotteryId, count: sql<number>`count(*)::int` })
+      .from(lotteryTicketsTable)
+      .groupBy(lotteryTicketsTable.lotteryId);
+    const countMap = new Map(counts.map(c => [c.lotteryId, c.count]));
+    res.json(lotteries.map(l => ({ ...l, ticketsSold: countMap.get(l.id) ?? 0 })));
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 /* ─── Admin: create lottery ────────────────────────────────── */
 router.post("/admin/lottery", requireAuth, requireAdmin, async (req, res): Promise<void> => {
   try {
@@ -243,8 +258,9 @@ router.post("/admin/lottery/:id/draw", requireAuth, requireAdmin, async (req, re
 /* ─── Admin: delete lottery ────────────────────────────────── */
 router.delete("/admin/lottery/:id", requireAuth, requireAdmin, async (req, res): Promise<void> => {
   try {
-    await db.delete(lotteryTicketsTable).where(eq(lotteryTicketsTable.lotteryId, req.params.id));
-    await db.delete(lotteriesTable).where(eq(lotteriesTable.id, req.params.id));
+    const lotteryId = String(req.params.id);
+    await db.delete(lotteryTicketsTable).where(eq(lotteryTicketsTable.lotteryId, lotteryId));
+    await db.delete(lotteriesTable).where(eq(lotteriesTable.id, lotteryId));
     res.json({ ok: true });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
