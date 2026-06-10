@@ -62,70 +62,6 @@ const THEMES: Record<number, { bar: string; icon: string; badge: string; badgeTe
 const fallbackTheme = THEMES[1];
 const getTheme = (level: number) => THEMES[level] ?? fallbackTheme;
 
-/* ─── Placeholder pool card (shown when no real pools exist) ──────────── */
-const PLACEHOLDER_POOLS = [
-  { level: 1, title: "Bronze Pool", size: "5,000" },
-  { level: 2, title: "Silver Pool", size: "10,000" },
-  { level: 3, title: "Gold Pool",   size: "25,000" },
-  { level: 4, title: "Platinum Pool", size: "50,000" },
-];
-
-function PlaceholderPoolCard({ level, title, size }: { level: number; title: string; size: string }) {
-  const t = getTheme(level);
-  return (
-    <div className={`rounded-2xl border overflow-hidden ${t.comingSoon}`}>
-      <div className={`h-1 w-full bg-gradient-to-r ${t.bar} opacity-40`} />
-      <div className="p-5">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${t.icon} opacity-40 flex items-center justify-center`}>
-              <span className="text-white font-black text-sm">L{level}</span>
-            </div>
-            <div>
-              <p className="font-bold text-base text-foreground/50">{title}</p>
-              <p className="text-xs text-muted-foreground/60 mt-0.5">Level {level} Pool</p>
-            </div>
-          </div>
-          <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border border-muted bg-muted/60 text-muted-foreground`}>
-            <Clock className="h-2.5 w-2.5 inline mr-1 -mt-px" />
-            Coming Soon
-          </span>
-        </div>
-
-        {/* Progress placeholder */}
-        <div className="mb-4">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-[11px] text-muted-foreground/60 font-medium">Pool filled</span>
-            <span className="text-[11px] font-bold tabular-nums text-muted-foreground/60">0%</span>
-          </div>
-          <div className="h-2 bg-muted/40 rounded-full" />
-        </div>
-
-        {/* Stats row */}
-        <div className="grid grid-cols-3 gap-2 mb-4">
-          <div className="bg-white/60 rounded-xl p-2.5 text-center border border-white">
-            <p className="text-[9px] text-muted-foreground/60 uppercase font-semibold tracking-wide">Size</p>
-            <p className="font-bold text-sm mt-0.5 text-foreground/40">${size}</p>
-          </div>
-          <div className="bg-white/60 rounded-xl p-2.5 text-center border border-white">
-            <p className="text-[9px] text-muted-foreground/60 uppercase font-semibold tracking-wide">Daily Yield</p>
-            <p className="font-bold text-sm mt-0.5 text-foreground/40">—</p>
-          </div>
-          <div className="bg-white/60 rounded-xl p-2.5 text-center border border-white">
-            <p className="text-[9px] text-muted-foreground/60 uppercase font-semibold tracking-wide">Left</p>
-            <p className="font-bold text-sm mt-0.5 text-foreground/40">${size}</p>
-          </div>
-        </div>
-
-        <div className="h-11 rounded-xl flex items-center justify-center gap-2 bg-muted/40 text-muted-foreground/60 text-sm font-semibold border border-muted/60 cursor-not-allowed select-none">
-          <Lock className="h-4 w-4" />
-          Opens Soon
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ─── Real pool card ──────────────────────────────────────────────────── */
 function PoolCard({ pool, onBid }: { pool: NftPoolWithNft; onBid: (p: NftPoolWithNft) => void }) {
   const poolSize = parseFloat(pool.poolSize);
@@ -409,21 +345,15 @@ export default function NftPoolsPage() {
             )}
           </>
         ) : (
-          /* ── No real pools yet: show placeholder cards ── */
-          <div className="space-y-4">
-            {/* Soft notice */}
-            <div className="flex items-center gap-2.5 bg-white border border-border rounded-2xl px-4 py-3">
-              <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
-              <div>
-                <p className="text-sm font-semibold">Pools launching soon</p>
-                <p className="text-xs text-muted-foreground">The admin is setting up pools — here's a preview of what's coming.</p>
-              </div>
+          /* ── No real pools yet: simple empty state ── */
+          <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-muted/60 flex items-center justify-center">
+              <Clock className="h-7 w-7 text-muted-foreground" />
             </div>
-
-            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Upcoming Pools</p>
-            {PLACEHOLDER_POOLS.map(p => (
-              <PlaceholderPoolCard key={p.level} {...p} />
-            ))}
+            <div>
+              <p className="font-semibold text-base">Pools launching soon</p>
+              <p className="text-sm text-muted-foreground mt-1">No active pools right now. Check back later.</p>
+            </div>
           </div>
         )}
 
