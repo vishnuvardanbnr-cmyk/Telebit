@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/"
-title = "CryptoVault Shop"
+title = "Telebit Shop"
 version = "1.0.0"
 id = "artifacts/shop"
 router = "path"
