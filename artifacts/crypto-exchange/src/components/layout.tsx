@@ -12,6 +12,7 @@ import {
   ShieldAlert,
   Menu,
   X,
+  LayoutGrid,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +27,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { name: "Deposit", href: "/deposit", icon: ArrowDownToLine },
     { name: "Withdraw", href: "/withdraw", icon: ArrowUpFromLine },
     { name: "P2P", href: "/p2p", icon: Send },
+    { name: "Services", href: "/services", icon: LayoutGrid },
     { name: "History", href: "/history", icon: History },
   ];
 

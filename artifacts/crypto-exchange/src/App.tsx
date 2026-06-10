@@ -14,6 +14,7 @@ import Withdraw from "./pages/withdraw";
 import P2P from "./pages/p2p";
 import History from "./pages/history";
 import Admin from "./pages/admin";
+import Services from "./pages/services";
 import SignInPage from "./pages/sign-in";
 
 const queryClient = new QueryClient();
@@ -113,6 +114,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/p2p"><ProtectedRoute component={P2P} /></Route>
             <Route path="/history"><ProtectedRoute component={History} /></Route>
             <Route path="/admin"><ProtectedRoute component={Admin} /></Route>
+            <Route path="/services"><ProtectedRoute component={Services} /></Route>
             <Route component={NotFound} />
           </Switch>
           <Toaster position="bottom-right" />

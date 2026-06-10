@@ -10,3 +10,4 @@ export * from "./shop_orders";
 export * from "./shop_order_items";
 export * from "./shop_reviews";
 export * from "./shop_wishlist";
+export * from "./utility";
