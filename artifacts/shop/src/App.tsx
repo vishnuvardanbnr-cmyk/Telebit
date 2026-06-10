@@ -62,12 +62,12 @@ function AppRoutes() {
       </Route>
       <Route path="/products">
         <Layout>
-          <Products />
+          <ProtectedRoute component={Products} />
         </Layout>
       </Route>
       <Route path="/products/:id">
         <Layout>
-          <ProductDetail />
+          <ProtectedRoute component={ProductDetail} />
         </Layout>
       </Route>
       <Route path="/cart">
@@ -112,12 +112,12 @@ function AppRoutes() {
       </Route>
       <Route path="/lottery">
         <Layout>
-          <Lottery />
+          <ProtectedRoute component={Lottery} />
         </Layout>
       </Route>
       <Route path="/lottery/:id">
         <Layout>
-          <LotteryDetail />
+          <ProtectedRoute component={LotteryDetail} />
         </Layout>
       </Route>
       <Route path="/p2p">
