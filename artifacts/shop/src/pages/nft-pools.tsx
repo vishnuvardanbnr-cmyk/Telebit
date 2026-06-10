@@ -23,6 +23,7 @@ import {
 type NftPoolWithNft = {
   id: string; nftId: string; level: number;
   poolSize: string; poolLimit: string; poolAmount: string;
+  dailyYield: string; userBidAmount?: string;
   status: string; createdAt: string; updatedAt: string;
   nft: { id: string; title: string; image: string; price: string; status: string };
 };
@@ -108,7 +109,7 @@ function PlaceholderPoolCard({ level, title, size }: { level: number; title: str
           </div>
           <div className="bg-white/60 rounded-xl p-2.5 text-center border border-white">
             <p className="text-[9px] text-muted-foreground/60 uppercase font-semibold tracking-wide">Daily Yield</p>
-            <p className="font-bold text-sm mt-0.5 text-foreground/40">{dailyYield}</p>
+            <p className="font-bold text-sm mt-0.5 text-foreground/40">—</p>
           </div>
           <div className="bg-white/60 rounded-xl p-2.5 text-center border border-white">
             <p className="text-[9px] text-muted-foreground/60 uppercase font-semibold tracking-wide">Left</p>
@@ -184,7 +185,9 @@ function PoolCard({ pool, onBid }: { pool: NftPoolWithNft; onBid: (p: NftPoolWit
           </div>
           <div className="bg-muted/40 rounded-xl p-2.5 text-center">
             <p className="text-[9px] text-muted-foreground uppercase font-semibold tracking-wide">Daily Yield</p>
-            <p className="font-bold text-sm mt-0.5 text-emerald-600">{getDailyYield(pool.level)}</p>
+            <p className="font-bold text-sm mt-0.5 text-emerald-600">
+              {parseFloat(pool.dailyYield) > 0 ? `${parseFloat(pool.dailyYield)}%` : "—"}
+            </p>
           </div>
           <div className={`rounded-xl p-2.5 text-center ${isFull ? "bg-muted/40" : "bg-emerald-50 border border-emerald-100"}`}>
             <p className="text-[9px] text-muted-foreground uppercase font-semibold tracking-wide">Left</p>

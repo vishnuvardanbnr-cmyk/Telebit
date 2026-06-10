@@ -594,6 +594,7 @@ export interface NftPool {
   poolSize: string;
   poolLimit: string;
   poolAmount: string;
+  dailyYield: string;
   userBidAmount?: string;
   status: NftPoolStatus;
   createdAt: string;
@@ -701,6 +702,7 @@ export interface NftPoolCreateRequest {
   level?: number;
   poolSize: string;
   poolLimit?: string;
+  dailyYield?: string;
 }
 
 export type NftPoolStatusUpdateStatus = typeof NftPoolStatusUpdateStatus[keyof typeof NftPoolStatusUpdateStatus];
@@ -715,6 +717,7 @@ export const NftPoolStatusUpdateStatus = {
 export interface NftPoolStatusUpdate {
   status?: NftPoolStatusUpdateStatus;
   poolLimit?: string;
+  dailyYield?: string;
 }
 
 export interface NftPurchaseTransaction {

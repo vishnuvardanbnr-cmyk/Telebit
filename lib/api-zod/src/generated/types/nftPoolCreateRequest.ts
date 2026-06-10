@@ -11,4 +11,5 @@ export interface NftPoolCreateRequest {
   level?: number;
   poolSize: string;
   poolLimit?: string;
+  dailyYield?: string;
 }

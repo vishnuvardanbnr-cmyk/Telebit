@@ -763,7 +763,7 @@ router.get("/admin/nft/pools", requireAuth, requireAdmin, async (_req, res): Pro
 });
 
 router.post("/admin/nft/pools", requireAuth, requireAdmin, async (req, res): Promise<void> => {
-  const { nftId, level, poolSize, poolLimit } = req.body;
+  const { nftId, level, poolSize, poolLimit, dailyYield } = req.body;
   if (!nftId || !poolSize) {
     res.status(400).json({ error: "nftId and poolSize are required" });
     return;
@@ -783,6 +783,7 @@ router.post("/admin/nft/pools", requireAuth, requireAdmin, async (req, res): Pro
       level: parseInt(String(level ?? 1)),
       poolSize: String(sz),
       poolLimit: String(parseFloat(String(poolLimit ?? poolSize))),
+      dailyYield: String(parseFloat(String(dailyYield ?? 0))),
     })
     .returning();
 
@@ -791,11 +792,12 @@ router.post("/admin/nft/pools", requireAuth, requireAdmin, async (req, res): Pro
 
 router.patch("/admin/nft/pools/:poolId", requireAuth, requireAdmin, async (req, res): Promise<void> => {
   const poolId = req.params.poolId as string;
-  const { status, poolLimit } = req.body;
+  const { status, poolLimit, dailyYield } = req.body;
 
   const updates: Record<string, unknown> = {};
   if (status !== undefined) updates.status = status;
   if (poolLimit !== undefined) updates.poolLimit = String(poolLimit);
+  if (dailyYield !== undefined) updates.dailyYield = String(parseFloat(String(dailyYield)));
 
   const [updated] = await db
     .update(nftPoolsTable)

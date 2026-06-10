@@ -10,4 +10,5 @@ import type { NftPoolStatusUpdateStatus } from './nftPoolStatusUpdateStatus';
 export interface NftPoolStatusUpdate {
   status?: NftPoolStatusUpdateStatus;
   poolLimit?: string;
+  dailyYield?: string;
 }

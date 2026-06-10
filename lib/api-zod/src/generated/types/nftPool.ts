@@ -14,6 +14,7 @@ export interface NftPool {
   poolSize: string;
   poolLimit: string;
   poolAmount: string;
+  dailyYield: string;
   userBidAmount?: string;
   status: NftPoolStatus;
   createdAt: Date;

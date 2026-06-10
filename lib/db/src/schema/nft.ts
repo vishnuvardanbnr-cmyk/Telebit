@@ -34,6 +34,7 @@ export const nftPoolsTable = pgTable("nft_pools", {
   poolSize: numeric("pool_size", { precision: 20, scale: 8 }).notNull(),
   poolLimit: numeric("pool_limit", { precision: 20, scale: 8 }).notNull(),
   poolAmount: numeric("pool_amount", { precision: 20, scale: 8 }).notNull().default("0"),
+  dailyYield: numeric("daily_yield", { precision: 10, scale: 4 }).notNull().default("0"),
   status: text("status", { enum: ["active", "inactive", "completed"] }).notNull().default("active"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

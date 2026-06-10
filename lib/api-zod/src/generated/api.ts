@@ -1423,6 +1423,7 @@ export const ListNftsResponseItem = zod.object({
   "poolSize": zod.string(),
   "poolLimit": zod.string(),
   "poolAmount": zod.string(),
+  "dailyYield": zod.string(),
   "userBidAmount": zod.string().optional(),
   "status": zod.enum(['active', 'inactive', 'completed']),
   "createdAt": zod.coerce.date(),
@@ -1442,6 +1443,7 @@ export const ListNftPoolsResponseItem = zod.object({
   "poolSize": zod.string(),
   "poolLimit": zod.string(),
   "poolAmount": zod.string(),
+  "dailyYield": zod.string(),
   "userBidAmount": zod.string().optional(),
   "status": zod.enum(['active', 'inactive', 'completed']),
   "createdAt": zod.coerce.date(),
@@ -1599,6 +1601,7 @@ export const AdminListNftsResponseItem = zod.object({
   "poolSize": zod.string(),
   "poolLimit": zod.string(),
   "poolAmount": zod.string(),
+  "dailyYield": zod.string(),
   "userBidAmount": zod.string().optional(),
   "status": zod.enum(['active', 'inactive', 'completed']),
   "createdAt": zod.coerce.date(),
@@ -1663,6 +1666,7 @@ export const AdminListNftPoolsResponseItem = zod.object({
   "poolSize": zod.string(),
   "poolLimit": zod.string(),
   "poolAmount": zod.string(),
+  "dailyYield": zod.string(),
   "userBidAmount": zod.string().optional(),
   "status": zod.enum(['active', 'inactive', 'completed']),
   "createdAt": zod.coerce.date(),
@@ -1688,7 +1692,8 @@ export const AdminCreateNftPoolBody = zod.object({
   "nftId": zod.string(),
   "level": zod.number().optional(),
   "poolSize": zod.string(),
-  "poolLimit": zod.string().optional()
+  "poolLimit": zod.string().optional(),
+  "dailyYield": zod.string().optional()
 })
 
 export const AdminCreateNftPoolResponse = zod.object({
@@ -1698,6 +1703,7 @@ export const AdminCreateNftPoolResponse = zod.object({
   "poolSize": zod.string(),
   "poolLimit": zod.string(),
   "poolAmount": zod.string(),
+  "dailyYield": zod.string(),
   "userBidAmount": zod.string().optional(),
   "status": zod.enum(['active', 'inactive', 'completed']),
   "createdAt": zod.coerce.date(),
@@ -1714,7 +1720,8 @@ export const AdminUpdateNftPoolParams = zod.object({
 
 export const AdminUpdateNftPoolBody = zod.object({
   "status": zod.enum(['active', 'inactive', 'completed']).optional(),
-  "poolLimit": zod.string().optional()
+  "poolLimit": zod.string().optional(),
+  "dailyYield": zod.string().optional()
 })
 
 export const AdminUpdateNftPoolResponse = zod.object({
@@ -1724,6 +1731,7 @@ export const AdminUpdateNftPoolResponse = zod.object({
   "poolSize": zod.string(),
   "poolLimit": zod.string(),
   "poolAmount": zod.string(),
+  "dailyYield": zod.string(),
   "userBidAmount": zod.string().optional(),
   "status": zod.enum(['active', 'inactive', 'completed']),
   "createdAt": zod.coerce.date(),
