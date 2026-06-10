@@ -1,83 +1,75 @@
 import { Link } from "wouter";
 import { useListOrders } from "@workspace/api-client-react";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Package, ArrowRight } from "lucide-react";
-import { fmtUsdt } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Package, ArrowRight, ShoppingBag } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { fmtUsdt } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+
+const STATUS_STYLES: Record<string, string> = {
+  delivered: "bg-green-100 text-green-700",
+  shipped:   "bg-blue-100 text-blue-700",
+  confirmed: "bg-primary/10 text-primary",
+  cancelled: "bg-red-100 text-red-600",
+  pending:   "bg-amber-100 text-amber-700",
+};
 
 export default function Orders() {
   const { data: orders, isLoading } = useListOrders();
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'delivered': return 'bg-green-500/10 text-green-500 border-green-500/20';
-      case 'shipped': return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
-      case 'confirmed': return 'bg-primary/10 text-primary border-primary/20';
-      case 'cancelled': return 'bg-destructive/10 text-destructive border-destructive/20';
-      default: return 'bg-muted text-muted-foreground border-border';
-    }
-  };
-
   return (
-    <div className="container mx-auto px-4 md:px-8 py-8 max-w-6xl">
-      <div className="flex items-center gap-3 mb-8">
-        <Package className="h-8 w-8 text-primary" />
-        <h1 className="text-3xl font-black uppercase tracking-wider">Order History</h1>
+    <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+      <div className="flex items-center gap-3">
+        <Package className="h-5 w-5 text-primary" />
+        <div>
+          <h1 className="text-xl font-bold tracking-tight">Order History</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Track and review your past orders.</p>
+        </div>
       </div>
 
-      <div className="bg-card border border-border">
-        <Table>
-          <TableHeader>
-            <TableRow className="border-border hover:bg-transparent">
-              <TableHead className="font-bold uppercase tracking-wider text-xs">Order ID</TableHead>
-              <TableHead className="font-bold uppercase tracking-wider text-xs">Date</TableHead>
-              <TableHead className="font-bold uppercase tracking-wider text-xs">Status</TableHead>
-              <TableHead className="font-bold uppercase tracking-wider text-xs text-right">Total</TableHead>
-              <TableHead></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array(5).fill(0).map((_, i) => (
-                <TableRow key={i} className="border-border">
-                  <TableCell><Skeleton className="h-4 w-24 rounded-none" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-32 rounded-none" /></TableCell>
-                  <TableCell><Skeleton className="h-6 w-20 rounded-none" /></TableCell>
-                  <TableCell className="text-right"><Skeleton className="h-4 w-16 rounded-none ml-auto" /></TableCell>
-                  <TableCell></TableCell>
-                </TableRow>
-              ))
-            ) : !orders || orders.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-12 text-muted-foreground uppercase tracking-wider">
-                  No orders found.
-                </TableCell>
-              </TableRow>
-            ) : (
-              orders.map((order) => (
-                <TableRow key={order.id} className="border-border group">
-                  <TableCell className="font-mono text-sm">{order.id.split('-')[0].toUpperCase()}</TableCell>
-                  <TableCell>{new Date(order.createdAt).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={`rounded-none uppercase tracking-widest text-[10px] ${getStatusColor(order.status)}`}>
+      {isLoading ? (
+        <div className="space-y-3">
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
+        </div>
+      ) : !orders || orders.length === 0 ? (
+        <div className="rounded-xl border border-border bg-white py-20 flex flex-col items-center gap-4 text-center shadow-sm">
+          <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
+            <ShoppingBag className="w-6 h-6 text-muted-foreground/40" />
+          </div>
+          <p className="text-sm text-muted-foreground">No orders yet.</p>
+          <Link href="/products"><Button size="sm">Browse Catalog</Button></Link>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-border bg-white shadow-sm overflow-hidden divide-y divide-border">
+          {orders.map((order) => (
+            <Link key={order.id} href={`/orders/${order.id}`}>
+              <div className="flex items-center gap-4 px-4 py-3.5 hover:bg-accent/40 transition-colors cursor-pointer group">
+                <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                  <Package className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold font-mono">#{order.id.split("-")[0].toUpperCase()}</p>
+                    <span className={cn(
+                      "text-[10px] font-bold uppercase px-2 py-0.5 rounded-full",
+                      STATUS_STYLES[order.status] ?? STATUS_STYLES.pending,
+                    )}>
                       {order.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right font-mono font-bold text-primary">{fmtUsdt(order.totalUsdt)} USDT</TableCell>
-                  <TableCell className="text-right">
-                    <Link href={`/orders/${order.id}`}>
-                      <button className="text-muted-foreground hover:text-primary transition-colors inline-flex items-center text-xs uppercase tracking-wider font-bold">
-                        View <ArrowRight className="ml-1 h-3 w-3" />
-                      </button>
-                    </Link>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {new Date(order.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-sm font-bold text-primary">{fmtUsdt(order.totalUsdt)} USDT</p>
+                </div>
+                <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
