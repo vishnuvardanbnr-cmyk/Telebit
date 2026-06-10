@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useUser } from "@clerk/react";
-import { ShoppingCart, Trophy, Package, ShieldCheck, LogOut, Menu, X, LayoutGrid, Zap, Wallet } from "lucide-react";
+import { ShoppingCart, Trophy, ArrowLeftRight, ShieldCheck, LogOut, Menu, X, LayoutGrid, Zap, Wallet } from "lucide-react";
 import { useGetCart, useGetMe } from "@workspace/api-client-react";
 import { useClerk } from "@clerk/react";
 import { fmtUsdt } from "@/lib/utils";
@@ -174,14 +174,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </Link>
 
               <Link
-                href="/orders"
+                href="/p2p"
                 className={cn(
                   "flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
-                  location.startsWith("/orders") ? "text-primary" : "text-muted-foreground"
+                  location.startsWith("/p2p") ? "text-primary" : "text-muted-foreground"
                 )}
               >
-                <Package className={cn("h-5 w-5", location.startsWith("/orders") && "stroke-[2.5px]")} />
-                <span>Orders</span>
+                <ArrowLeftRight className={cn("h-5 w-5", location.startsWith("/p2p") && "stroke-[2.5px]")} />
+                <span>P2P</span>
               </Link>
 
               <Link

@@ -19,6 +19,7 @@ import Services from "./pages/services";
 import Wallet from "./pages/wallet";
 import Lottery from "./pages/lottery";
 import LotteryDetail from "./pages/lottery-detail";
+import P2P from "./pages/p2p";
 import ShopSignInPage from "./pages/sign-in";
 import { Layout } from "./components/layout";
 
@@ -146,6 +147,11 @@ function AppRoutes() {
       <Route path="/lottery/:id">
         <Layout>
           <LotteryDetail />
+        </Layout>
+      </Route>
+      <Route path="/p2p">
+        <Layout>
+          <ProtectedRoute component={P2P} />
         </Layout>
       </Route>
       <Route component={NotFound} />

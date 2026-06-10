@@ -10,6 +10,7 @@ import shopRouter from "./shop";
 import authRouter from "./auth";
 import utilityRouter from "./utility";
 import lotteryRouter from "./lottery";
+import shopP2pRouter from "./shopP2p";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(adminRouter);
 router.use(shopRouter);
 router.use(utilityRouter);
 router.use(lotteryRouter);
+router.use(shopP2pRouter);
 
 export default router;
