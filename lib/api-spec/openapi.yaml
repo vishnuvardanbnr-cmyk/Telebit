@@ -883,6 +883,73 @@ paths:
         "403":
           description: Forbidden
 
+  /auth/otp/send:
+    post:
+      operationId: requestPhoneOtp
+      tags: [settings]
+      summary: Send OTP to phone number via Telegram bot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OtpSendRequest"
+      responses:
+        "200":
+          description: OTP sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        "400":
+          description: Bad request
+        "404":
+          description: Phone not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  hint:
+                    type: string
+                  botUsername:
+                    type: string
+        "429":
+          description: Too many requests
+        "503":
+          description: Bot not configured
+
+  /auth/otp/verify:
+    post:
+      operationId: confirmPhoneOtp
+      tags: [settings]
+      summary: Verify OTP and get session cookie
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OtpVerifyRequest"
+      responses:
+        "200":
+          description: Verified, session cookie set
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        "401":
+          description: Invalid or expired code
+        "429":
+          description: Too many attempts
+
   /settings/telegram:
     get:
       operationId: getTelegramConfig
@@ -1146,6 +1213,19 @@ components:
         withdrawWalletPrivateKey: { type: string }
         telegramBotToken: { type: string }
         telegramBotUsername: { type: string }
+
+    OtpSendRequest:
+      type: object
+      required: [phone]
+      properties:
+        phone: { type: string }
+
+    OtpVerifyRequest:
+      type: object
+      required: [phone, code]
+      properties:
+        phone: { type: string }
+        code: { type: string }
 
     TelegramConfig:
       type: object

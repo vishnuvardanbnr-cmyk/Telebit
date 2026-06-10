@@ -34,6 +34,7 @@ import type {
   Category,
   CategoryInput,
   CheckoutInput,
+  ConfirmPhoneOtp200,
   DashboardSummary,
   Deposit,
   DepositCheckResult,
@@ -46,6 +47,8 @@ import type {
   ListWithdrawalsParams,
   Order,
   OrderStatusUpdate,
+  OtpSendRequest,
+  OtpVerifyRequest,
   P2PTransfer,
   P2PTransferRequest,
   PlatformSettings,
@@ -55,6 +58,8 @@ import type {
   ProductListResponse,
   ProductUpdate,
   PublicSettings,
+  RequestPhoneOtp200,
+  RequestPhoneOtp404,
   Review,
   ReviewInput,
   SettingsUpdate,
@@ -3186,6 +3191,148 @@ export const useAdminRejectWithdrawal = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getAdminRejectWithdrawalMutationOptions(options));
+    }
+
+export const getRequestPhoneOtpUrl = () => {
+
+
+
+
+  return `/api/auth/otp/send`
+}
+
+/**
+ * @summary Send OTP to phone number via Telegram bot
+ */
+export const requestPhoneOtp = async (otpSendRequest: OtpSendRequest, options?: RequestInit): Promise<RequestPhoneOtp200> => {
+
+  return customFetch<RequestPhoneOtp200>(getRequestPhoneOtpUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      otpSendRequest,)
+  }
+);}
+
+
+
+
+export const getRequestPhoneOtpMutationOptions = <TError = ErrorType<void | RequestPhoneOtp404>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestPhoneOtp>>, TError,{data: BodyType<OtpSendRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestPhoneOtp>>, TError,{data: BodyType<OtpSendRequest>}, TContext> => {
+
+const mutationKey = ['requestPhoneOtp'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestPhoneOtp>>, {data: BodyType<OtpSendRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  requestPhoneOtp(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestPhoneOtpMutationResult = NonNullable<Awaited<ReturnType<typeof requestPhoneOtp>>>
+    export type RequestPhoneOtpMutationBody = BodyType<OtpSendRequest>
+    export type RequestPhoneOtpMutationError = ErrorType<void | RequestPhoneOtp404>
+
+    /**
+ * @summary Send OTP to phone number via Telegram bot
+ */
+export const useRequestPhoneOtp = <TError = ErrorType<void | RequestPhoneOtp404>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestPhoneOtp>>, TError,{data: BodyType<OtpSendRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestPhoneOtp>>,
+        TError,
+        {data: BodyType<OtpSendRequest>},
+        TContext
+      > => {
+      return useMutation(getRequestPhoneOtpMutationOptions(options));
+    }
+
+export const getConfirmPhoneOtpUrl = () => {
+
+
+
+
+  return `/api/auth/otp/verify`
+}
+
+/**
+ * @summary Verify OTP and get session cookie
+ */
+export const confirmPhoneOtp = async (otpVerifyRequest: OtpVerifyRequest, options?: RequestInit): Promise<ConfirmPhoneOtp200> => {
+
+  return customFetch<ConfirmPhoneOtp200>(getConfirmPhoneOtpUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      otpVerifyRequest,)
+  }
+);}
+
+
+
+
+export const getConfirmPhoneOtpMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmPhoneOtp>>, TError,{data: BodyType<OtpVerifyRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof confirmPhoneOtp>>, TError,{data: BodyType<OtpVerifyRequest>}, TContext> => {
+
+const mutationKey = ['confirmPhoneOtp'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmPhoneOtp>>, {data: BodyType<OtpVerifyRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  confirmPhoneOtp(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConfirmPhoneOtpMutationResult = NonNullable<Awaited<ReturnType<typeof confirmPhoneOtp>>>
+    export type ConfirmPhoneOtpMutationBody = BodyType<OtpVerifyRequest>
+    export type ConfirmPhoneOtpMutationError = ErrorType<void>
+
+    /**
+ * @summary Verify OTP and get session cookie
+ */
+export const useConfirmPhoneOtp = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmPhoneOtp>>, TError,{data: BodyType<OtpVerifyRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof confirmPhoneOtp>>,
+        TError,
+        {data: BodyType<OtpVerifyRequest>},
+        TContext
+      > => {
+      return useMutation(getConfirmPhoneOtpMutationOptions(options));
     }
 
 export const getGetTelegramConfigUrl = () => {

@@ -18,6 +18,45 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQueryClient } from "@tanstack/react-query";
 
+const BASE = import.meta.env.BASE_URL;
+
+function SetWebhookButton() {
+  const [loading, setLoading] = useState(false);
+
+  const handleSetWebhook = async () => {
+    setLoading(true);
+    try {
+      const webhookUrl = `${window.location.origin}${BASE}api/auth/bot-webhook`;
+      const res = await fetch(`${BASE}api/auth/bot-webhook/setup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ webhookUrl }),
+      });
+      const body = await res.json().catch(() => ({})) as { error?: string };
+      if (!res.ok) throw new Error(body.error || "Failed to set webhook");
+      toast.success("Bot webhook registered successfully");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to register webhook");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={handleSetWebhook}
+      disabled={loading}
+      className="rounded-none font-mono uppercase text-xs tracking-wider"
+    >
+      {loading ? "Registering…" : "Register Webhook"}
+    </Button>
+  );
+}
+
 const settingsSchema = z.object({
   minDepositUsdt: z.string().optional(),
   depositFeeFlat: z.string().optional(),
@@ -163,8 +202,15 @@ function SettingsTab() {
                   </FormItem>
                 )} />
               </div>
+              <div className="bg-muted/30 border border-border rounded-none p-3 space-y-2">
+                <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground font-semibold">Bot Webhook</p>
+                <p className="text-xs text-muted-foreground">
+                  After saving the bot token above, register the webhook so the bot can receive phone contact messages from users.
+                </p>
+                <SetWebhookButton />
+              </div>
               <p className="text-xs text-muted-foreground">
-                Create a bot via @BotFather on Telegram. Set the bot username (without @) and the HTTP API token here to enable Telegram login.
+                Create a bot via @BotFather on Telegram. Set the bot username (without @) and the HTTP API token here to enable Phone OTP login. Users must start the bot and share their phone number once before they can log in.
               </p>
             </div>
 

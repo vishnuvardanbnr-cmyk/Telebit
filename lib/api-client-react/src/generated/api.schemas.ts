@@ -228,6 +228,15 @@ export interface SettingsUpdate {
   telegramBotUsername?: string;
 }
 
+export interface OtpSendRequest {
+  phone: string;
+}
+
+export interface OtpVerifyRequest {
+  phone: string;
+  code: string;
+}
+
 export interface TelegramConfig {
   botUsername: string;
   configured: boolean;
@@ -582,5 +591,19 @@ export type AdminListWithdrawalsParams = {
 limit?: number;
 offset?: number;
 status?: string;
+};
+
+export type RequestPhoneOtp200 = {
+  success?: boolean;
+};
+
+export type RequestPhoneOtp404 = {
+  error?: string;
+  hint?: string;
+  botUsername?: string;
+};
+
+export type ConfirmPhoneOtp200 = {
+  success?: boolean;
 };
 

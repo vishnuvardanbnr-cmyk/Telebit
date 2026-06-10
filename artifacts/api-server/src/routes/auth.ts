@@ -1,65 +1,105 @@
 import { Router } from "express";
-import crypto from "crypto";
-import { db, usersTable } from "@workspace/db";
+import { db, usersTable, telegramMappingsTable } from "@workspace/db";
 import { eq, or } from "drizzle-orm";
 import { getSettings } from "../lib/settings";
 import { generateWallet, generateReferralCode } from "../lib/wallet";
 import { setAuthCookie, clearAuthCookie } from "../lib/auth";
+import { generateOtp, storeOtp, verifyOtp, hasRecentOtp } from "../lib/otp-store";
+import { sendTelegramMessage, normalizePhone, setTelegramWebhook } from "../lib/telegram-bot";
 
 const router = Router();
 
-interface TelegramAuthData {
-  id: number;
-  first_name: string;
-  last_name?: string;
-  username?: string;
-  photo_url?: string;
-  auth_date: number;
-  hash: string;
-}
+router.post("/auth/otp/send", async (req, res): Promise<void> => {
+  const { phone } = req.body as { phone?: string };
+  if (!phone || typeof phone !== "string") {
+    res.status(400).json({ error: "Phone number is required" });
+    return;
+  }
 
-function verifyTelegramHash(data: TelegramAuthData, botToken: string): boolean {
-  const { hash, ...rest } = data;
-  const checkArr = Object.entries(rest)
-    .filter(([, v]) => v !== undefined && v !== null)
-    .map(([k, v]) => `${k}=${v}`)
-    .sort();
-  const checkString = checkArr.join("\n");
-  const secretKey = crypto.createHash("sha256").update(botToken).digest();
-  const hmac = crypto.createHmac("sha256", secretKey).update(checkString).digest("hex");
-  return hmac === hash;
-}
+  const normalized = normalizePhone(phone);
+  if (normalized.length < 7 || normalized.length > 15) {
+    res.status(400).json({ error: "Invalid phone number format" });
+    return;
+  }
 
-router.post("/auth/telegram", async (req, res): Promise<void> => {
+  if (hasRecentOtp(normalized)) {
+    res.status(429).json({ error: "Please wait before requesting another code" });
+    return;
+  }
+
   const settings = await getSettings();
-  const botToken = settings.telegramBotToken;
-
-  if (!botToken) {
-    res.status(503).json({ error: "Telegram login is not configured" });
+  if (!settings.telegramBotToken) {
+    res.status(503).json({ error: "Telegram bot is not configured" });
     return;
   }
 
-  const authData = req.body as TelegramAuthData;
+  const [mapping] = await db
+    .select()
+    .from(telegramMappingsTable)
+    .where(eq(telegramMappingsTable.phone, normalized))
+    .limit(1);
 
-  if (!authData.id || !authData.hash || !authData.auth_date) {
-    res.status(400).json({ error: "Invalid Telegram auth data" });
+  if (!mapping) {
+    res.status(404).json({
+      error: "Phone number not found",
+      hint: "Please start the bot first",
+      botUsername: settings.telegramBotUsername,
+    });
     return;
   }
 
-  const now = Math.floor(Date.now() / 1000);
-  if (now - authData.auth_date > 3600) {
-    res.status(401).json({ error: "Telegram auth data expired" });
+  const code = generateOtp();
+  storeOtp(normalized, code);
+
+  try {
+    await sendTelegramMessage(
+      settings.telegramBotToken,
+      mapping.chatId,
+      `Your Telebit verification code: *${code}*\n\nThis code expires in 5 minutes. Do not share it with anyone.`,
+    );
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(502).json({ error: "Failed to send OTP via Telegram" });
+  }
+});
+
+router.post("/auth/otp/verify", async (req, res): Promise<void> => {
+  const { phone, code } = req.body as { phone?: string; code?: string };
+  if (!phone || !code) {
+    res.status(400).json({ error: "Phone and code are required" });
     return;
   }
 
-  if (!verifyTelegramHash(authData, botToken)) {
-    res.status(401).json({ error: "Invalid Telegram signature" });
+  const normalized = normalizePhone(phone);
+  const result = verifyOtp(normalized, code.trim());
+
+  if (result === "expired") {
+    res.status(401).json({ error: "Code expired. Please request a new one." });
+    return;
+  }
+  if (result === "too_many_attempts") {
+    res.status(429).json({ error: "Too many attempts. Please request a new code." });
+    return;
+  }
+  if (result === "invalid") {
+    res.status(401).json({ error: "Invalid code. Please try again." });
     return;
   }
 
-  const telegramId = String(authData.id);
+  const [mapping] = await db
+    .select()
+    .from(telegramMappingsTable)
+    .where(eq(telegramMappingsTable.phone, normalized))
+    .limit(1);
+
+  if (!mapping) {
+    res.status(404).json({ error: "Phone number not found" });
+    return;
+  }
+
+  const telegramId = String(mapping.chatId);
   const externalId = `tg_${telegramId}`;
-  const telegramEmail = `tg_${telegramId}@cryptovault.internal`;
+  const telegramEmail = `tg_${telegramId}@telebit.internal`;
 
   let [user] = await db
     .select()
@@ -70,13 +110,13 @@ router.post("/auth/telegram", async (req, res): Promise<void> => {
   if (!user) {
     const { address, privateKeyEncrypted } = generateWallet();
     const referralCode = generateReferralCode();
-    const username = authData.username ?? `tg${telegramId}`;
+    const username = mapping.username ?? `tg${telegramId}`;
     [user] = await db
       .insert(usersTable)
       .values({
         clerkId: externalId,
         email: telegramEmail,
-        fullName: [authData.first_name, authData.last_name].filter(Boolean).join(" ") || username,
+        fullName: [mapping.firstName, mapping.lastName].filter(Boolean).join(" ") || username,
         depositAddress: address,
         depositPrivateKeyEncrypted: privateKeyEncrypted,
         referralCode,
@@ -88,6 +128,116 @@ router.post("/auth/telegram", async (req, res): Promise<void> => {
 
   setAuthCookie(res, user.id);
   res.json({ success: true });
+});
+
+router.post("/auth/bot-webhook", async (req, res): Promise<void> => {
+  const settings = await getSettings();
+  if (!settings.telegramBotToken) {
+    res.sendStatus(200);
+    return;
+  }
+
+  const update = req.body as TelegramUpdate;
+  const message = update.message;
+
+  if (!message) {
+    res.sendStatus(200);
+    return;
+  }
+
+  const chatId = message.chat.id;
+  const from = message.from;
+
+  if (message.text === "/start") {
+    await sendTelegramMessage(
+      settings.telegramBotToken,
+      chatId,
+      "Welcome to Telebit! 👋\n\nTo enable phone-based login, please share your phone number by tapping the button below.",
+    ).catch(() => {});
+
+    const keyboard = JSON.stringify({
+      keyboard: [[{ text: "📱 Share my phone number", request_contact: true }]],
+      resize_keyboard: true,
+      one_time_keyboard: true,
+    });
+
+    const url = `https://api.telegram.org/bot${settings.telegramBotToken}/sendMessage`;
+    await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: "Tap the button to share your phone number:",
+        reply_markup: keyboard,
+      }),
+    }).catch(() => {});
+
+    res.sendStatus(200);
+    return;
+  }
+
+  if (message.contact) {
+    const contact = message.contact;
+    const phone = normalizePhone(contact.phone_number);
+
+    await db
+      .insert(telegramMappingsTable)
+      .values({
+        phone,
+        chatId: BigInt(chatId),
+        firstName: from?.first_name ?? contact.first_name ?? null,
+        lastName: from?.last_name ?? contact.last_name ?? null,
+        username: from?.username ?? null,
+      })
+      .onConflictDoUpdate({
+        target: telegramMappingsTable.phone,
+        set: {
+          chatId: BigInt(chatId),
+          firstName: from?.first_name ?? contact.first_name ?? null,
+          lastName: from?.last_name ?? contact.last_name ?? null,
+          username: from?.username ?? null,
+          updatedAt: new Date(),
+        },
+      });
+
+    const removeKeyboard = JSON.stringify({ remove_keyboard: true });
+    const url = `https://api.telegram.org/bot${settings.telegramBotToken}/sendMessage`;
+    await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: "✅ Phone number registered! You can now sign in to Telebit using your phone number.",
+        reply_markup: removeKeyboard,
+      }),
+    }).catch(() => {});
+
+    res.sendStatus(200);
+    return;
+  }
+
+  res.sendStatus(200);
+});
+
+router.post("/auth/bot-webhook/setup", async (req, res): Promise<void> => {
+  const settings = await getSettings();
+  if (!settings.telegramBotToken) {
+    res.status(503).json({ error: "Bot token not configured" });
+    return;
+  }
+
+  const { webhookUrl } = req.body as { webhookUrl?: string };
+  if (!webhookUrl) {
+    res.status(400).json({ error: "webhookUrl is required" });
+    return;
+  }
+
+  try {
+    await setTelegramWebhook(settings.telegramBotToken, webhookUrl);
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(502).json({ error: err.message });
+  }
 });
 
 router.post("/auth/demo", async (req, res): Promise<void> => {
@@ -128,5 +278,26 @@ router.post("/auth/logout", (req, res): void => {
   clearAuthCookie(res);
   res.json({ success: true });
 });
+
+interface TelegramUpdate {
+  update_id: number;
+  message?: {
+    message_id: number;
+    from?: {
+      id: number;
+      first_name?: string;
+      last_name?: string;
+      username?: string;
+    };
+    chat: { id: number };
+    text?: string;
+    contact?: {
+      phone_number: string;
+      first_name?: string;
+      last_name?: string;
+      user_id?: number;
+    };
+  };
+}
 
 export default router;

@@ -632,7 +632,7 @@ function MyOrdersModal({ myUserId, onClose, onOpenOrder }: { myUserId: string; o
 
 // ─── Main P2P Page ────────────────────────────────────────────────────────────
 export default function P2PPage() {
-  const { user: dbUser } = useAuth();
+  const { user: dbUser, isSignedIn: user } = useAuth();
   const walletBalance = parseFloat(String(dbUser?.walletBalance ?? "0"));
 
   const [side, setSide] = useState<"buy" | "sell">("sell");

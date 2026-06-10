@@ -1169,6 +1169,31 @@ export const AdminRejectWithdrawalResponse = zod.object({
 
 
 /**
+ * @summary Send OTP to phone number via Telegram bot
+ */
+export const RequestPhoneOtpBody = zod.object({
+  "phone": zod.string()
+})
+
+export const RequestPhoneOtpResponse = zod.object({
+  "success": zod.boolean().optional()
+})
+
+
+/**
+ * @summary Verify OTP and get session cookie
+ */
+export const ConfirmPhoneOtpBody = zod.object({
+  "phone": zod.string(),
+  "code": zod.string()
+})
+
+export const ConfirmPhoneOtpResponse = zod.object({
+  "success": zod.boolean().optional()
+})
+
+
+/**
  * @summary Get public Telegram bot config (no auth required)
  */
 export const GetTelegramConfigResponse = zod.object({

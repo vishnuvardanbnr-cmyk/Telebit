@@ -13,3 +13,4 @@ export * from "./shop_wishlist";
 export * from "./utility";
 export * from "./lottery";
 export * from "./shop_p2p";
+export * from "./telegram_mappings";
