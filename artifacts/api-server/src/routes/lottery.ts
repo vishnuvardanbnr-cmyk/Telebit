@@ -66,7 +66,7 @@ router.get("/lottery/my-tickets", requireAuth, async (req, res): Promise<void> =
 /* ─── Public: single lottery ───────────────────────────────── */
 router.get("/lottery/:id", async (req, res): Promise<void> => {
   try {
-    const [lottery] = await db.select().from(lotteriesTable).where(eq(lotteriesTable.id, req.params.id)).limit(1);
+    const [lottery] = await db.select().from(lotteriesTable).where(eq(lotteriesTable.id, req.params.id as string)).limit(1);
     if (!lottery) { res.status(404).json({ error: "Lottery not found" }); return; }
     res.json(lottery);
   } catch (err: any) {
@@ -84,7 +84,7 @@ router.get("/lottery/:id/tickets", async (req, res): Promise<void> => {
       purchasedAt: lotteryTicketsTable.purchasedAt,
     })
       .from(lotteryTicketsTable)
-      .where(eq(lotteryTicketsTable.lotteryId, req.params.id))
+      .where(eq(lotteryTicketsTable.lotteryId, req.params.id as string))
       .orderBy(lotteryTicketsTable.purchasedAt);
     res.json(tickets);
   } catch (err: any) {
@@ -96,7 +96,7 @@ router.get("/lottery/:id/tickets", async (req, res): Promise<void> => {
 router.post("/lottery/:id/purchase", requireAuth, async (req, res): Promise<void> => {
   try {
     const dbUser = (req as any).dbUser;
-    const [lottery] = await db.select().from(lotteriesTable).where(eq(lotteriesTable.id, req.params.id)).limit(1);
+    const [lottery] = await db.select().from(lotteriesTable).where(eq(lotteriesTable.id, req.params.id as string)).limit(1);
 
     if (!lottery) { res.status(404).json({ error: "Lottery not found" }); return; }
     if (lottery.status !== "active") { res.status(400).json({ error: "Lottery is not active" }); return; }
@@ -201,7 +201,7 @@ router.put("/admin/lottery/:id", requireAuth, requireAdmin, async (req, res): Pr
         updates[key] = key === "drawDate" && req.body[key] ? new Date(req.body[key]) : req.body[key];
       }
     }
-    const [lottery] = await db.update(lotteriesTable).set(updates).where(eq(lotteriesTable.id, req.params.id)).returning();
+    const [lottery] = await db.update(lotteriesTable).set(updates).where(eq(lotteriesTable.id, req.params.id as string)).returning();
     res.json(lottery);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -211,7 +211,7 @@ router.put("/admin/lottery/:id", requireAuth, requireAdmin, async (req, res): Pr
 /* ─── Admin: draw winner ───────────────────────────────────── */
 router.post("/admin/lottery/:id/draw", requireAuth, requireAdmin, async (req, res): Promise<void> => {
   try {
-    const [lottery] = await db.select().from(lotteriesTable).where(eq(lotteriesTable.id, req.params.id)).limit(1);
+    const [lottery] = await db.select().from(lotteriesTable).where(eq(lotteriesTable.id, req.params.id as string)).limit(1);
     if (!lottery) { res.status(404).json({ error: "Lottery not found" }); return; }
     if (lottery.status !== "active") { res.status(400).json({ error: "Only active lotteries can be drawn" }); return; }
 
@@ -258,7 +258,7 @@ router.post("/admin/lottery/:id/draw", requireAuth, requireAdmin, async (req, re
 /* ─── Admin: delete lottery ────────────────────────────────── */
 router.delete("/admin/lottery/:id", requireAuth, requireAdmin, async (req, res): Promise<void> => {
   try {
-    const lotteryId = String(req.params.id);
+    const lotteryId = String(req.params.id as string);
     await db.delete(lotteryTicketsTable).where(eq(lotteryTicketsTable.lotteryId, lotteryId));
     await db.delete(lotteriesTable).where(eq(lotteriesTable.id, lotteryId));
     res.json({ ok: true });

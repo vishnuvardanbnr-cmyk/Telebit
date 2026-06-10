@@ -14,10 +14,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { fmtUsdt } from "@/lib/utils";
 import {
-  User, Wallet, TrendingUp, LayoutGrid, BadgeCheck,
-  Copy, Coins, ChevronRight, ShoppingBag,
+  Wallet, TrendingUp, LayoutGrid, BadgeCheck,
+  Coins, ChevronRight, ShoppingBag, Copy,
 } from "lucide-react";
 import { toast } from "sonner";
+import { UserProfileCard } from "@/components/user-profile-card";
 
 export default function Home() {
   const { data: user, isLoading: userLoading } = useGetMe();
@@ -62,35 +63,8 @@ export default function Home() {
     <div className="container mx-auto px-4 py-6 space-y-5 max-w-2xl">
 
       {/* ── User Profile ── */}
-      <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-transparent">
-        <CardContent className="p-5">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                <User className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <div className="font-bold text-lg leading-tight">
-                  {user?.fullName || user?.email?.split("@")[0] || "User"}
-                </div>
-                <div className="text-xs text-muted-foreground mt-0.5">{user?.email}</div>
-                {user?.referralCode && (
-                  <button
-                    className="flex items-center gap-1 mt-1.5 text-[11px] text-primary font-medium hover:underline"
-                    onClick={() => { navigator.clipboard.writeText(user.referralCode); toast.success("Referral code copied"); }}
-                  >
-                    Ref: {user.referralCode} <Copy className="h-2.5 w-2.5" />
-                  </button>
-                )}
-              </div>
-            </div>
-            <div className="text-right shrink-0">
-              <div className="text-[10px] text-muted-foreground uppercase mb-0.5">Balance</div>
-              <div className="font-black text-2xl text-primary leading-tight">{fmtUsdt(user?.walletBalance)}</div>
-              <div className="text-[11px] text-muted-foreground">USDT</div>
-            </div>
-          </div>
-
+      {user && (
+        <UserProfileCard user={user}>
           {/* Deposit address */}
           <div className="mt-4 flex items-center gap-2 bg-muted/30 border border-border rounded-lg px-3 py-2">
             <Wallet className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
@@ -99,8 +73,8 @@ export default function Home() {
               <Copy className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
             </button>
           </div>
-        </CardContent>
-      </Card>
+        </UserProfileCard>
+      )}
 
       {/* ── Stats row ── */}
       <div className="grid grid-cols-2 gap-3">

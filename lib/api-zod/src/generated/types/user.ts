@@ -12,6 +12,14 @@ export interface User {
   email: string;
   /** @nullable */
   fullName?: string | null;
+  /** @nullable */
+  telegramUsername?: string | null;
+  /** @nullable */
+  telegramPhotoUrl?: string | null;
+  /** @nullable */
+  telegramChatId?: string | null;
+  /** @nullable */
+  parentUserId?: string | null;
   walletBalance: string;
   earningsBalance: string;
   depositAddress: string;

@@ -6,6 +6,7 @@ export const telegramMappingsTable = pgTable("telegram_mappings", {
   firstName: text("first_name"),
   lastName: text("last_name"),
   username: text("username"),
+  photoUrl: text("photo_url"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

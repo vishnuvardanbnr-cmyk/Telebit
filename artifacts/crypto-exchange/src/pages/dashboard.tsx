@@ -18,10 +18,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { formatUsdt, truncateAddress } from "@/lib/format";
 import {
-  Copy, User, Wallet, TrendingUp, LayoutGrid, BadgeCheck,
+  Wallet, TrendingUp, LayoutGrid, BadgeCheck,
   ArrowDownToLine, ArrowUpFromLine, Send, RefreshCw, AlertCircle,
-  ChevronRight, Coins,
+  ChevronRight, Coins, Copy,
 } from "lucide-react";
+import { UserProfileCard } from "@/components/user-profile-card";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { Link } from "wouter";
@@ -143,42 +144,8 @@ export default function Dashboard() {
       <div className="space-y-5">
 
         {/* ── User Profile ── */}
-        <Card className="rounded-none border-primary/40 bg-gradient-to-r from-primary/5 to-transparent">
-          <CardContent className="p-5">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-none bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                  <User className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <div className="font-mono font-bold text-lg">
-                    {user?.fullName || user?.email?.split("@")[0] || "User"}
-                  </div>
-                  <div className="font-mono text-xs text-muted-foreground mt-0.5">{user?.email}</div>
-                  <div className="flex items-center gap-2 mt-1.5">
-                    <span className="font-mono text-[10px] text-muted-foreground uppercase">Referral:</span>
-                    <span
-                      className="font-mono text-xs text-primary font-bold cursor-pointer hover:underline"
-                      onClick={() => {
-                        navigator.clipboard.writeText(user?.referralCode || "");
-                        toast.success("Referral code copied");
-                      }}
-                    >
-                      {user?.referralCode}
-                      <Copy className="h-3 w-3 inline ml-1 opacity-60" />
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Balance chip */}
-              <div className="text-right shrink-0">
-                <div className="font-mono text-[10px] text-muted-foreground uppercase mb-0.5">Balance</div>
-                <div className="font-mono font-black text-2xl text-primary">{formatUsdt(user?.walletBalance)}</div>
-                <div className="font-mono text-xs text-muted-foreground">USDT</div>
-              </div>
-            </div>
-
+        {user && (
+          <UserProfileCard user={user}>
             {/* Action buttons */}
             <div className="grid grid-cols-3 gap-2 mt-5">
               <Button size="sm" className="rounded-none font-mono uppercase tracking-wider text-xs gap-1.5" onClick={() => setDepositOpen(true)}>
@@ -200,8 +167,8 @@ export default function Dashboard() {
                 <Copy className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
               </button>
             </div>
-          </CardContent>
-        </Card>
+          </UserProfileCard>
+        )}
 
         {/* ── Stats row ── */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

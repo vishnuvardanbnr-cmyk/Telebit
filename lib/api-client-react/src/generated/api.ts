@@ -35,6 +35,7 @@ import type {
   CategoryInput,
   CheckoutInput,
   ConfirmPhoneOtp200,
+  CreateSubAccountRequest,
   DashboardSummary,
   Deposit,
   DepositCheckResult,
@@ -81,6 +82,7 @@ import type {
   ReviewInput,
   SettingsUpdate,
   ShopStats,
+  SubAccount,
   TelegramConfig,
   User,
   UserNftActivation,
@@ -332,6 +334,224 @@ export function useGetDashboard<TData = Awaited<ReturnType<typeof getDashboard>>
 
 
 
+
+export const getListSubAccountsUrl = () => {
+
+
+
+
+  return `/api/users/accounts`
+}
+
+/**
+ * @summary List all sub-accounts linked to current Telegram identity
+ */
+export const listSubAccounts = async ( options?: RequestInit): Promise<SubAccount[]> => {
+
+  return customFetch<SubAccount[]>(getListSubAccountsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSubAccountsQueryKey = () => {
+    return [
+    `/api/users/accounts`
+    ] as const;
+    }
+
+
+export const getListSubAccountsQueryOptions = <TData = Awaited<ReturnType<typeof listSubAccounts>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSubAccounts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSubAccountsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSubAccounts>>> = ({ signal }) => listSubAccounts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSubAccounts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSubAccountsQueryResult = NonNullable<Awaited<ReturnType<typeof listSubAccounts>>>
+export type ListSubAccountsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List all sub-accounts linked to current Telegram identity
+ */
+
+export function useListSubAccounts<TData = Awaited<ReturnType<typeof listSubAccounts>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSubAccounts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSubAccountsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateSubAccountUrl = () => {
+
+
+
+
+  return `/api/users/accounts`
+}
+
+/**
+ * @summary Create a new sub-account
+ */
+export const createSubAccount = async (createSubAccountRequest: CreateSubAccountRequest, options?: RequestInit): Promise<SubAccount> => {
+
+  return customFetch<SubAccount>(getCreateSubAccountUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createSubAccountRequest,)
+  }
+);}
+
+
+
+
+export const getCreateSubAccountMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSubAccount>>, TError,{data: BodyType<CreateSubAccountRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createSubAccount>>, TError,{data: BodyType<CreateSubAccountRequest>}, TContext> => {
+
+const mutationKey = ['createSubAccount'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSubAccount>>, {data: BodyType<CreateSubAccountRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createSubAccount(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateSubAccountMutationResult = NonNullable<Awaited<ReturnType<typeof createSubAccount>>>
+    export type CreateSubAccountMutationBody = BodyType<CreateSubAccountRequest>
+    export type CreateSubAccountMutationError = ErrorType<void>
+
+    /**
+ * @summary Create a new sub-account
+ */
+export const useCreateSubAccount = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSubAccount>>, TError,{data: BodyType<CreateSubAccountRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createSubAccount>>,
+        TError,
+        {data: BodyType<CreateSubAccountRequest>},
+        TContext
+      > => {
+      return useMutation(getCreateSubAccountMutationOptions(options));
+    }
+
+export const getSwitchSubAccountUrl = (accountId: string,) => {
+
+
+
+
+  return `/api/users/accounts/switch/${accountId}`
+}
+
+/**
+ * @summary Switch active sub-account (re-issues auth session)
+ */
+export const switchSubAccount = async (accountId: string, options?: RequestInit): Promise<User> => {
+
+  return customFetch<User>(getSwitchSubAccountUrl(accountId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getSwitchSubAccountMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof switchSubAccount>>, TError,{accountId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof switchSubAccount>>, TError,{accountId: string}, TContext> => {
+
+const mutationKey = ['switchSubAccount'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof switchSubAccount>>, {accountId: string}> = (props) => {
+          const {accountId} = props ?? {};
+
+          return  switchSubAccount(accountId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SwitchSubAccountMutationResult = NonNullable<Awaited<ReturnType<typeof switchSubAccount>>>
+
+    export type SwitchSubAccountMutationError = ErrorType<void>
+
+    /**
+ * @summary Switch active sub-account (re-issues auth session)
+ */
+export const useSwitchSubAccount = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof switchSubAccount>>, TError,{accountId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof switchSubAccount>>,
+        TError,
+        {accountId: string},
+        TContext
+      > => {
+      return useMutation(getSwitchSubAccountMutationOptions(options));
+    }
 
 export const getListDepositsUrl = (params?: ListDepositsParams,) => {
   const normalizedParams = new URLSearchParams();

@@ -5,7 +5,7 @@ import { getSettings } from "../lib/settings";
 import { generateWallet, generateReferralCode } from "../lib/wallet";
 import { setAuthCookie, clearAuthCookie } from "../lib/auth";
 import { generateOtp, storeOtp, verifyOtp, hasRecentOtp } from "../lib/otp-store";
-import { sendTelegramMessage, normalizePhone, setTelegramWebhook } from "../lib/telegram-bot";
+import { sendTelegramMessage, normalizePhone, setTelegramWebhook, fetchTelegramPhotoUrl } from "../lib/telegram-bot";
 
 const router = Router();
 
@@ -107,23 +107,41 @@ router.post("/auth/otp/verify", async (req, res): Promise<void> => {
     .where(or(eq(usersTable.clerkId, externalId), eq(usersTable.email, telegramEmail)))
     .limit(1);
 
+  const settings = await getSettings();
+  const photoUrl = settings.telegramBotToken
+    ? await fetchTelegramPhotoUrl(settings.telegramBotToken, mapping.chatId)
+    : mapping.photoUrl ?? null;
+
+  const telegramUsername = mapping.username ?? null;
+  const fullName = [mapping.firstName, mapping.lastName].filter(Boolean).join(" ") || telegramUsername || `tg${telegramId}`;
+
   if (!user) {
     const { address, privateKeyEncrypted } = generateWallet();
     const referralCode = generateReferralCode();
-    const username = mapping.username ?? `tg${telegramId}`;
     [user] = await db
       .insert(usersTable)
       .values({
         clerkId: externalId,
         email: telegramEmail,
-        fullName: [mapping.firstName, mapping.lastName].filter(Boolean).join(" ") || username,
+        fullName,
+        telegramUsername,
+        telegramPhotoUrl: photoUrl,
+        telegramChatId: telegramId,
         depositAddress: address,
         depositPrivateKeyEncrypted: privateKeyEncrypted,
         referralCode,
       })
       .returning();
-  } else if (user.clerkId !== externalId) {
-    await db.update(usersTable).set({ clerkId: externalId }).where(eq(usersTable.id, user.id));
+  } else {
+    const updates: Record<string, any> = {};
+    if (user.clerkId !== externalId) updates.clerkId = externalId;
+    if (telegramUsername && user.telegramUsername !== telegramUsername) updates.telegramUsername = telegramUsername;
+    if (photoUrl && user.telegramPhotoUrl !== photoUrl) updates.telegramPhotoUrl = photoUrl;
+    if (!user.telegramChatId) updates.telegramChatId = telegramId;
+    if (Object.keys(updates).length > 0) {
+      await db.update(usersTable).set(updates as any).where(eq(usersTable.id, user.id));
+      user = { ...user, ...updates };
+    }
   }
 
   setAuthCookie(res, user.id);
@@ -133,6 +151,10 @@ router.post("/auth/otp/verify", async (req, res): Promise<void> => {
       clerkId: user.clerkId,
       email: user.email,
       fullName: user.fullName,
+      telegramUsername: user.telegramUsername ?? null,
+      telegramPhotoUrl: user.telegramPhotoUrl ?? null,
+      telegramChatId: user.telegramChatId ?? null,
+      parentUserId: user.parentUserId ?? null,
       walletBalance: user.walletBalance,
       earningsBalance: user.earningsBalance,
       depositAddress: user.depositAddress,
@@ -194,6 +216,10 @@ router.post("/auth/bot-webhook", async (req, res): Promise<void> => {
     const contact = message.contact;
     const phone = normalizePhone(contact.phone_number);
 
+    const photoUrl = settings.telegramBotToken
+      ? await fetchTelegramPhotoUrl(settings.telegramBotToken, chatId)
+      : null;
+
     await db
       .insert(telegramMappingsTable)
       .values({
@@ -202,6 +228,7 @@ router.post("/auth/bot-webhook", async (req, res): Promise<void> => {
         firstName: from?.first_name ?? contact.first_name ?? null,
         lastName: from?.last_name ?? contact.last_name ?? null,
         username: from?.username ?? null,
+        photoUrl,
       })
       .onConflictDoUpdate({
         target: telegramMappingsTable.phone,
@@ -210,6 +237,7 @@ router.post("/auth/bot-webhook", async (req, res): Promise<void> => {
           firstName: from?.first_name ?? contact.first_name ?? null,
           lastName: from?.last_name ?? contact.last_name ?? null,
           username: from?.username ?? null,
+          photoUrl: photoUrl ?? undefined,
           updatedAt: new Date(),
         },
       });

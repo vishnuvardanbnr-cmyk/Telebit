@@ -63,6 +63,66 @@ paths:
         "401":
           description: Unauthorized
 
+  /users/accounts:
+    get:
+      operationId: listSubAccounts
+      tags: [users]
+      summary: List all sub-accounts linked to current Telegram identity
+      responses:
+        "200":
+          description: List of accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SubAccount"
+        "401":
+          description: Unauthorized
+    post:
+      operationId: createSubAccount
+      tags: [users]
+      summary: Create a new sub-account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSubAccountRequest"
+      responses:
+        "201":
+          description: Sub-account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubAccount"
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+
+  /users/accounts/switch/{accountId}:
+    post:
+      operationId: switchSubAccount
+      tags: [users]
+      summary: Switch active sub-account (re-issues auth session)
+      parameters:
+        - in: path
+          name: accountId
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Switched successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "403":
+          description: Account not owned by this Telegram identity
+        "401":
+          description: Unauthorized
+
   /deposits:
     get:
       operationId: listDeposits
@@ -1326,6 +1386,25 @@ components:
       properties:
         status: { type: string }
 
+    SubAccount:
+      type: object
+      required: [id, fullName, walletBalance, telegramChatId]
+      properties:
+        id: { type: string }
+        fullName: { type: ["string", "null"] }
+        telegramUsername: { type: ["string", "null"] }
+        telegramPhotoUrl: { type: ["string", "null"] }
+        telegramChatId: { type: string }
+        walletBalance: { type: string }
+        isCurrentAccount: { type: boolean }
+
+    CreateSubAccountRequest:
+      type: object
+      required: [alias]
+      properties:
+        alias: { type: string }
+        initialFund: { type: number }
+
     User:
       type: object
       required: [id, clerkId, email, walletBalance, earningsBalance, depositAddress, referralCode, isAdmin, withdrawalBlocked, createdAt]
@@ -1334,6 +1413,10 @@ components:
         clerkId: { type: string }
         email: { type: string }
         fullName: { type: ["string", "null"] }
+        telegramUsername: { type: ["string", "null"] }
+        telegramPhotoUrl: { type: ["string", "null"] }
+        telegramChatId: { type: ["string", "null"] }
+        parentUserId: { type: ["string", "null"] }
         walletBalance: { type: string }
         earningsBalance: { type: string }
         depositAddress: { type: string }

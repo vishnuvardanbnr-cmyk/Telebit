@@ -24,6 +24,10 @@ export const GetMeResponse = zod.object({
   "clerkId": zod.string(),
   "email": zod.string(),
   "fullName": zod.string().nullish(),
+  "telegramUsername": zod.string().nullish(),
+  "telegramPhotoUrl": zod.string().nullish(),
+  "telegramChatId": zod.string().nullish(),
+  "parentUserId": zod.string().nullish(),
   "walletBalance": zod.string(),
   "earningsBalance": zod.string(),
   "depositAddress": zod.string(),
@@ -79,6 +83,56 @@ export const GetDashboardResponse = zod.object({
   "note": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 }))
+})
+
+
+/**
+ * @summary List all sub-accounts linked to current Telegram identity
+ */
+export const ListSubAccountsResponseItem = zod.object({
+  "id": zod.string(),
+  "fullName": zod.string().nullable(),
+  "telegramUsername": zod.string().nullish(),
+  "telegramPhotoUrl": zod.string().nullish(),
+  "telegramChatId": zod.string(),
+  "walletBalance": zod.string(),
+  "isCurrentAccount": zod.boolean().optional()
+})
+export const ListSubAccountsResponse = zod.array(ListSubAccountsResponseItem)
+
+
+/**
+ * @summary Create a new sub-account
+ */
+export const CreateSubAccountBody = zod.object({
+  "alias": zod.string(),
+  "initialFund": zod.number().optional()
+})
+
+
+/**
+ * @summary Switch active sub-account (re-issues auth session)
+ */
+export const SwitchSubAccountParams = zod.object({
+  "accountId": zod.coerce.string()
+})
+
+export const SwitchSubAccountResponse = zod.object({
+  "id": zod.string(),
+  "clerkId": zod.string(),
+  "email": zod.string(),
+  "fullName": zod.string().nullish(),
+  "telegramUsername": zod.string().nullish(),
+  "telegramPhotoUrl": zod.string().nullish(),
+  "telegramChatId": zod.string().nullish(),
+  "parentUserId": zod.string().nullish(),
+  "walletBalance": zod.string(),
+  "earningsBalance": zod.string(),
+  "depositAddress": zod.string(),
+  "referralCode": zod.string(),
+  "isAdmin": zod.boolean(),
+  "withdrawalBlocked": zod.boolean(),
+  "createdAt": zod.coerce.date()
 })
 
 

@@ -9,12 +9,38 @@ export interface HealthStatus {
   status: string;
 }
 
+export interface SubAccount {
+  id: string;
+  /** @nullable */
+  fullName: string | null;
+  /** @nullable */
+  telegramUsername?: string | null;
+  /** @nullable */
+  telegramPhotoUrl?: string | null;
+  telegramChatId: string;
+  walletBalance: string;
+  isCurrentAccount?: boolean;
+}
+
+export interface CreateSubAccountRequest {
+  alias: string;
+  initialFund?: number;
+}
+
 export interface User {
   id: string;
   clerkId: string;
   email: string;
   /** @nullable */
   fullName?: string | null;
+  /** @nullable */
+  telegramUsername?: string | null;
+  /** @nullable */
+  telegramPhotoUrl?: string | null;
+  /** @nullable */
+  telegramChatId?: string | null;
+  /** @nullable */
+  parentUserId?: string | null;
   walletBalance: string;
   earningsBalance: string;
   depositAddress: string;
