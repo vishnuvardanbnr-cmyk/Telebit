@@ -3,32 +3,26 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: CryptoVault Exchange API specification
+  description: CryptoVault Exchange & Shop API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
   - name: users
-    description: User profile and wallet operations
   - name: deposits
-    description: USDT deposit operations
   - name: withdrawals
-    description: USDT withdrawal operations
   - name: p2p
-    description: P2P internal transfers
   - name: admin
-    description: Admin management operations
   - name: settings
-    description: Platform settings
+  - name: shop
+  - name: shop-admin
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -41,7 +35,7 @@ paths:
     get:
       operationId: getMe
       tags: [users]
-      summary: Get current user profile and wallet info
+      summary: Get current user profile
       responses:
         "200":
           description: User profile
@@ -56,7 +50,7 @@ paths:
     get:
       operationId: getDashboard
       tags: [users]
-      summary: Get dashboard summary (balances, recent activity, totals)
+      summary: Get dashboard summary
       responses:
         "200":
           description: Dashboard summary
@@ -71,18 +65,14 @@ paths:
     get:
       operationId: listDeposits
       tags: [deposits]
-      summary: List user deposit history
+      summary: List user deposits
       parameters:
         - name: limit
           in: query
-          schema:
-            type: integer
-            default: 20
+          schema: { type: integer, default: 20 }
         - name: offset
           in: query
-          schema:
-            type: integer
-            default: 0
+          schema: { type: integer, default: 0 }
       responses:
         "200":
           description: Deposit list
@@ -99,10 +89,10 @@ paths:
     post:
       operationId: checkDeposit
       tags: [deposits]
-      summary: Check for on-chain USDT deposit and credit balance
+      summary: Check for on-chain USDT deposit
       responses:
         "200":
-          description: Deposit check result
+          description: Check result
           content:
             application/json:
               schema:
@@ -114,18 +104,14 @@ paths:
     get:
       operationId: listWithdrawals
       tags: [withdrawals]
-      summary: List user withdrawal history
+      summary: List user withdrawals
       parameters:
         - name: limit
           in: query
-          schema:
-            type: integer
-            default: 20
+          schema: { type: integer, default: 20 }
         - name: offset
           in: query
-          schema:
-            type: integer
-            default: 0
+          schema: { type: integer, default: 0 }
       responses:
         "200":
           description: Withdrawal list
@@ -163,18 +149,14 @@ paths:
     get:
       operationId: listP2PTransfers
       tags: [p2p]
-      summary: List user P2P transfer history
+      summary: List user P2P transfers
       parameters:
         - name: limit
           in: query
-          schema:
-            type: integer
-            default: 20
+          schema: { type: integer, default: 20 }
         - name: offset
           in: query
-          schema:
-            type: integer
-            default: 0
+          schema: { type: integer, default: 0 }
       responses:
         "200":
           description: P2P transfer list
@@ -212,35 +194,551 @@ paths:
     get:
       operationId: getSettings
       tags: [settings]
-      summary: Get platform settings (public safe subset)
+      summary: Get public platform settings
       responses:
         "200":
-          description: Platform settings
+          description: Settings
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/PublicSettings"
 
+  # ─── Shop ─────────────────────────────────────────────────────────────────
+
+  /shop/products:
+    get:
+      operationId: listProducts
+      tags: [shop]
+      summary: List products
+      parameters:
+        - name: categoryId
+          in: query
+          schema: { type: ["string", "null"] }
+        - name: search
+          in: query
+          schema: { type: ["string", "null"] }
+        - name: minPrice
+          in: query
+          schema: { type: ["string", "null"] }
+        - name: maxPrice
+          in: query
+          schema: { type: ["string", "null"] }
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [newest, price_asc, price_desc, popular, rating]
+            default: newest
+        - name: limit
+          in: query
+          schema: { type: integer, default: 24 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+      responses:
+        "200":
+          description: Product list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductListResponse"
+
+  /shop/products/{productId}:
+    get:
+      operationId: getProduct
+      tags: [shop]
+      summary: Get product detail
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Product detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductDetail"
+        "404":
+          description: Not found
+
+  /shop/products/{productId}/reviews:
+    get:
+      operationId: listProductReviews
+      tags: [shop]
+      summary: List reviews for a product
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Review list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Review"
+    post:
+      operationId: createProductReview
+      tags: [shop]
+      summary: Post a review for a product
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewInput"
+      responses:
+        "201":
+          description: Review created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+        "401":
+          description: Unauthorized
+
+  /shop/categories:
+    get:
+      operationId: listCategories
+      tags: [shop]
+      summary: List all product categories
+      responses:
+        "200":
+          description: Category list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+
+  /shop/featured:
+    get:
+      operationId: getFeatured
+      tags: [shop]
+      summary: Get featured, new arrivals, top-rated, on-sale products
+      responses:
+        "200":
+          description: Featured collections
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeaturedResponse"
+
+  /shop/cart:
+    get:
+      operationId: getCart
+      tags: [shop]
+      summary: Get current user's cart
+      responses:
+        "200":
+          description: Cart
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+        "401":
+          description: Unauthorized
+
+  /shop/cart/items:
+    post:
+      operationId: addToCart
+      tags: [shop]
+      summary: Add item to cart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CartItemInput"
+      responses:
+        "200":
+          description: Updated cart
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+        "400":
+          description: Validation error
+        "401":
+          description: Unauthorized
+
+  /shop/cart/items/{itemId}:
+    patch:
+      operationId: updateCartItem
+      tags: [shop]
+      summary: Update cart item quantity
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CartItemUpdate"
+      responses:
+        "200":
+          description: Updated cart
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+        "401":
+          description: Unauthorized
+    delete:
+      operationId: removeCartItem
+      tags: [shop]
+      summary: Remove item from cart
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Updated cart
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+        "401":
+          description: Unauthorized
+
+  /shop/cart/clear:
+    delete:
+      operationId: clearCart
+      tags: [shop]
+      summary: Clear all items from cart
+      responses:
+        "200":
+          description: Empty cart
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+        "401":
+          description: Unauthorized
+
+  /shop/orders:
+    get:
+      operationId: listOrders
+      tags: [shop]
+      summary: List current user's orders
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+      responses:
+        "200":
+          description: Order list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+        "401":
+          description: Unauthorized
+    post:
+      operationId: createOrder
+      tags: [shop]
+      summary: Place an order — deducts USDT from wallet balance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutInput"
+      responses:
+        "201":
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          description: Insufficient balance or validation error
+        "401":
+          description: Unauthorized
+
+  /shop/orders/{orderId}:
+    get:
+      operationId: getOrder
+      tags: [shop]
+      summary: Get order detail
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Order detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "404":
+          description: Not found
+
+  /shop/wishlist:
+    get:
+      operationId: getWishlist
+      tags: [shop]
+      summary: Get current user's wishlist
+      responses:
+        "200":
+          description: Wishlist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wishlist"
+        "401":
+          description: Unauthorized
+
+  /shop/wishlist/{productId}:
+    post:
+      operationId: addToWishlist
+      tags: [shop]
+      summary: Add product to wishlist
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Wishlist updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wishlist"
+        "401":
+          description: Unauthorized
+    delete:
+      operationId: removeFromWishlist
+      tags: [shop]
+      summary: Remove product from wishlist
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Wishlist updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wishlist"
+        "401":
+          description: Unauthorized
+
+  # ─── Shop Admin ───────────────────────────────────────────────────────────
+
+  /shop/admin/stats:
+    get:
+      operationId: adminGetShopStats
+      tags: [shop-admin]
+      summary: Get shop stats (admin)
+      responses:
+        "200":
+          description: Shop stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShopStats"
+        "403":
+          description: Forbidden
+
+  /shop/admin/products:
+    get:
+      operationId: adminListProducts
+      tags: [shop-admin]
+      summary: List all products (admin)
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+      responses:
+        "200":
+          description: Product list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductListResponse"
+        "403":
+          description: Forbidden
+    post:
+      operationId: adminCreateProduct
+      tags: [shop-admin]
+      summary: Create a new product (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+      responses:
+        "201":
+          description: Created product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "403":
+          description: Forbidden
+
+  /shop/admin/products/{productId}:
+    patch:
+      operationId: adminUpdateProduct
+      tags: [shop-admin]
+      summary: Update a product (admin)
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductUpdate"
+      responses:
+        "200":
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "403":
+          description: Forbidden
+    delete:
+      operationId: adminDeleteProduct
+      tags: [shop-admin]
+      summary: Delete a product (admin)
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          description: Forbidden
+
+  /shop/admin/categories:
+    post:
+      operationId: adminCreateCategory
+      tags: [shop-admin]
+      summary: Create a category (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryInput"
+      responses:
+        "201":
+          description: Created category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "403":
+          description: Forbidden
+
+  /shop/admin/orders:
+    get:
+      operationId: adminListOrders
+      tags: [shop-admin]
+      summary: List all orders (admin)
+      parameters:
+        - name: status
+          in: query
+          schema: { type: ["string", "null"] }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+      responses:
+        "200":
+          description: All orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+        "403":
+          description: Forbidden
+
+  /shop/admin/orders/{orderId}/status:
+    patch:
+      operationId: adminUpdateOrderStatus
+      tags: [shop-admin]
+      summary: Update order status (admin)
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderStatusUpdate"
+      responses:
+        "200":
+          description: Updated order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "403":
+          description: Forbidden
+
+  # ─── Exchange Admin ───────────────────────────────────────────────────────
+
   /admin/users:
     get:
       operationId: adminListUsers
       tags: [admin]
-      summary: List all users (admin only)
+      summary: List all users (admin)
       parameters:
         - name: limit
           in: query
-          schema:
-            type: integer
-            default: 50
+          schema: { type: integer, default: 50 }
         - name: offset
           in: query
-          schema:
-            type: integer
-            default: 0
+          schema: { type: integer, default: 0 }
         - name: search
           in: query
-          schema:
-            type: string
+          schema: { type: string }
       responses:
         "200":
           description: User list
@@ -264,8 +762,7 @@ paths:
         - name: userId
           in: path
           required: true
-          schema:
-            type: string
+          schema: { type: string }
       requestBody:
         required: true
         content:
@@ -288,22 +785,17 @@ paths:
     get:
       operationId: adminListDeposits
       tags: [admin]
-      summary: List all deposits (admin only)
+      summary: List all deposits (admin)
       parameters:
         - name: limit
           in: query
-          schema:
-            type: integer
-            default: 50
+          schema: { type: integer, default: 50 }
         - name: offset
           in: query
-          schema:
-            type: integer
-            default: 0
+          schema: { type: integer, default: 0 }
         - name: status
           in: query
-          schema:
-            type: string
+          schema: { type: string }
       responses:
         "200":
           description: Deposit list
@@ -322,22 +814,17 @@ paths:
     get:
       operationId: adminListWithdrawals
       tags: [admin]
-      summary: List all withdrawals (admin only)
+      summary: List all withdrawals (admin)
       parameters:
         - name: limit
           in: query
-          schema:
-            type: integer
-            default: 50
+          schema: { type: integer, default: 50 }
         - name: offset
           in: query
-          schema:
-            type: integer
-            default: 0
+          schema: { type: integer, default: 0 }
         - name: status
           in: query
-          schema:
-            type: string
+          schema: { type: string }
       responses:
         "200":
           description: Withdrawal list
@@ -356,13 +843,12 @@ paths:
     post:
       operationId: adminApproveWithdrawal
       tags: [admin]
-      summary: Approve a pending withdrawal (admin only)
+      summary: Approve a pending withdrawal
       parameters:
         - name: id
           in: path
           required: true
-          schema:
-            type: string
+          schema: { type: string }
       responses:
         "200":
           description: Withdrawal approved
@@ -379,13 +865,12 @@ paths:
     post:
       operationId: adminRejectWithdrawal
       tags: [admin]
-      summary: Reject a pending withdrawal (admin only)
+      summary: Reject a pending withdrawal
       parameters:
         - name: id
           in: path
           required: true
-          schema:
-            type: string
+          schema: { type: string }
       responses:
         "200":
           description: Withdrawal rejected
@@ -402,7 +887,7 @@ paths:
     get:
       operationId: adminGetSettings
       tags: [admin]
-      summary: Get all platform settings (admin only)
+      summary: Get all platform settings (admin)
       responses:
         "200":
           description: All settings
@@ -417,7 +902,7 @@ paths:
     put:
       operationId: adminUpdateSettings
       tags: [admin]
-      summary: Update platform settings (admin only)
+      summary: Update platform settings (admin)
       requestBody:
         required: true
         content:
@@ -440,7 +925,7 @@ paths:
     get:
       operationId: adminGetStats
       tags: [admin]
-      summary: Get platform-wide statistics (admin only)
+      summary: Get platform stats (admin)
       responses:
         "200":
           description: Platform stats
@@ -457,341 +942,493 @@ components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
-        status:
-          type: string
-      required:
-        - status
+        status: { type: string }
 
     User:
       type: object
       required: [id, clerkId, email, walletBalance, earningsBalance, depositAddress, referralCode, isAdmin, withdrawalBlocked, createdAt]
       properties:
-        id:
-          type: string
-        clerkId:
-          type: string
-        email:
-          type: string
-        fullName:
-          type: ["string", "null"]
-        walletBalance:
-          type: string
-          description: USDT balance as decimal string
-        earningsBalance:
-          type: string
-          description: Earnings balance as decimal string
-        depositAddress:
-          type: string
-          description: User's unique BSC deposit wallet address
-        referralCode:
-          type: string
-        isAdmin:
-          type: boolean
-        withdrawalBlocked:
-          type: boolean
-        createdAt:
-          type: string
-          format: date-time
+        id: { type: string }
+        clerkId: { type: string }
+        email: { type: string }
+        fullName: { type: ["string", "null"] }
+        walletBalance: { type: string }
+        earningsBalance: { type: string }
+        depositAddress: { type: string }
+        referralCode: { type: string }
+        isAdmin: { type: boolean }
+        withdrawalBlocked: { type: boolean }
+        createdAt: { type: string, format: date-time }
 
     AdminUser:
       type: object
       required: [id, clerkId, email, walletBalance, earningsBalance, depositAddress, referralCode, isAdmin, withdrawalBlocked, createdAt]
       properties:
-        id:
-          type: string
-        clerkId:
-          type: string
-        email:
-          type: string
-        fullName:
-          type: ["string", "null"]
-        walletBalance:
-          type: string
-        earningsBalance:
-          type: string
-        depositAddress:
-          type: string
-        referralCode:
-          type: string
-        isAdmin:
-          type: boolean
-        withdrawalBlocked:
-          type: boolean
-        createdAt:
-          type: string
-          format: date-time
-        totalDeposited:
-          type: string
-        totalWithdrawn:
-          type: string
+        id: { type: string }
+        clerkId: { type: string }
+        email: { type: string }
+        fullName: { type: ["string", "null"] }
+        walletBalance: { type: string }
+        earningsBalance: { type: string }
+        depositAddress: { type: string }
+        referralCode: { type: string }
+        isAdmin: { type: boolean }
+        withdrawalBlocked: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        totalDeposited: { type: string }
+        totalWithdrawn: { type: string }
 
     DashboardSummary:
       type: object
       required: [walletBalance, earningsBalance, depositAddress, totalDeposited, totalWithdrawn, pendingWithdrawals, recentDeposits, recentWithdrawals, recentP2P]
       properties:
-        walletBalance:
-          type: string
-        earningsBalance:
-          type: string
-        depositAddress:
-          type: string
-        totalDeposited:
-          type: string
-        totalWithdrawn:
-          type: string
-        pendingWithdrawals:
-          type: string
+        walletBalance: { type: string }
+        earningsBalance: { type: string }
+        depositAddress: { type: string }
+        totalDeposited: { type: string }
+        totalWithdrawn: { type: string }
+        pendingWithdrawals: { type: string }
         recentDeposits:
           type: array
-          items:
-            $ref: "#/components/schemas/Deposit"
+          items: { $ref: "#/components/schemas/Deposit" }
         recentWithdrawals:
           type: array
-          items:
-            $ref: "#/components/schemas/Withdrawal"
+          items: { $ref: "#/components/schemas/Withdrawal" }
         recentP2P:
           type: array
-          items:
-            $ref: "#/components/schemas/P2PTransfer"
+          items: { $ref: "#/components/schemas/P2PTransfer" }
 
     Deposit:
       type: object
       required: [id, userId, amount, fee, netAmount, status, txHash, createdAt]
       properties:
-        id:
-          type: string
-        userId:
-          type: string
-        amount:
-          type: string
-          description: Raw on-chain USDT amount
-        fee:
-          type: string
-          description: Platform fee deducted
-        netAmount:
-          type: string
-          description: Amount credited to wallet
+        id: { type: string }
+        userId: { type: string }
+        amount: { type: string }
+        fee: { type: string }
+        netAmount: { type: string }
         status:
           type: string
           enum: [pending, sweeping, credited, failed]
-        txHash:
-          type: ["string", "null"]
-          description: Blockchain transaction hash
-        sweepTxHash:
-          type: ["string", "null"]
-        createdAt:
-          type: string
-          format: date-time
-        creditedAt:
-          type: ["string", "null"]
+        txHash: { type: ["string", "null"] }
+        sweepTxHash: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        creditedAt: { type: ["string", "null"] }
 
     DepositCheckResult:
       type: object
       required: [found, message]
       properties:
-        found:
-          type: boolean
-        amount:
-          type: ["string", "null"]
-        credited:
-          type: ["string", "null"]
-        message:
-          type: string
-        deposit:
-          $ref: "#/components/schemas/Deposit"
+        found: { type: boolean }
+        amount: { type: ["string", "null"] }
+        credited: { type: ["string", "null"] }
+        message: { type: string }
+        deposit: { $ref: "#/components/schemas/Deposit" }
 
     Withdrawal:
       type: object
       required: [id, userId, amount, fee, netAmount, destinationAddress, status, createdAt]
       properties:
-        id:
-          type: string
-        userId:
-          type: string
-        amount:
-          type: string
-        fee:
-          type: string
-        netAmount:
-          type: string
-        destinationAddress:
-          type: string
+        id: { type: string }
+        userId: { type: string }
+        amount: { type: string }
+        fee: { type: string }
+        netAmount: { type: string }
+        destinationAddress: { type: string }
         status:
           type: string
           enum: [pending, approved, rejected]
-        txHash:
-          type: ["string", "null"]
-        rejectionReason:
-          type: ["string", "null"]
-        createdAt:
-          type: string
-          format: date-time
-        processedAt:
-          type: ["string", "null"]
+        txHash: { type: ["string", "null"] }
+        rejectionReason: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        processedAt: { type: ["string", "null"] }
 
     WithdrawalRequest:
       type: object
       required: [amount, destinationAddress]
       properties:
-        amount:
-          type: string
-          description: USDT amount to withdraw
-        destinationAddress:
-          type: string
-          description: BSC wallet address to send to
+        amount: { type: string }
+        destinationAddress: { type: string }
 
     P2PTransfer:
       type: object
       required: [id, senderId, receiverId, amount, createdAt]
       properties:
-        id:
-          type: string
-        senderId:
-          type: string
-        receiverId:
-          type: string
-        senderEmail:
-          type: ["string", "null"]
-        receiverEmail:
-          type: ["string", "null"]
-        amount:
-          type: string
-        note:
-          type: ["string", "null"]
-        createdAt:
-          type: string
-          format: date-time
+        id: { type: string }
+        senderId: { type: string }
+        receiverId: { type: string }
+        senderEmail: { type: ["string", "null"] }
+        receiverEmail: { type: ["string", "null"] }
+        amount: { type: string }
+        note: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
 
     P2PTransferRequest:
       type: object
       required: [amount, recipientIdentifier]
       properties:
-        amount:
-          type: string
-          description: USDT amount to send
-        recipientIdentifier:
-          type: string
-          description: Recipient referral code or user ID
-        note:
-          type: ["string", "null"]
+        amount: { type: string }
+        recipientIdentifier: { type: string }
+        note: { type: ["string", "null"] }
 
     PublicSettings:
       type: object
       required: [minDepositUsdt, depositFeeFlat, depositFeePercent, withdrawFeeFlat, withdrawFeePercent, withdrawFeeMode, withdrawalEnabled, otpWithdrawalEnabled]
       properties:
-        minDepositUsdt:
-          type: string
-        depositFeeFlat:
-          type: string
-        depositFeePercent:
-          type: string
-        withdrawFeeFlat:
-          type: string
-        withdrawFeePercent:
-          type: string
+        minDepositUsdt: { type: string }
+        depositFeeFlat: { type: string }
+        depositFeePercent: { type: string }
+        withdrawFeeFlat: { type: string }
+        withdrawFeePercent: { type: string }
         withdrawFeeMode:
           type: string
           enum: [deduct_from_amount, deduct_from_balance]
-        withdrawalEnabled:
-          type: boolean
-        otpWithdrawalEnabled:
-          type: boolean
+        withdrawalEnabled: { type: boolean }
+        otpWithdrawalEnabled: { type: boolean }
 
     PlatformSettings:
       type: object
       required: [minDepositUsdt, depositFeeFlat, depositFeePercent, withdrawFeeFlat, withdrawFeePercent, withdrawFeeMode, withdrawalMode, withdrawalEnabled, otpWithdrawalEnabled, adminMasterWallet, bscRpcUrl]
       properties:
-        minDepositUsdt:
-          type: string
-        depositFeeFlat:
-          type: string
-        depositFeePercent:
-          type: string
-        withdrawFeeFlat:
-          type: string
-        withdrawFeePercent:
-          type: string
+        minDepositUsdt: { type: string }
+        depositFeeFlat: { type: string }
+        depositFeePercent: { type: string }
+        withdrawFeeFlat: { type: string }
+        withdrawFeePercent: { type: string }
         withdrawFeeMode:
           type: string
           enum: [deduct_from_amount, deduct_from_balance]
         withdrawalMode:
           type: string
           enum: [manual, auto]
-        withdrawalEnabled:
-          type: boolean
-        otpWithdrawalEnabled:
-          type: boolean
-        adminMasterWallet:
-          type: string
-        bscRpcUrl:
-          type: string
-        gasWalletAddress:
-          type: ["string", "null"]
-          description: Gas wallet address (private key not exposed)
+        withdrawalEnabled: { type: boolean }
+        otpWithdrawalEnabled: { type: boolean }
+        adminMasterWallet: { type: string }
+        bscRpcUrl: { type: string }
+        gasWalletAddress: { type: ["string", "null"] }
 
     SettingsUpdate:
       type: object
       properties:
-        minDepositUsdt:
-          type: string
-        depositFeeFlat:
-          type: string
-        depositFeePercent:
-          type: string
-        withdrawFeeFlat:
-          type: string
-        withdrawFeePercent:
-          type: string
+        minDepositUsdt: { type: string }
+        depositFeeFlat: { type: string }
+        depositFeePercent: { type: string }
+        withdrawFeeFlat: { type: string }
+        withdrawFeePercent: { type: string }
         withdrawFeeMode:
           type: string
           enum: [deduct_from_amount, deduct_from_balance]
         withdrawalMode:
           type: string
           enum: [manual, auto]
-        withdrawalEnabled:
-          type: boolean
-        otpWithdrawalEnabled:
-          type: boolean
-        adminMasterWallet:
-          type: string
-        bscRpcUrl:
-          type: string
-        gasWalletPrivateKey:
-          type: string
-        withdrawWalletPrivateKey:
-          type: string
+        withdrawalEnabled: { type: boolean }
+        otpWithdrawalEnabled: { type: boolean }
+        adminMasterWallet: { type: string }
+        bscRpcUrl: { type: string }
+        gasWalletPrivateKey: { type: string }
+        withdrawWalletPrivateKey: { type: string }
 
     BlockToggle:
       type: object
       required: [blocked]
       properties:
-        blocked:
-          type: boolean
+        blocked: { type: boolean }
 
     AdminStats:
       type: object
       required: [totalUsers, totalDeposited, totalWithdrawn, pendingWithdrawals, totalP2P, depositCount, withdrawalCount]
       properties:
-        totalUsers:
-          type: integer
-        totalDeposited:
-          type: string
-        totalWithdrawn:
-          type: string
-        pendingWithdrawals:
-          type: string
-        totalP2P:
-          type: string
-        depositCount:
-          type: integer
-        withdrawalCount:
-          type: integer
+        totalUsers: { type: integer }
+        totalDeposited: { type: string }
+        totalWithdrawn: { type: string }
+        pendingWithdrawals: { type: string }
+        totalP2P: { type: string }
+        depositCount: { type: integer }
+        withdrawalCount: { type: integer }
         recentDeposits:
           type: array
-          items:
-            $ref: "#/components/schemas/Deposit"
+          items: { $ref: "#/components/schemas/Deposit" }
         recentWithdrawals:
           type: array
-          items:
-            $ref: "#/components/schemas/Withdrawal"
+          items: { $ref: "#/components/schemas/Withdrawal" }
+
+    # ─── Shop schemas ─────────────────────────────────────────────────────────
+
+    Category:
+      type: object
+      required: [id, name, slug, productCount]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        description: { type: ["string", "null"] }
+        imageUrl: { type: ["string", "null"] }
+        productCount: { type: integer }
+
+    CategoryInput:
+      type: object
+      required: [name, slug]
+      properties:
+        name: { type: string }
+        slug: { type: string }
+        description: { type: ["string", "null"] }
+        imageUrl: { type: ["string", "null"] }
+
+    Product:
+      type: object
+      required: [id, name, slug, description, priceUsdt, stock, categoryId, imageUrls, isActive, isFeatured, averageRating, reviewCount, createdAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        description: { type: string }
+        priceUsdt: { type: string }
+        compareAtPrice: { type: ["string", "null"] }
+        stock: { type: integer }
+        categoryId: { type: string }
+        categoryName: { type: ["string", "null"] }
+        imageUrls:
+          type: array
+          items: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+        isActive: { type: boolean }
+        isFeatured: { type: boolean }
+        averageRating: { type: string }
+        reviewCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+
+    ProductDetail:
+      type: object
+      required: [id, name, slug, description, priceUsdt, stock, categoryId, imageUrls, isActive, isFeatured, averageRating, reviewCount, createdAt, reviews]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        description: { type: string }
+        priceUsdt: { type: string }
+        compareAtPrice: { type: ["string", "null"] }
+        stock: { type: integer }
+        categoryId: { type: string }
+        categoryName: { type: ["string", "null"] }
+        imageUrls:
+          type: array
+          items: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+        isActive: { type: boolean }
+        isFeatured: { type: boolean }
+        averageRating: { type: string }
+        reviewCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+        reviews:
+          type: array
+          items: { $ref: "#/components/schemas/Review" }
+
+    ProductListResponse:
+      type: object
+      required: [products, total, limit, offset]
+      properties:
+        products:
+          type: array
+          items: { $ref: "#/components/schemas/Product" }
+        total: { type: integer }
+        limit: { type: integer }
+        offset: { type: integer }
+
+    ProductInput:
+      type: object
+      required: [name, slug, description, priceUsdt, stock, categoryId, imageUrls]
+      properties:
+        name: { type: string }
+        slug: { type: string }
+        description: { type: string }
+        priceUsdt: { type: string }
+        compareAtPrice: { type: ["string", "null"] }
+        stock: { type: integer }
+        categoryId: { type: string }
+        imageUrls:
+          type: array
+          items: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+        isActive: { type: boolean }
+        isFeatured: { type: boolean }
+
+    ProductUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        slug: { type: string }
+        description: { type: string }
+        priceUsdt: { type: string }
+        compareAtPrice: { type: ["string", "null"] }
+        stock: { type: integer }
+        categoryId: { type: string }
+        imageUrls:
+          type: array
+          items: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+        isActive: { type: boolean }
+        isFeatured: { type: boolean }
+
+    FeaturedResponse:
+      type: object
+      required: [featured, newArrivals, topRated, onSale]
+      properties:
+        featured:
+          type: array
+          items: { $ref: "#/components/schemas/Product" }
+        newArrivals:
+          type: array
+          items: { $ref: "#/components/schemas/Product" }
+        topRated:
+          type: array
+          items: { $ref: "#/components/schemas/Product" }
+        onSale:
+          type: array
+          items: { $ref: "#/components/schemas/Product" }
+
+    CartItem:
+      type: object
+      required: [id, productId, quantity, priceUsdt, product]
+      properties:
+        id: { type: string }
+        productId: { type: string }
+        quantity: { type: integer }
+        priceUsdt: { type: string }
+        product: { $ref: "#/components/schemas/Product" }
+
+    Cart:
+      type: object
+      required: [items, subtotal, itemCount]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/CartItem" }
+        subtotal: { type: string }
+        itemCount: { type: integer }
+
+    CartItemInput:
+      type: object
+      required: [productId, quantity]
+      properties:
+        productId: { type: string }
+        quantity: { type: integer, minimum: 1 }
+
+    CartItemUpdate:
+      type: object
+      required: [quantity]
+      properties:
+        quantity: { type: integer, minimum: 0 }
+
+    OrderItem:
+      type: object
+      required: [id, productId, productName, quantity, priceUsdt, subtotal]
+      properties:
+        id: { type: string }
+        productId: { type: string }
+        productName: { type: string }
+        productImageUrl: { type: ["string", "null"] }
+        quantity: { type: integer }
+        priceUsdt: { type: string }
+        subtotal: { type: string }
+
+    ShippingAddress:
+      type: object
+      required: [fullName, addressLine1, city, country]
+      properties:
+        fullName: { type: string }
+        addressLine1: { type: string }
+        addressLine2: { type: ["string", "null"] }
+        city: { type: string }
+        state: { type: ["string", "null"] }
+        postalCode: { type: ["string", "null"] }
+        country: { type: string }
+        phone: { type: ["string", "null"] }
+
+    Order:
+      type: object
+      required: [id, userId, status, totalUsdt, shippingAddress, items, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        status:
+          type: string
+          enum: [pending, confirmed, shipped, delivered, cancelled]
+        totalUsdt: { type: string }
+        shippingAddress: { $ref: "#/components/schemas/ShippingAddress" }
+        trackingNumber: { type: ["string", "null"] }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/OrderItem" }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    CheckoutInput:
+      type: object
+      required: [shippingAddress]
+      properties:
+        shippingAddress: { $ref: "#/components/schemas/ShippingAddress" }
+
+    OrderStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [pending, confirmed, shipped, delivered, cancelled]
+        trackingNumber: { type: ["string", "null"] }
+
+    Review:
+      type: object
+      required: [id, productId, userId, rating, createdAt]
+      properties:
+        id: { type: string }
+        productId: { type: string }
+        userId: { type: string }
+        userFullName: { type: ["string", "null"] }
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        title: { type: ["string", "null"] }
+        body: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+
+    ReviewInput:
+      type: object
+      required: [rating]
+      properties:
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        title: { type: ["string", "null"] }
+        body: { type: ["string", "null"] }
+
+    Wishlist:
+      type: object
+      required: [productIds]
+      properties:
+        productIds:
+          type: array
+          items: { type: string }
+
+    ShopStats:
+      type: object
+      required: [totalProducts, totalOrders, totalRevenue, pendingOrders, totalCategories, averageOrderValue]
+      properties:
+        totalProducts: { type: integer }
+        totalOrders: { type: integer }
+        totalRevenue: { type: string }
+        pendingOrders: { type: integer }
+        totalCategories: { type: integer }
+        averageOrderValue: { type: string }
+        recentOrders:
+          type: array
+          items: { $ref: "#/components/schemas/Order" }
+        topProducts:
+          type: array
+          items: { $ref: "#/components/schemas/Product" }

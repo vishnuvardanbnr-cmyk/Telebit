@@ -6,6 +6,7 @@ import withdrawalsRouter from "./withdrawals";
 import p2pRouter from "./p2p";
 import settingsRouter from "./settings";
 import adminRouter from "./admin";
+import shopRouter from "./shop";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(withdrawalsRouter);
 router.use(p2pRouter);
 router.use(settingsRouter);
 router.use(adminRouter);
+router.use(shopRouter);
 
 export default router;

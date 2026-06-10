@@ -1,0 +1,5 @@
+- [Shop seed script](shop-seed.md) — seed script needs drizzle-orm in scripts/package.json devDeps; use static drizzle imports with eq(), not dynamic patterns.
+- [Orval collision fix](orval-collision.md) — operations with BOTH path params AND query params generate duplicate `<OpId>Params`; fix by removing query params from those operations.
+- [Express 5 route param types](express5-params.md) — req.params values type as `string | string[]` in Express 5; always cast as `req.params.x as string` in route handlers.
+- [Drizzle dynamic update](drizzle-dynamic-update.md) — `.set(obj)` with dynamically-built objects won't typecheck; cast as `.set(obj as any)`.
+- [Shop price formatting](shop-price-fmt.md) — DB stores USDT prices as numeric(18,8); use `fmtUsdt()` from `@/lib/utils` for all price displays.
