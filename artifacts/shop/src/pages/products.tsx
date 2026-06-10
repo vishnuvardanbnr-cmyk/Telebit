@@ -97,7 +97,7 @@ export default function Products() {
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
             {Array(9).fill(0).map((_, i) => (
               <div key={i} className="space-y-4">
                 <Skeleton className="aspect-square rounded-none" />
@@ -122,7 +122,7 @@ export default function Products() {
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
             {productsData?.products.map((product) => (
               <Link key={product.id} href={`/products/${product.id}`}>
                 <Card className="rounded-none border-border hover:border-primary transition-colors cursor-pointer h-full bg-card hover:bg-muted/10">
@@ -145,21 +145,21 @@ export default function Products() {
                         </div>
                       )}
                     </div>
-                    <div className="p-4 flex flex-col flex-1">
-                      <div className="text-xs text-muted-foreground uppercase tracking-widest mb-1">
+                    <div className="p-2.5 sm:p-4 flex flex-col flex-1">
+                      <div className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-widest mb-0.5 sm:mb-1">
                         {product.categoryName}
                       </div>
-                      <h3 className="font-bold text-lg mb-2 line-clamp-2">{product.name}</h3>
+                      <h3 className="font-bold text-sm sm:text-lg mb-1 sm:mb-2 line-clamp-2">{product.name}</h3>
                       <div className="mt-auto">
-                        <div className="flex items-center gap-1 mb-2">
-                          <Star className="h-4 w-4 fill-primary text-primary" />
-                          <span className="text-sm font-bold">{product.averageRating}</span>
-                          <span className="text-xs text-muted-foreground">({product.reviewCount})</span>
+                        <div className="flex items-center gap-1 mb-1 sm:mb-2">
+                          <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-primary text-primary" />
+                          <span className="text-xs sm:text-sm font-bold">{product.averageRating}</span>
+                          <span className="text-[10px] sm:text-xs text-muted-foreground">({product.reviewCount})</span>
                         </div>
-                        <div className="flex items-end gap-2">
-                          <span className="text-xl font-bold text-primary">{fmtUsdt(product.priceUsdt)} USDT</span>
+                        <div className="flex flex-col sm:flex-row sm:items-end sm:gap-2 gap-0.5">
+                          <span className="text-sm sm:text-xl font-bold text-primary">{fmtUsdt(product.priceUsdt)} USDT</span>
                           {product.compareAtPrice && (
-                            <span className="text-sm text-muted-foreground line-through mb-0.5">{fmtUsdt(product.compareAtPrice)} USDT</span>
+                            <span className="text-[10px] sm:text-sm text-muted-foreground line-through">{fmtUsdt(product.compareAtPrice)} USDT</span>
                           )}
                         </div>
                       </div>

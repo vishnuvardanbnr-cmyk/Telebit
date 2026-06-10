@@ -25,12 +25,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { name: "Dashboard", href: "/dashboard", icon: Wallet },
     { name: "Deposit", href: "/deposit", icon: ArrowDownToLine },
     { name: "Withdraw", href: "/withdraw", icon: ArrowUpFromLine },
-    { name: "P2P Transfer", href: "/p2p", icon: Send },
+    { name: "P2P", href: "/p2p", icon: Send },
     { name: "History", href: "/history", icon: History },
   ];
 
   if (user?.isAdmin) {
-    navItems.push({ name: "Admin Panel", href: "/admin", icon: ShieldAlert });
+    navItems.push({ name: "Admin", href: "/admin", icon: ShieldAlert });
   }
 
   return (
@@ -95,14 +95,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
         />
       )}
 
-      {/* Mobile drawer */}
+      {/* Mobile slide-out drawer */}
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 w-72 bg-card border-r border-border flex flex-col transform transition-transform duration-200 md:hidden",
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="flex h-16 items-center justify-between border-b border-border px-5">
+        <div className="flex h-14 items-center justify-between border-b border-border px-5">
           <Link href="/" className="flex items-center gap-2 font-semibold text-primary" onClick={() => setMobileOpen(false)}>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
@@ -173,13 +173,35 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <div className="w-7" />
         </header>
 
-        {/* Page content */}
-        <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
+        {/* Page content — bottom padding on mobile to clear the footer nav */}
+        <main className="flex-1 overflow-auto p-4 pb-20 md:p-6 md:pb-6 lg:p-8">
           <div className="mx-auto max-w-5xl">
             {children}
           </div>
         </main>
       </div>
+
+      {/* Mobile bottom footer nav */}
+      <nav className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-card border-t border-border">
+        <div className="grid grid-cols-5 h-16">
+          {navItems.slice(0, 5).map((item) => {
+            const isActive = location.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
+                  isActive ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                <item.icon className={cn("h-5 w-5", isActive && "stroke-[2.5px]")} />
+                <span>{item.name}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useUser } from "@clerk/react";
-import { ShoppingCart, Heart, Package, ShieldCheck, LogOut, Menu, X } from "lucide-react";
+import { ShoppingCart, Heart, Package, ShieldCheck, LogOut, Menu, X, LayoutGrid } from "lucide-react";
 import { useGetCart, useGetMe } from "@workspace/api-client-react";
 import { useClerk } from "@clerk/react";
 import { fmtUsdt } from "@/lib/utils";
@@ -14,6 +14,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { data: dbUser } = useGetMe({ query: { enabled: !!user, queryKey: ["/api/users/me", !!user] } });
   const { data: cart } = useGetCart({ query: { enabled: !!user, queryKey: ["/api/shop/cart", !!user] } });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const cartCount = cart?.itemCount ?? 0;
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
@@ -45,29 +47,30 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </div>
 
                 {dbUser?.isAdmin && (
-                  <Link href="/admin" className="text-muted-foreground hover:text-primary transition-colors p-1.5 rounded-md hover:bg-muted/50">
+                  <Link href="/admin" className="hidden md:flex text-muted-foreground hover:text-primary transition-colors p-1.5 rounded-md hover:bg-muted/50">
                     <ShieldCheck className="h-4 w-4" />
                   </Link>
                 )}
 
-                <Link href="/wishlist" className="text-muted-foreground hover:text-primary transition-colors p-1.5 rounded-md hover:bg-muted/50">
-                  <Heart className="h-4 w-4" />
-                </Link>
-
-                <Link href="/orders" className="hidden sm:flex text-muted-foreground hover:text-primary transition-colors p-1.5 rounded-md hover:bg-muted/50">
-                  <Package className="h-4 w-4" />
-                </Link>
-
-                <Link href="/cart" className="text-muted-foreground hover:text-primary transition-colors p-1.5 rounded-md hover:bg-muted/50 relative">
-                  <ShoppingCart className="h-4 w-4" />
-                  {!!cart?.itemCount && (
+                <Link href="/cart" className="md:hidden text-muted-foreground hover:text-primary transition-colors p-1.5 rounded-md hover:bg-muted/50 relative">
+                  <ShoppingCart className="h-5 w-5" />
+                  {!!cartCount && (
                     <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center leading-none">
-                      {cart.itemCount > 9 ? "9+" : cart.itemCount}
+                      {cartCount > 9 ? "9+" : cartCount}
                     </span>
                   )}
                 </Link>
 
-                {/* Mobile hamburger */}
+                <Link href="/cart" className="hidden md:flex text-muted-foreground hover:text-primary transition-colors p-1.5 rounded-md hover:bg-muted/50 relative">
+                  <ShoppingCart className="h-4 w-4" />
+                  {!!cartCount && (
+                    <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center leading-none">
+                      {cartCount > 9 ? "9+" : cartCount}
+                    </span>
+                  )}
+                </Link>
+
+                {/* Mobile hamburger — only for overflow items */}
                 <button
                   className="md:hidden p-1.5 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted/50"
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -86,35 +89,27 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        {/* Mobile dropdown menu */}
+        {/* Mobile dropdown — balance + overflow items */}
         {mobileMenuOpen && user && (
           <div className="md:hidden border-t border-border bg-white">
             <div className="max-w-7xl mx-auto px-4 py-3 space-y-1">
-              {/* Balance pill */}
               <div className="flex items-center justify-between px-3 py-2 bg-muted/40 rounded-md text-sm mb-2">
                 <span className="text-muted-foreground">Wallet Balance</span>
                 <span className="font-semibold">{fmtUsdt(dbUser?.walletBalance)} USDT</span>
               </div>
-              {[
-                { href: "/products", label: "Catalog" },
-                { href: "/cart", label: "Cart", badge: cart?.itemCount },
-                { href: "/wishlist", label: "Wishlist" },
-                { href: "/orders", label: "My Orders" },
-                ...(dbUser?.isAdmin ? [{ href: "/admin", label: "Admin Panel" }] : []),
-              ].map(({ href, label, badge }) => (
+              {dbUser?.isAdmin && (
                 <Link
-                  key={href}
-                  href={href}
+                  href="/admin"
                   onClick={() => setMobileMenuOpen(false)}
                   className={cn(
-                    "flex items-center justify-between px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
-                    location.startsWith(href) ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                    "flex items-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
+                    location.startsWith("/admin") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                   )}
                 >
-                  {label}
-                  {badge ? <span className="bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full">{badge}</span> : null}
+                  <ShieldCheck className="h-4 w-4" />
+                  Admin Panel
                 </Link>
-              ))}
+              )}
               <button
                 onClick={() => { signOut(); setMobileMenuOpen(false); }}
                 className="flex w-full items-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
@@ -127,16 +122,86 @@ export function Layout({ children }: { children: React.ReactNode }) {
         )}
       </header>
 
-      <main className="flex-1">
+      {/* Page content — bottom padding on mobile for footer nav */}
+      <main className="flex-1 pb-16 md:pb-0">
         {children}
       </main>
 
-      <footer className="border-t border-border bg-white py-5">
+      {/* Desktop footer */}
+      <footer className="hidden md:block border-t border-border bg-white py-5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-sm text-muted-foreground">
           <p className="font-medium">CryptoVault Shop</p>
           <p>Spend your USDT. Zero off-ramping.</p>
         </div>
       </footer>
+
+      {/* Mobile bottom footer nav */}
+      <nav className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-card border-t border-border">
+        <div className={cn("grid h-16", user ? "grid-cols-4" : "grid-cols-1")}>
+          {user ? (
+            <>
+              <Link
+                href="/products"
+                className={cn(
+                  "flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
+                  location.startsWith("/products") ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                <LayoutGrid className={cn("h-5 w-5", location.startsWith("/products") && "stroke-[2.5px]")} />
+                <span>Catalog</span>
+              </Link>
+
+              <Link
+                href="/cart"
+                className={cn(
+                  "flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors relative",
+                  location.startsWith("/cart") ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                <span className="relative">
+                  <ShoppingCart className={cn("h-5 w-5", location.startsWith("/cart") && "stroke-[2.5px]")} />
+                  {!!cartCount && (
+                    <span className="absolute -top-1.5 -right-1.5 bg-primary text-primary-foreground text-[8px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center leading-none">
+                      {cartCount > 9 ? "9+" : cartCount}
+                    </span>
+                  )}
+                </span>
+                <span>Cart</span>
+              </Link>
+
+              <Link
+                href="/wishlist"
+                className={cn(
+                  "flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
+                  location.startsWith("/wishlist") ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                <Heart className={cn("h-5 w-5", location.startsWith("/wishlist") && "stroke-[2.5px]")} />
+                <span>Wishlist</span>
+              </Link>
+
+              <Link
+                href="/orders"
+                className={cn(
+                  "flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
+                  location.startsWith("/orders") ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                <Package className={cn("h-5 w-5", location.startsWith("/orders") && "stroke-[2.5px]")} />
+                <span>Orders</span>
+              </Link>
+            </>
+          ) : (
+            <Link
+              href="/sign-in"
+              className="flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium text-muted-foreground"
+            >
+              <ShoppingCart className="h-5 w-5" />
+              <span>Sign In to Shop</span>
+            </Link>
+          )}
+        </div>
+      </nav>
     </div>
   );
 }
