@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { Link } from "wouter";
 import {
   AlertCircle, Zap, ArrowLeft,
-  ChevronRight, Shield, Lock, Coins,
+  ChevronRight, Shield, Lock, Coins, Clock,
 } from "lucide-react";
 
 const QUICK = [10, 50, 100, 500];

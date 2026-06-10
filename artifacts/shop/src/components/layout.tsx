@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { ShoppingCart, Trophy, ArrowLeftRight, ShieldCheck, LogOut, Menu, X, LayoutGrid, Zap, Wallet, Home } from "lucide-react";
+import { ShoppingCart, Trophy, ArrowLeftRight, ShieldCheck, Menu, X, Zap, Wallet, Home } from "lucide-react";
 import { useGetCart } from "@workspace/api-client-react";
 import { useAuth } from "@/lib/auth-context";
 import { fmtUsdt } from "@/lib/utils";
@@ -41,24 +41,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2 sm:gap-3 ml-auto">
             {isSignedIn ? (
               <>
-                {/* Account switcher (Telegram-linked users) */}
-                {user && <AccountSwitcher user={user} />}
-
-                {/* Wallet balance — desktop only (hide when switcher shown) */}
-                {!user?.telegramChatId && (
-                  <div className="hidden md:flex items-center gap-1.5 text-xs bg-muted/60 rounded-full px-3 py-1.5">
-                    <span className="text-muted-foreground">Balance:</span>
-                    <span className="font-semibold text-foreground">{fmtUsdt(user?.walletBalance)} USDT</span>
-                  </div>
-                )}
-
-                {user?.isAdmin && (
-                  <Link href="/admin" className="hidden md:flex text-muted-foreground hover:text-primary transition-colors p-1.5 rounded-md hover:bg-muted/50">
-                    <ShieldCheck className="h-4 w-4" />
-                  </Link>
-                )}
-
-                <Link href="/cart" className="md:hidden text-muted-foreground hover:text-primary transition-colors p-1.5 rounded-md hover:bg-muted/50 relative">
+                {/* Cart icon */}
+                <Link href="/cart" className="text-muted-foreground hover:text-primary transition-colors p-1.5 rounded-md hover:bg-muted/50 relative">
                   <ShoppingCart className="h-5 w-5" />
                   {!!cartCount && (
                     <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center leading-none">
@@ -67,29 +51,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   )}
                 </Link>
 
-                <Link href="/cart" className="hidden md:flex text-muted-foreground hover:text-primary transition-colors p-1.5 rounded-md hover:bg-muted/50 relative">
-                  <ShoppingCart className="h-4 w-4" />
-                  {!!cartCount && (
-                    <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center leading-none">
-                      {cartCount > 9 ? "9+" : cartCount}
-                    </span>
-                  )}
-                </Link>
+                {/* Profile + switcher — all signed-in users */}
+                {user && <AccountSwitcher user={user} onSignOut={signOut} />}
 
-                {/* Mobile hamburger */}
+                {/* Mobile hamburger (nav links) */}
                 <button
                   className="md:hidden p-1.5 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted/50"
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 >
                   {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-                </button>
-
-                {/* Desktop logout */}
-                <button
-                  onClick={() => signOut()}
-                  className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-md hover:bg-muted/50"
-                >
-                  <LogOut className="h-4 w-4" />
                 </button>
               </>
             ) : (
@@ -103,14 +73,30 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        {/* Mobile dropdown */}
+        {/* Mobile dropdown — nav links only */}
         {mobileMenuOpen && isSignedIn && (
           <div className="md:hidden border-t border-border bg-white">
-            <div className="max-w-7xl mx-auto px-4 py-3 space-y-1">
-              <div className="flex items-center justify-between px-3 py-2 bg-muted/40 rounded-md text-sm mb-2">
-                <span className="text-muted-foreground">Wallet Balance</span>
-                <span className="font-semibold">{fmtUsdt(user?.walletBalance)} USDT</span>
-              </div>
+            <div className="max-w-7xl mx-auto px-4 py-2 space-y-0.5">
+              <Link
+                href="/"
+                onClick={() => setMobileMenuOpen(false)}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
+                  location === "/" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                )}
+              >
+                Home
+              </Link>
+              <Link
+                href="/products"
+                onClick={() => setMobileMenuOpen(false)}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
+                  location.startsWith("/products") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                )}
+              >
+                Catalog
+              </Link>
               {user?.isAdmin && (
                 <Link
                   href="/admin"
@@ -124,13 +110,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   Admin Panel
                 </Link>
               )}
-              <button
-                onClick={() => { signOut(); setMobileMenuOpen(false); }}
-                className="flex w-full items-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
-              >
-                <LogOut className="h-4 w-4" />
-                Sign Out
-              </button>
             </div>
           </div>
         )}

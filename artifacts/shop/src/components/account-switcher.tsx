@@ -12,12 +12,14 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Check, ChevronDown, Plus, Users } from "lucide-react";
+import { Check, ChevronDown, Plus, LogOut, ShieldCheck } from "lucide-react";
+import { fmtUsdt } from "@/lib/utils";
 import { toast } from "sonner";
+import { Link } from "wouter";
 
-function Img({ src, name, size = 28 }: { src?: string | null; name?: string | null; size?: number }) {
+function Avatar({ src, name, size = 28 }: { src?: string | null; name?: string | null; size?: number }) {
   const [err, setErr] = useState(false);
-  const initials = (name ?? "U").slice(0, 2).toUpperCase();
+  const initials = (name ?? "U").replace(/\s+/g, " ").trim().split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase() || "U";
   const s = { width: size, height: size, minWidth: size };
   if (src && !err) {
     return (
@@ -27,7 +29,7 @@ function Img({ src, name, size = 28 }: { src?: string | null; name?: string | nu
     );
   }
   return (
-    <div style={s} className="rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 text-[10px] font-bold text-primary">
+    <div style={{ ...s, fontSize: size * 0.35 }} className="rounded-full bg-gradient-to-br from-primary/80 to-primary flex items-center justify-center shrink-0 text-white font-bold">
       {initials}
     </div>
   );
@@ -83,7 +85,7 @@ function CreateDialog({ open, onClose }: { open: boolean; onClose: () => void })
   );
 }
 
-export function AccountSwitcher({ user }: { user: User }) {
+export function AccountSwitcher({ user, onSignOut }: { user: User; onSignOut: () => void }) {
   const qc = useQueryClient();
   const { data: accounts } = useListSubAccounts({ query: { enabled: !!user.telegramChatId, queryKey: ["listSubAccounts", user.id] } });
   const switchSub = useSwitchSubAccount();
@@ -115,35 +117,44 @@ export function AccountSwitcher({ user }: { user: User }) {
     );
   };
 
-  if (!user.telegramChatId) return null;
+  const displayName = user.fullName || user.telegramUsername || user.email?.split("@")[0] || "Account";
 
   return (
     <div className="relative" ref={ref}>
+      {/* Trigger pill */}
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-muted/60 hover:bg-muted text-xs font-medium transition-colors"
+        className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-muted/60 hover:bg-muted transition-colors"
       >
-        <Img src={user.telegramPhotoUrl} name={user.fullName} size={20} />
-        <span className="hidden sm:inline max-w-[80px] truncate">{user.fullName || user.telegramUsername || "Account"}</span>
+        <Avatar src={user.telegramPhotoUrl} name={displayName} size={26} />
+        <span className="hidden sm:block text-xs font-semibold max-w-[90px] truncate text-foreground">{displayName}</span>
         <ChevronDown className={`h-3 w-3 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-border rounded-2xl shadow-xl z-50 overflow-hidden">
-          {/* Header */}
-          <div className="px-4 py-3 border-b border-border bg-primary/5">
-            <div className="flex items-center gap-2.5">
-              <Img src={user.telegramPhotoUrl} name={user.fullName} size={36} />
-              <div className="min-w-0">
-                <p className="font-semibold text-sm truncate">{user.fullName}</p>
-                {user.telegramUsername && <p className="text-[11px] text-primary/70">@{user.telegramUsername}</p>}
+        <div className="absolute right-0 top-full mt-2 w-68 bg-white border border-border rounded-2xl shadow-xl z-50 overflow-hidden" style={{ width: 270 }}>
+          {/* Profile header */}
+          <div className="px-4 py-3.5 bg-gradient-to-br from-primary/5 to-primary/10 border-b border-border">
+            <div className="flex items-center gap-3">
+              <Avatar src={user.telegramPhotoUrl} name={displayName} size={40} />
+              <div className="min-w-0 flex-1">
+                <p className="font-bold text-sm truncate">{displayName}</p>
+                {user.telegramUsername
+                  ? <p className="text-[11px] text-primary/70">@{user.telegramUsername}</p>
+                  : <p className="text-[11px] text-muted-foreground truncate">{user.email}</p>
+                }
               </div>
+            </div>
+            {/* Balance chip */}
+            <div className="mt-2.5 flex items-center justify-between bg-white/70 rounded-xl px-3 py-2">
+              <span className="text-[11px] text-muted-foreground font-medium">Wallet Balance</span>
+              <span className="text-xs font-extrabold text-foreground">{fmtUsdt(user.walletBalance)} USDT</span>
             </div>
           </div>
 
-          {/* Accounts list */}
+          {/* Sub-account switcher (Telegram users with multiple accounts) */}
           {accounts && accounts.length > 1 && (
-            <div className="py-1.5">
+            <div className="py-1.5 border-b border-border">
               <p className="px-4 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Switch Account</p>
               {accounts.map(acc => (
                 <button
@@ -156,7 +167,7 @@ export function AccountSwitcher({ user }: { user: User }) {
                       : "hover:bg-muted/50 text-foreground"
                   }`}
                 >
-                  <Img src={acc.telegramPhotoUrl} name={acc.fullName} size={28} />
+                  <Avatar src={acc.telegramPhotoUrl} name={acc.fullName} size={28} />
                   <span className="flex-1 text-left font-medium truncate">{acc.fullName}</span>
                   {acc.isCurrentAccount && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
                 </button>
@@ -164,16 +175,37 @@ export function AccountSwitcher({ user }: { user: User }) {
             </div>
           )}
 
-          {/* Create new */}
-          <div className="border-t border-border py-1.5">
+          {/* Add sub-account (Telegram users only) */}
+          {user.telegramChatId && (
+            <div className="py-1.5 border-b border-border">
+              <button
+                onClick={() => { setOpen(false); setCreateOpen(true); }}
+                className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
+              >
+                <div className="w-7 h-7 rounded-full border border-dashed border-border flex items-center justify-center">
+                  <Plus className="h-3.5 w-3.5" />
+                </div>
+                Add Sub-Account
+              </button>
+            </div>
+          )}
+
+          {/* Bottom actions */}
+          <div className="py-1.5">
+            {user.isAdmin && (
+              <Link href="/admin" onClick={() => setOpen(false)}>
+                <div className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors cursor-pointer">
+                  <ShieldCheck className="h-4 w-4" />
+                  Admin Panel
+                </div>
+              </Link>
+            )}
             <button
-              onClick={() => { setOpen(false); setCreateOpen(true); }}
-              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
+              onClick={() => { setOpen(false); onSignOut(); }}
+              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
             >
-              <div className="w-7 h-7 rounded-full border border-dashed border-border flex items-center justify-center">
-                <Plus className="h-3.5 w-3.5" />
-              </div>
-              Add Sub-Account
+              <LogOut className="h-4 w-4" />
+              Sign Out
             </button>
           </div>
         </div>
