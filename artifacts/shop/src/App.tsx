@@ -8,7 +8,6 @@ import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 
-import Home from "./pages/home";
 import Products from "./pages/products";
 import ProductDetail from "./pages/product-detail";
 import Cart from "./pages/cart";
@@ -154,9 +153,7 @@ function AppRoutes() {
       <Route path="/sign-in/*?" component={SignInPage} />
       <Route path="/sign-up/*?" component={SignUpPage} />
       <Route path="/">
-        <Layout>
-          <Home />
-        </Layout>
+        <Redirect to="/products" />
       </Route>
       <Route path="/products">
         <Layout>
