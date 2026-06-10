@@ -127,7 +127,6 @@ router.post("/auth/telegram", async (req, res): Promise<void> => {
 
 router.post("/auth/demo", async (req, res): Promise<void> => {
   const demoExternalId = "demo_user_telebit";
-  const demoEmail = "demo@telebit.internal";
 
   let clerkUserId: string;
   try {
@@ -140,7 +139,7 @@ router.post("/auth/demo", async (req, res): Promise<void> => {
     } else {
       const created = await clerkClient.users.createUser({
         externalId: demoExternalId,
-        emailAddress: [demoEmail],
+        emailAddress: ["demo@telebit.app"],
         firstName: "Demo",
         lastName: "User",
         username: "demo_telebit",
@@ -165,7 +164,7 @@ router.post("/auth/demo", async (req, res): Promise<void> => {
     const referralCode = generateReferralCode();
     await db.insert(usersTable).values({
       clerkId: clerkUserId,
-      email: demoEmail,
+      email: `demo@telebit.app`,
       depositAddress: address,
       depositPrivateKeyEncrypted: privateKeyEncrypted,
       referralCode,
