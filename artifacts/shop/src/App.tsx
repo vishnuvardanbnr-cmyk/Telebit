@@ -19,6 +19,7 @@ import Lottery from "./pages/lottery";
 import LotteryDetail from "./pages/lottery-detail";
 import P2P from "./pages/p2p";
 import ShopSignInPage from "./pages/sign-in";
+import Home from "./pages/home";
 import { Layout } from "./components/layout";
 import { AuthProvider, useAuth } from "./lib/auth-context";
 
@@ -58,7 +59,9 @@ function AppRoutes() {
       <Route path="/sign-in/*?" component={ShopSignInPage} />
       <Route path="/sign-up/*?" component={ShopSignInPage} />
       <Route path="/">
-        <Redirect to="/products" />
+        <Layout>
+          <ProtectedRoute component={Home} />
+        </Layout>
       </Route>
       <Route path="/products">
         <Layout>

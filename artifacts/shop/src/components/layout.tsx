@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { ShoppingCart, Trophy, ArrowLeftRight, ShieldCheck, LogOut, Menu, X, LayoutGrid, Zap, Wallet } from "lucide-react";
+import { ShoppingCart, Trophy, ArrowLeftRight, ShieldCheck, LogOut, Menu, X, LayoutGrid, Zap, Wallet, Home } from "lucide-react";
 import { useGetCart } from "@workspace/api-client-react";
 import { useAuth } from "@/lib/auth-context";
 import { fmtUsdt } from "@/lib/utils";
@@ -28,9 +28,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-5 text-sm mr-auto">
+            <Link href="/" className={cn("transition-colors font-medium", location === "/" ? "text-primary" : "text-muted-foreground hover:text-foreground")}>
+              Home
+            </Link>
             <Link href="/products" className={cn("transition-colors font-medium", location.startsWith("/products") ? "text-primary" : "text-muted-foreground hover:text-foreground")}>
               Catalog
             </Link>
+            <a href="/exchange/dashboard" className="transition-colors font-medium text-muted-foreground hover:text-foreground flex items-center gap-1">
+              Exchange ↗
+            </a>
           </nav>
 
           {/* Right actions */}
@@ -146,13 +152,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
           {isSignedIn ? (
             <>
               <Link
-                href="/products"
+                href="/"
                 className={cn(
                   "flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
-                  location.startsWith("/products") ? "text-primary" : "text-muted-foreground"
+                  location === "/" ? "text-primary" : "text-muted-foreground"
                 )}
               >
-                <LayoutGrid className={cn("h-5 w-5", location.startsWith("/products") && "stroke-[2.5px]")} />
+                <Home className={cn("h-5 w-5", location === "/" && "stroke-[2.5px]")} />
                 <span>Home</span>
               </Link>
 
