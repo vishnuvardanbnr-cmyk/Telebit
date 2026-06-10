@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { useLocation, Redirect } from "wouter";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
 import { ShoppingBag, Send, FlaskConical, Phone, ArrowLeft } from "lucide-react";
-
-const BASE = import.meta.env.BASE_URL;
 
 type Step = "phone" | "code";
 
 export default function ShopSignInPage() {
   const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
   const { isSignedIn, isLoading } = useAuth();
 
   const [step, setStep] = useState<Step>("phone");
@@ -28,7 +28,7 @@ export default function ShopSignInPage() {
     setError(null);
     setHint(null);
     try {
-      const res = await fetch(`${BASE}api/auth/otp/send`, {
+      const res = await fetch(`/api/auth/otp/send`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -54,7 +54,7 @@ export default function ShopSignInPage() {
     setVerifying(true);
     setError(null);
     try {
-      const res = await fetch(`${BASE}api/auth/otp/verify`, {
+      const res = await fetch(`/api/auth/otp/verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -62,6 +62,8 @@ export default function ShopSignInPage() {
       });
       const body = await res.json().catch(() => ({})) as { error?: string };
       if (!res.ok) throw new Error(body.error || "Verification failed");
+      await queryClient.invalidateQueries({ queryKey: ["getMe"] });
+      await queryClient.refetchQueries({ queryKey: ["getMe"] });
       setLocation("/products");
     } catch (e: any) {
       setError(e.message);
@@ -73,12 +75,14 @@ export default function ShopSignInPage() {
     setDemoLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${BASE}api/auth/demo`, {
+      const res = await fetch(`/api/auth/demo`, {
         method: "POST",
         credentials: "include",
       });
       const body = await res.json().catch(() => ({})) as { error?: string };
       if (!res.ok) throw new Error(body.error || "Demo login failed");
+      await queryClient.invalidateQueries({ queryKey: ["getMe"] });
+      await queryClient.refetchQueries({ queryKey: ["getMe"] });
       setLocation("/products");
     } catch (e: any) {
       setError(e.message);

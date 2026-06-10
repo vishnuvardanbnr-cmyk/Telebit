@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation, Redirect } from "wouter";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
 import { ShieldCheck, Send, FlaskConical, Phone, ArrowLeft } from "lucide-react";
 
@@ -7,6 +8,7 @@ type Step = "phone" | "code";
 
 export default function SignInPage() {
   const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
   const { isSignedIn, isLoading } = useAuth();
 
   const [step, setStep] = useState<Step>("phone");
@@ -60,6 +62,8 @@ export default function SignInPage() {
       });
       const body = await res.json().catch(() => ({})) as { error?: string };
       if (!res.ok) throw new Error(body.error || "Verification failed");
+      await queryClient.invalidateQueries({ queryKey: ["getMe"] });
+      await queryClient.refetchQueries({ queryKey: ["getMe"] });
       setLocation("/dashboard");
     } catch (e: any) {
       setError(e.message);
@@ -77,6 +81,8 @@ export default function SignInPage() {
       });
       const body = await res.json().catch(() => ({})) as { error?: string };
       if (!res.ok) throw new Error(body.error || "Demo login failed");
+      await queryClient.invalidateQueries({ queryKey: ["getMe"] });
+      await queryClient.refetchQueries({ queryKey: ["getMe"] });
       setLocation("/dashboard");
     } catch (e: any) {
       setError(e.message);
