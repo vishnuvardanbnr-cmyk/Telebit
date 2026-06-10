@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, SlidersHorizontal, Star, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, SlidersHorizontal, Star, X, ChevronLeft, ChevronRight, ImageOff } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const PAGE_SIZE = 12;
@@ -282,56 +282,58 @@ export default function Products() {
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
               {productsData?.products.map((product) => (
                 <Link key={product.id} href={`/products/${product.id}`}>
-                  <Card className="rounded-none border-border hover:border-primary transition-colors cursor-pointer h-full bg-card hover:bg-muted/10">
-                    <CardContent className="p-0 flex flex-col h-full">
-                      <div className="aspect-square bg-muted relative overflow-hidden">
-                        {product.imageUrls?.[0] ? (
-                          <img
-                            src={product.imageUrls[0]}
-                            alt={product.name}
-                            className="object-cover w-full h-full transition-transform hover:scale-105 duration-500"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
-                            No Image
-                          </div>
-                        )}
-                        {product.compareAtPrice && (
-                          <div className="absolute top-2 right-2 bg-destructive text-destructive-foreground px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
-                            Sale
-                          </div>
-                        )}
+                  <div className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer h-full flex flex-col">
+                    {/* Image */}
+                    <div className="aspect-square bg-muted relative overflow-hidden">
+                      <img
+                        src={product.imageUrls?.[0] ?? ""}
+                        alt={product.name}
+                        className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; (e.currentTarget.nextElementSibling as HTMLElement).style.display = "flex"; }}
+                      />
+                      <div
+                        className="absolute inset-0 hidden items-center justify-center bg-muted"
+                        style={{ display: product.imageUrls?.[0] ? "none" : "flex" }}
+                      >
+                        <ImageOff className="h-8 w-8 text-muted-foreground/30" />
                       </div>
-                      <div className="p-2.5 sm:p-4 flex flex-col flex-1">
-                        <div className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-widest mb-0.5">
-                          {product.categoryName}
+                      {product.compareAtPrice && (
+                        <span className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
+                          Sale
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Info */}
+                    <div className="p-2.5 sm:p-3.5 flex flex-col flex-1 gap-1">
+                      <p className="text-[9px] sm:text-[10px] font-semibold text-muted-foreground uppercase tracking-widest leading-none">
+                        {product.categoryName}
+                      </p>
+                      <h3 className="text-xs sm:text-sm font-semibold text-foreground line-clamp-2 leading-snug">
+                        {product.name}
+                      </h3>
+                      <div className="mt-auto pt-1.5 flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1">
+                          <Star className="h-3 w-3 fill-amber-400 text-amber-400 shrink-0" />
+                          <span className="text-[11px] font-semibold text-foreground">{product.averageRating}</span>
+                          <span className="text-[10px] text-muted-foreground">({product.reviewCount})</span>
                         </div>
-                        <h3 className="font-bold text-sm sm:text-base mb-1 sm:mb-2 line-clamp-2 leading-snug">
-                          {product.name}
-                        </h3>
-                        <div className="mt-auto">
-                          <div className="flex items-center gap-1 mb-1">
-                            <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5 fill-primary text-primary" />
-                            <span className="text-xs font-bold">{product.averageRating}</span>
-                            <span className="text-[10px] text-muted-foreground">({product.reviewCount})</span>
-                          </div>
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-sm sm:text-lg font-bold text-primary leading-none">
-                              {fmtUsdt(product.priceUsdt)} USDT
+                        <div className="flex items-baseline gap-1.5 flex-wrap">
+                          <span className="text-sm sm:text-base font-bold text-primary leading-none">
+                            {fmtUsdt(product.priceUsdt)} USDT
+                          </span>
+                          {product.compareAtPrice && (
+                            <span className="text-[10px] text-muted-foreground line-through leading-none">
+                              {fmtUsdt(product.compareAtPrice)}
                             </span>
-                            {product.compareAtPrice && (
-                              <span className="text-[10px] sm:text-xs text-muted-foreground line-through">
-                                {fmtUsdt(product.compareAtPrice)} USDT
-                              </span>
-                            )}
-                          </div>
+                          )}
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 </Link>
               ))}
             </div>
