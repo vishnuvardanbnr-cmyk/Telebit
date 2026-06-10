@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useUser } from "@clerk/react";
-import { useGetMe } from "@workspace/api-client-react";
+import { useAuth } from "@/lib/auth-context";
 import { Link } from "wouter";
 import { ArrowLeftRight, Plus, X, ChevronLeft, ChevronRight, MessageSquare, CheckCircle2, AlertTriangle, Clock, Ban, RotateCcw, Send, ChevronDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -633,8 +632,7 @@ function MyOrdersModal({ myUserId, onClose, onOpenOrder }: { myUserId: string; o
 
 // ─── Main P2P Page ────────────────────────────────────────────────────────────
 export default function P2PPage() {
-  const { user } = useUser();
-  const { data: dbUser } = useGetMe({ query: { enabled: !!user, queryKey: ["/api/users/me", !!user] } });
+  const { user: dbUser } = useAuth();
   const walletBalance = parseFloat(String(dbUser?.walletBalance ?? "0"));
 
   const [side, setSide] = useState<"buy" | "sell">("sell");

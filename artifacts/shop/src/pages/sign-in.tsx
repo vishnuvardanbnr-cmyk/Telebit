@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Redirect } from "wouter";
 import { useGetTelegramConfig } from "@workspace/api-client-react";
-import { useSignIn } from "@clerk/react";
+import { useAuth } from "@/lib/auth-context";
 import { ShoppingBag, Send, FlaskConical } from "lucide-react";
+
+const BASE = import.meta.env.BASE_URL;
 
 declare global {
   interface Window {
@@ -22,16 +24,15 @@ interface TelegramUser {
 
 export default function ShopSignInPage() {
   const [, setLocation] = useLocation();
-  const { data: config, isLoading } = useGetTelegramConfig();
-  const { signIn, setActive } = useSignIn();
+  const { isSignedIn, isLoading } = useAuth();
+  const { data: config, isLoading: configLoading } = useGetTelegramConfig();
   const widgetRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
-  const ready = !!signIn;
 
   useEffect(() => {
-    if (!config?.configured || !config.botUsername || !widgetRef.current || !ready) return;
+    if (!config?.configured || !config.botUsername || !widgetRef.current) return;
 
     widgetRef.current.innerHTML = "";
 
@@ -39,19 +40,16 @@ export default function ShopSignInPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch("/api/auth/telegram", {
+        const res = await fetch(`${BASE}api/auth/telegram`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify(tgUser),
         });
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
           throw new Error(body.error || "Authentication failed");
         }
-        const { token } = await res.json();
-        const result = await signIn!.create({ strategy: "ticket", ticket: token });
-        if (result.status !== "complete") throw new Error("Sign-in incomplete");
-        await setActive!({ session: result.createdSessionId });
         setLocation("/products");
       } catch (e: any) {
         setError(e.message || "Authentication failed. Please try again.");
@@ -69,23 +67,20 @@ export default function ShopSignInPage() {
     widgetRef.current.appendChild(script);
 
     return () => { delete window.onTelegramAuthShop; };
-  }, [config, ready, signIn, setLocation]);
+  }, [config, setLocation]);
 
   const handleDemoLogin = async () => {
-    if (!signIn) return;
     setDemoLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/auth/demo", { method: "POST" });
+      const res = await fetch(`${BASE}api/auth/demo`, {
+        method: "POST",
+        credentials: "include",
+      });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || "Demo login failed");
       }
-      const { token } = await res.json();
-      const result = await signIn.create({ strategy: "ticket", ticket: token });
-      console.log("[demo] signIn.create result:", result.status, result.createdSessionId, JSON.stringify(result));
-      if (result.status !== "complete") throw new Error(`Sign-in status: ${result.status}`);
-      await setActive!({ session: result.createdSessionId });
       setLocation("/products");
     } catch (e: any) {
       setError(e.message || "Demo login failed. Please try again.");
@@ -93,6 +88,8 @@ export default function ShopSignInPage() {
       setDemoLoading(false);
     }
   };
+
+  if (!isLoading && isSignedIn) return <Redirect to="/products" />;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -119,7 +116,7 @@ export default function ShopSignInPage() {
               </div>
 
               <div className="flex flex-col items-center gap-4">
-                {isLoading || !ready ? (
+                {configLoading ? (
                   <div className="flex items-center gap-2 text-muted-foreground text-sm">
                     <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                     Loading…
@@ -160,7 +157,7 @@ export default function ShopSignInPage() {
               {/* Demo login */}
               <button
                 onClick={handleDemoLogin}
-                disabled={demoLoading || !ready}
+                disabled={demoLoading}
                 className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-lg border-2 border-dashed border-primary/40 bg-primary/5 hover:bg-primary/10 hover:border-primary/60 transition-all text-primary font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {demoLoading ? (

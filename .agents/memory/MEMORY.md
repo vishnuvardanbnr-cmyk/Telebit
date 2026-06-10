@@ -3,3 +3,4 @@
 - [Express 5 route param types](express5-params.md) — req.params values type as `string | string[]` in Express 5; always cast as `req.params.x as string` in route handlers.
 - [Drizzle dynamic update](drizzle-dynamic-update.md) — `.set(obj)` with dynamically-built objects won't typecheck; cast as `.set(obj as any)`.
 - [Shop price formatting](shop-price-fmt.md) — DB stores USDT prices as numeric(18,8); use `fmtUsdt()` from `@/lib/utils` for all price displays.
+- [Custom JWT auth (no Clerk)](custom-jwt-auth.md) — auth replaced with HMAC-SHA256 cookie tokens; SESSION_SECRET serves dual purpose (wallet encryption + JWT signing).

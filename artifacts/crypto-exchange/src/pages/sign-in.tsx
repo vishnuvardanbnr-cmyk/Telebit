@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Redirect } from "wouter";
 import { useGetTelegramConfig } from "@workspace/api-client-react";
-import { useSignIn } from "@clerk/react";
+import { useAuth } from "@/lib/auth-context";
 import { ShieldCheck, Send } from "lucide-react";
+
+const BASE = import.meta.env.BASE_URL;
 
 declare global {
   interface Window {
@@ -22,15 +24,14 @@ interface TelegramUser {
 
 export default function SignInPage() {
   const [, setLocation] = useLocation();
-  const { data: config, isLoading } = useGetTelegramConfig();
-  const { signIn, setActive } = useSignIn();
+  const { isSignedIn, isLoading } = useAuth();
+  const { data: config, isLoading: configLoading } = useGetTelegramConfig();
   const widgetRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const ready = !!signIn;
 
   useEffect(() => {
-    if (!config?.configured || !config.botUsername || !widgetRef.current || !ready) return;
+    if (!config?.configured || !config.botUsername || !widgetRef.current) return;
 
     widgetRef.current.innerHTML = "";
 
@@ -38,20 +39,16 @@ export default function SignInPage() {
       setLoading(true);
       setError(null);
       try {
-        // Step 1: verify with backend and get a Clerk sign-in token
-        const res = await fetch("/api/auth/telegram", {
+        const res = await fetch(`${BASE}api/auth/telegram`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify(tgUser),
         });
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
           throw new Error(body.error || "Authentication failed");
         }
-        const { token } = await res.json();
-        const result = await signIn!.create({ strategy: "ticket", ticket: token });
-        if (result.status !== "complete") throw new Error("Sign-in incomplete");
-        await setActive!({ session: result.createdSessionId });
         setLocation("/dashboard");
       } catch (e: any) {
         setError(e.message || "Authentication failed. Please try again.");
@@ -71,7 +68,9 @@ export default function SignInPage() {
     return () => {
       delete window.onTelegramAuth;
     };
-  }, [config, ready, signIn, setLocation]);
+  }, [config, setLocation]);
+
+  if (!isLoading && isSignedIn) return <Redirect to="/dashboard" />;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -99,7 +98,7 @@ export default function SignInPage() {
               </div>
 
               <div className="flex flex-col items-center gap-4">
-                {isLoading || !ready ? (
+                {configLoading ? (
                   <div className="flex items-center gap-2 text-muted-foreground text-sm">
                     <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                     Loading…

@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { getAuth } from "@clerk/express";
 import { db, usersTable, shopCategories, shopProducts, shopCartItems, shopOrders, shopOrderItems, shopReviews, shopWishlist } from "@workspace/db";
+import { verifyToken } from "../lib/auth";
 import { eq, desc, asc, and, ilike, gte, lte, sql, inArray } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../lib/auth";
 import { logger } from "../lib/logger";
@@ -189,10 +189,11 @@ router.get("/shop/products/:productId", async (req, res): Promise<void> => {
   // Optional auth: check if the requesting user has purchased / already reviewed
   let userHasPurchased = false;
   let userHasReviewed = false;
-  const clerkId = getAuth(req)?.userId;
-  if (clerkId) {
+  const sidToken = (req as any).cookies?.sid as string | undefined;
+  const authUserId = sidToken ? verifyToken(sidToken) : null;
+  if (authUserId) {
     const [dbUser] = await db.select({ id: usersTable.id })
-      .from(usersTable).where(eq(usersTable.clerkId, clerkId));
+      .from(usersTable).where(eq(usersTable.id, authUserId));
     if (dbUser) {
       const [purchased] = await db
         .select({ id: shopOrderItems.id })

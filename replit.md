@@ -10,17 +10,17 @@ A full-featured institutional-grade USDT (BEP-20) investment platform on BSC. Us
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string, `SESSION_SECRET` — AES-256 encryption key for wallet private keys, `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `VITE_CLERK_PUBLISHABLE_KEY`
+- Required env: `DATABASE_URL` — Postgres connection string, `SESSION_SECRET` — used for wallet key encryption (AES-256-CBC) AND JWT session tokens (HMAC-SHA256)
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5 + Clerk auth (`@clerk/express`)
+- API: Express 5 + custom cookie-based JWT auth (no Clerk)
 - DB: PostgreSQL + Drizzle ORM
 - Validation: Zod (`zod/v4`), `drizzle-zod`
 - API codegen: Orval (from OpenAPI spec)
 - Build: esbuild (CJS bundle)
-- Frontend: React + Vite + Wouter + Tailwind v4 + Clerk React
+- Frontend: React + Vite + Wouter + Tailwind v4
 - Blockchain: ethers.js v6, BSC mainnet, USDT BEP-20
 
 ## Where things live
@@ -35,7 +35,7 @@ A full-featured institutional-grade USDT (BEP-20) investment platform on BSC. Us
 ## Architecture decisions
 
 - **Isolated wallets**: Each user gets a unique BSC wallet for deposits; private keys are AES-256-CBC encrypted using `SESSION_SECRET` before DB storage.
-- **Clerk auth proxy**: Clerk requests are proxied through `/api/__clerk` so the frontend only needs the public domain — no CORS issues.
+- **Custom JWT auth**: Backend issues HMAC-SHA256 tokens signed with `SESSION_SECRET`, stored as HTTP-only `sid` cookies (30-day expiry). `requireAuth` middleware verifies the cookie and attaches `req.dbUser`. Frontend auth state comes from `useAuth()` which wraps `useGetMe()` — no Clerk SDK anywhere.
 - **Contract-first API**: OpenAPI spec drives both server validation (Zod schemas) and client data fetching (React Query hooks via Orval codegen).
 - **Admin via DB**: First admin must be set manually via `UPDATE users SET is_admin = true WHERE ...` — no self-promotion endpoint.
 - **USDT contract**: `0x55d398326f99059fF775485246999027B3197955` on BSC mainnet (18 decimals).
@@ -61,4 +61,3 @@ _Populate as you build — explicit user instructions worth remembering across s
 ## Pointers
 
 - See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
-- See the `clerk-auth` skill for Clerk configuration and customization

@@ -1,7 +1,5 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { useClerk } from "@clerk/react";
-import { useGetMe } from "@workspace/api-client-react";
 import {
   LogOut,
   Wallet,
@@ -15,11 +13,11 @@ import {
   LayoutGrid,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const { signOut } = useClerk();
+  const { user, isLoading, signOut } = useAuth();
   const [location] = useLocation();
-  const { data: user, isLoading } = useGetMe();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navItems = [
@@ -175,7 +173,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <div className="w-7" />
         </header>
 
-        {/* Page content — bottom padding on mobile to clear the footer nav */}
         <main className="flex-1 overflow-auto p-4 pb-20 md:p-6 md:pb-6 lg:p-8">
           <div className="mx-auto max-w-5xl">
             {children}

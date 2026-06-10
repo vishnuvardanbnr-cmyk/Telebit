@@ -1,18 +1,15 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { useUser } from "@clerk/react";
 import { ShoppingCart, Trophy, ArrowLeftRight, ShieldCheck, LogOut, Menu, X, LayoutGrid, Zap, Wallet } from "lucide-react";
-import { useGetCart, useGetMe } from "@workspace/api-client-react";
-import { useClerk } from "@clerk/react";
+import { useGetCart } from "@workspace/api-client-react";
+import { useAuth } from "@/lib/auth-context";
 import { fmtUsdt } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const { user } = useUser();
-  const { signOut } = useClerk();
+  const { user, isSignedIn, signOut } = useAuth();
   const [location] = useLocation();
-  const { data: dbUser } = useGetMe({ query: { enabled: !!user, queryKey: ["/api/users/me", !!user] } });
-  const { data: cart } = useGetCart({ query: { enabled: !!user, queryKey: ["/api/shop/cart", !!user] } });
+  const { data: cart } = useGetCart({ query: { enabled: isSignedIn, queryKey: ["/api/shop/cart", isSignedIn] } });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const cartCount = cart?.itemCount ?? 0;
@@ -38,15 +35,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
           {/* Right actions */}
           <div className="flex items-center gap-2 sm:gap-3 ml-auto">
-            {user ? (
+            {isSignedIn ? (
               <>
                 {/* Wallet balance — desktop only */}
                 <div className="hidden md:flex items-center gap-1.5 text-xs bg-muted/60 rounded-full px-3 py-1.5">
                   <span className="text-muted-foreground">Balance:</span>
-                  <span className="font-semibold text-foreground">{fmtUsdt(dbUser?.walletBalance)} USDT</span>
+                  <span className="font-semibold text-foreground">{fmtUsdt(user?.walletBalance)} USDT</span>
                 </div>
 
-                {dbUser?.isAdmin && (
+                {user?.isAdmin && (
                   <Link href="/admin" className="hidden md:flex text-muted-foreground hover:text-primary transition-colors p-1.5 rounded-md hover:bg-muted/50">
                     <ShieldCheck className="h-4 w-4" />
                   </Link>
@@ -70,12 +67,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   )}
                 </Link>
 
-                {/* Mobile hamburger — only for overflow items */}
+                {/* Mobile hamburger */}
                 <button
                   className="md:hidden p-1.5 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted/50"
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 >
                   {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+                </button>
+
+                {/* Desktop logout */}
+                <button
+                  onClick={() => signOut()}
+                  className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-md hover:bg-muted/50"
+                >
+                  <LogOut className="h-4 w-4" />
                 </button>
               </>
             ) : (
@@ -89,15 +94,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        {/* Mobile dropdown — balance + overflow items */}
-        {mobileMenuOpen && user && (
+        {/* Mobile dropdown */}
+        {mobileMenuOpen && isSignedIn && (
           <div className="md:hidden border-t border-border bg-white">
             <div className="max-w-7xl mx-auto px-4 py-3 space-y-1">
               <div className="flex items-center justify-between px-3 py-2 bg-muted/40 rounded-md text-sm mb-2">
                 <span className="text-muted-foreground">Wallet Balance</span>
-                <span className="font-semibold">{fmtUsdt(dbUser?.walletBalance)} USDT</span>
+                <span className="font-semibold">{fmtUsdt(user?.walletBalance)} USDT</span>
               </div>
-              {dbUser?.isAdmin && (
+              {user?.isAdmin && (
                 <Link
                   href="/admin"
                   onClick={() => setMobileMenuOpen(false)}
@@ -122,7 +127,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         )}
       </header>
 
-      {/* Page content — bottom padding on mobile for footer nav */}
+      {/* Page content */}
       <main className="flex-1 pb-16 md:pb-0">
         {children}
       </main>
@@ -137,8 +142,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Mobile bottom footer nav */}
       <nav className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-card border-t border-border">
-        <div className={cn("grid h-16", user ? "grid-cols-5" : "grid-cols-1")}>
-          {user ? (
+        <div className={cn("grid h-16", isSignedIn ? "grid-cols-5" : "grid-cols-1")}>
+          {isSignedIn ? (
             <>
               <Link
                 href="/products"

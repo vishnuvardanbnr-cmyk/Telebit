@@ -1,10 +1,10 @@
 import { Router } from "express";
 import crypto from "crypto";
 import { db, usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import { getSettings } from "../lib/settings";
 import { generateWallet, generateReferralCode } from "../lib/wallet";
-import { clerkClient } from "@clerk/express";
+import { setAuthCookie, clearAuthCookie } from "../lib/auth";
 
 const router = Router();
 
@@ -46,7 +46,6 @@ router.post("/auth/telegram", async (req, res): Promise<void> => {
     return;
   }
 
-  // Reject auth data older than 1 hour
   const now = Math.floor(Date.now() / 1000);
   if (now - authData.auth_date > 3600) {
     res.status(401).json({ error: "Telegram auth data expired" });
@@ -59,129 +58,75 @@ router.post("/auth/telegram", async (req, res): Promise<void> => {
   }
 
   const telegramId = String(authData.id);
+  const externalId = `tg_${telegramId}`;
   const telegramEmail = `tg_${telegramId}@cryptovault.internal`;
 
-  // Find or create Clerk user by externalId = telegramId
-  let clerkUserId: string;
-  try {
-    const { data: existingUsers } = await clerkClient.users.getUserList({
-      externalId: [telegramId],
-    });
-
-    if (existingUsers.length > 0) {
-      clerkUserId = existingUsers[0].id;
-    } else {
-      // Create new Clerk user
-      const newUser = await clerkClient.users.createUser({
-        externalId: telegramId,
-        emailAddress: [telegramEmail],
-        firstName: authData.first_name,
-        lastName: authData.last_name ?? "",
-        username: authData.username
-          ? authData.username
-          : `tg${telegramId}`,
-        skipPasswordRequirement: true,
-      });
-      clerkUserId = newUser.id;
-    }
-  } catch (err: any) {
-    req.log.error({ err }, "Failed to create/find Clerk user for Telegram auth");
-    res.status(500).json({ error: "Authentication failed" });
-    return;
-  }
-
-  // JIT-provision platform user record (same as requireAuth middleware)
-  const [existingDbUser] = await db
+  let [user] = await db
     .select()
     .from(usersTable)
-    .where(eq(usersTable.clerkId, clerkUserId))
+    .where(or(eq(usersTable.clerkId, externalId), eq(usersTable.email, telegramEmail)))
     .limit(1);
 
-  if (!existingDbUser) {
+  if (!user) {
     const { address, privateKeyEncrypted } = generateWallet();
     const referralCode = generateReferralCode();
-    await db.insert(usersTable).values({
-      clerkId: clerkUserId,
-      email: telegramEmail,
-      depositAddress: address,
-      depositPrivateKeyEncrypted: privateKeyEncrypted,
-      referralCode,
-    });
+    const username = authData.username ?? `tg${telegramId}`;
+    [user] = await db
+      .insert(usersTable)
+      .values({
+        clerkId: externalId,
+        email: telegramEmail,
+        fullName: [authData.first_name, authData.last_name].filter(Boolean).join(" ") || username,
+        depositAddress: address,
+        depositPrivateKeyEncrypted: privateKeyEncrypted,
+        referralCode,
+      })
+      .returning();
+  } else if (user.clerkId !== externalId) {
+    await db.update(usersTable).set({ clerkId: externalId }).where(eq(usersTable.id, user.id));
   }
 
-  // Create a Clerk sign-in token so the client can complete sign-in
-  try {
-    const signInToken = await clerkClient.signInTokens.createSignInToken({
-      userId: clerkUserId,
-      expiresInSeconds: 300,
-    });
-
-    res.json({
-      token: signInToken.token,
-    });
-  } catch (err: any) {
-    req.log.error({ err }, "Failed to create Clerk sign-in token");
-    res.status(500).json({ error: "Failed to create session" });
-  }
+  setAuthCookie(res, user.id);
+  res.json({ success: true });
 });
 
 router.post("/auth/demo", async (req, res): Promise<void> => {
-  const demoExternalId = "demo_user_telebit";
+  const externalId = "demo_user_telebit";
+  const demoEmail = "demo@telebit.app";
 
-  let clerkUserId: string;
-  try {
-    const { data: existing } = await clerkClient.users.getUserList({
-      externalId: [demoExternalId],
-    });
-
-    if (existing.length > 0) {
-      clerkUserId = existing[0].id;
-    } else {
-      const created = await clerkClient.users.createUser({
-        externalId: demoExternalId,
-        emailAddress: ["demo@telebit.app"],
-        firstName: "Demo",
-        lastName: "User",
-        username: "demo_telebit",
-        skipPasswordRequirement: true,
-      });
-      clerkUserId = created.id;
-    }
-  } catch (err: any) {
-    req.log.error({ err }, "Failed to create/find demo Clerk user");
-    res.status(500).json({ error: "Demo login failed" });
-    return;
-  }
-
-  const [existingDbUser] = await db
+  let [user] = await db
     .select()
     .from(usersTable)
-    .where(eq(usersTable.clerkId, clerkUserId))
+    .where(or(eq(usersTable.clerkId, externalId), eq(usersTable.email, demoEmail)))
     .limit(1);
 
-  if (!existingDbUser) {
+  if (!user) {
     const { address, privateKeyEncrypted } = generateWallet();
     const referralCode = generateReferralCode();
-    await db.insert(usersTable).values({
-      clerkId: clerkUserId,
-      email: `demo@telebit.app`,
-      depositAddress: address,
-      depositPrivateKeyEncrypted: privateKeyEncrypted,
-      referralCode,
-      walletBalance: "100.00",
-    });
+    [user] = await db
+      .insert(usersTable)
+      .values({
+        clerkId: externalId,
+        email: demoEmail,
+        fullName: "Demo User",
+        depositAddress: address,
+        depositPrivateKeyEncrypted: privateKeyEncrypted,
+        referralCode,
+        walletBalance: "100.00",
+      })
+      .returning();
+  } else if (user.clerkId !== externalId) {
+    await db.update(usersTable).set({ clerkId: externalId }).where(eq(usersTable.id, user.id));
+    user = { ...user, clerkId: externalId };
   }
 
-  try {
-    const signInToken = await clerkClient.signInTokens.createSignInToken({
-      userId: clerkUserId,
-      expiresInSeconds: 300,
-    });
-    res.json({ token: signInToken.token });
-  } catch (err: any) {
-    req.log.error({ err }, "Failed to create demo sign-in token");
-    res.status(500).json({ error: "Failed to create demo session" });
-  }
+  setAuthCookie(res, user.id);
+  res.json({ success: true });
+});
+
+router.post("/auth/logout", (req, res): void => {
+  clearAuthCookie(res);
+  res.json({ success: true });
 });
 
 export default router;
