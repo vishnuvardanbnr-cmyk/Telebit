@@ -22,7 +22,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="max-w-7xl mx-auto flex h-14 items-center px-4 sm:px-6">
           {/* Logo */}
           <Link href="/products" className="flex items-center gap-2 font-semibold text-foreground mr-6 shrink-0">
-            <ShoppingCart className="h-5 w-5 text-primary" />
+            <img src="/logo.png" alt="Telebit" className="h-7 w-7 rounded-lg object-cover" />
             <span className="hidden sm:inline text-sm font-bold tracking-tight">Telebit Shop</span>
             <span className="sm:hidden text-sm font-bold tracking-tight">Telebit</span>
           </Link>

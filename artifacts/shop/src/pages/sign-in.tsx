@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLocation, Redirect } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
-import { ShoppingBag, Send, FlaskConical, Phone, ArrowLeft } from "lucide-react";
+import { Send, FlaskConical, Phone, ArrowLeft } from "lucide-react";
 
 type Step = "phone" | "code";
 
@@ -93,7 +93,7 @@ export default function ShopSignInPage() {
     <div className="min-h-screen bg-background flex flex-col">
       <header className="flex items-center px-4 sm:px-6 py-4 border-b border-border bg-card">
         <div className="flex items-center gap-2 font-semibold text-foreground text-lg">
-          <ShoppingBag className="h-5 w-5 text-primary" />
+          <img src="/logo.png" alt="Telebit" className="h-6 w-6 rounded-md object-cover" />
           Telebit Shop
         </div>
       </header>
@@ -104,8 +104,8 @@ export default function ShopSignInPage() {
             <div className="h-1 bg-primary w-full" />
             <div className="p-6 sm:p-8">
               <div className="flex flex-col items-center mb-6">
-                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <ShoppingBag className="h-7 w-7 text-primary" />
+                <div className="w-14 h-14 rounded-2xl overflow-hidden mb-4 shadow-md">
+                  <img src="/logo.png" alt="Telebit" className="w-full h-full object-cover" />
                 </div>
                 <h1 className="text-xl font-bold text-foreground text-center">Sign In to Shop</h1>
                 <p className="text-sm text-muted-foreground text-center mt-1">
