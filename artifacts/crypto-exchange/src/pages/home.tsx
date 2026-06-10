@@ -12,7 +12,7 @@ export default function Home() {
             <path d="M8 11h8" />
             <path d="M12 7v8" />
           </svg>
-          CryptoVault
+          Telebit
         </div>
         <div className="flex gap-3">
           <Button className="font-mono uppercase tracking-widest rounded-md text-sm px-4" asChild>
@@ -65,7 +65,7 @@ export default function Home() {
       </main>
 
       <footer className="border-t border-border py-8 text-center text-muted-foreground font-mono text-xs uppercase tracking-widest bg-card mt-auto">
-        <p>&copy; {new Date().getFullYear()} CryptoVault Exchange. BSC Network Operations.</p>
+        <p>&copy; {new Date().getFullYear()} Telebit Exchange. BSC Network Operations.</p>
       </footer>
     </div>
   );

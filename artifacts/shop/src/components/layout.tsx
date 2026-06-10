@@ -25,7 +25,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           {/* Logo */}
           <Link href="/products" className="flex items-center gap-2 font-semibold text-foreground mr-6 shrink-0">
             <ShoppingCart className="h-5 w-5 text-primary" />
-            <span className="hidden sm:inline text-sm font-bold tracking-tight">CryptoVault Shop</span>
+            <span className="hidden sm:inline text-sm font-bold tracking-tight">Telebit Shop</span>
             <span className="sm:hidden text-sm font-bold tracking-tight">CV Shop</span>
           </Link>
 
@@ -130,7 +130,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Desktop footer */}
       <footer className="hidden md:block border-t border-border bg-white py-5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-sm text-muted-foreground">
-          <p className="font-medium">CryptoVault Shop</p>
+          <p className="font-medium">Telebit Shop</p>
           <p>Spend your USDT. Zero off-ramping.</p>
         </div>
       </footer>

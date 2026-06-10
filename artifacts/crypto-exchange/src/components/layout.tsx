@@ -43,7 +43,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               <path d="M8 11h8" /><path d="M12 7v8" />
             </svg>
-            CryptoVault
+            Telebit
           </Link>
         </div>
         <nav className="flex-1 overflow-auto py-4 px-3">
@@ -108,7 +108,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               <path d="M8 11h8" /><path d="M12 7v8" />
             </svg>
-            CryptoVault
+            Telebit
           </Link>
           <button onClick={() => setMobileOpen(false)} className="text-muted-foreground hover:text-foreground p-1">
             <X className="h-5 w-5" />
@@ -168,7 +168,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               <path d="M8 11h8" /><path d="M12 7v8" />
             </svg>
-            CryptoVault
+            Telebit
           </Link>
           <div className="w-7" />
         </header>

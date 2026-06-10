@@ -83,7 +83,7 @@ export default function Home() {
             Spend Your Crypto <br /> With Confidence
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-xl">
-            Seamlessly purchase premium goods directly from your CryptoVault USDT balance. Zero off-ramping, immediate settlement.
+            Seamlessly purchase premium goods directly from your Telebit USDT balance. Zero off-ramping, immediate settlement.
           </p>
           <div className="flex gap-4">
             <Link href="/products">

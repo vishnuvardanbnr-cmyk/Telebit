@@ -85,7 +85,7 @@ export default function ShopSignInPage() {
       <header className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-border bg-card">
         <div className="flex items-center gap-2 font-semibold text-foreground text-lg">
           <ShoppingBag className="h-5 w-5 text-primary" />
-          CryptoVault Shop
+          Telebit Shop
         </div>
       </header>
 

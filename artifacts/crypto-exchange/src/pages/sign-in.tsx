@@ -91,7 +91,7 @@ export default function SignInPage() {
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
             <path d="M8 11h8" /><path d="M12 7v8" />
           </svg>
-          CryptoVault
+          Telebit
         </div>
       </header>
 
@@ -104,7 +104,7 @@ export default function SignInPage() {
                 <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                   <ShieldCheck className="h-7 w-7 text-primary" />
                 </div>
-                <h1 className="text-xl font-bold text-foreground text-center">Sign In to CryptoVault</h1>
+                <h1 className="text-xl font-bold text-foreground text-center">Sign In to Telebit</h1>
                 <p className="text-sm text-muted-foreground text-center mt-1">Secure access via Telegram</p>
               </div>
 
