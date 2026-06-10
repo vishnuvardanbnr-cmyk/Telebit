@@ -17,6 +17,8 @@ import Wishlist from "./pages/wishlist";
 import Admin from "./pages/admin";
 import Services from "./pages/services";
 import Wallet from "./pages/wallet";
+import Lottery from "./pages/lottery";
+import LotteryDetail from "./pages/lottery-detail";
 import ShopSignInPage from "./pages/sign-in";
 import { Layout } from "./components/layout";
 
@@ -134,6 +136,16 @@ function AppRoutes() {
       <Route path="/wallet">
         <Layout>
           <ProtectedRoute component={Wallet} />
+        </Layout>
+      </Route>
+      <Route path="/lottery">
+        <Layout>
+          <Lottery />
+        </Layout>
+      </Route>
+      <Route path="/lottery/:id">
+        <Layout>
+          <LotteryDetail />
         </Layout>
       </Route>
       <Route component={NotFound} />

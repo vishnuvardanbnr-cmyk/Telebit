@@ -9,6 +9,7 @@ import adminRouter from "./admin";
 import shopRouter from "./shop";
 import authRouter from "./auth";
 import utilityRouter from "./utility";
+import lotteryRouter from "./lottery";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(settingsRouter);
 router.use(adminRouter);
 router.use(shopRouter);
 router.use(utilityRouter);
+router.use(lotteryRouter);
 
 export default router;

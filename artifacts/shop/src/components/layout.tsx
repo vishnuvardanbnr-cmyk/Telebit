@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useUser } from "@clerk/react";
-import { ShoppingCart, Heart, Package, ShieldCheck, LogOut, Menu, X, LayoutGrid, Zap, Wallet } from "lucide-react";
+import { ShoppingCart, Trophy, Package, ShieldCheck, LogOut, Menu, X, LayoutGrid, Zap, Wallet } from "lucide-react";
 import { useGetCart, useGetMe } from "@workspace/api-client-react";
 import { useClerk } from "@clerk/react";
 import { fmtUsdt } from "@/lib/utils";
@@ -163,14 +163,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </Link>
 
               <Link
-                href="/wishlist"
+                href="/lottery"
                 className={cn(
                   "flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
-                  location.startsWith("/wishlist") ? "text-primary" : "text-muted-foreground"
+                  location.startsWith("/lottery") ? "text-primary" : "text-muted-foreground"
                 )}
               >
-                <Heart className={cn("h-5 w-5", location.startsWith("/wishlist") && "stroke-[2.5px]")} />
-                <span>Wishlist</span>
+                <Trophy className={cn("h-5 w-5", location.startsWith("/lottery") && "stroke-[2.5px]")} />
+                <span>Lottery</span>
               </Link>
 
               <Link
