@@ -63,16 +63,13 @@ const getTheme = (level: number) => THEMES[level] ?? fallbackTheme;
 
 /* ─── Placeholder pool card (shown when no real pools exist) ──────────── */
 const PLACEHOLDER_POOLS = [
-  { level: 1, title: "Bronze Pool", size: "5,000", dailyYield: "0.8%" },
-  { level: 2, title: "Silver Pool", size: "10,000", dailyYield: "1.2%" },
-  { level: 3, title: "Gold Pool",   size: "25,000", dailyYield: "1.8%" },
-  { level: 4, title: "Platinum Pool", size: "50,000", dailyYield: "2.5%" },
+  { level: 1, title: "Bronze Pool", size: "5,000" },
+  { level: 2, title: "Silver Pool", size: "10,000" },
+  { level: 3, title: "Gold Pool",   size: "25,000" },
+  { level: 4, title: "Platinum Pool", size: "50,000" },
 ];
 
-const DAILY_YIELD: Record<number, string> = { 1: "0.8%", 2: "1.2%", 3: "1.8%", 4: "2.5%" };
-const getDailyYield = (level: number) => DAILY_YIELD[level] ?? `${(level * 0.4 + 0.4).toFixed(1)}%`;
-
-function PlaceholderPoolCard({ level, title, size, dailyYield }: { level: number; title: string; size: string; dailyYield: string }) {
+function PlaceholderPoolCard({ level, title, size }: { level: number; title: string; size: string }) {
   const t = getTheme(level);
   return (
     <div className={`rounded-2xl border overflow-hidden ${t.comingSoon}`}>
