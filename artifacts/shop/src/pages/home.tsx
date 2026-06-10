@@ -6,7 +6,6 @@ import {
   useGetNftHoldings,
   useListNftPools,
   useClaimNftHoldings,
-  NftClaimRequestType,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,7 +38,7 @@ export default function Home() {
     : "0.0000";
 
   const handleClaim = () => {
-    const types = [NftClaimRequestType.pool, NftClaimRequestType.referral, NftClaimRequestType.level];
+    const types = ["pool", "referral", "level"] as const;
     let idx = 0;
     const claimNext = () => {
       if (idx >= types.length) { toast.success("Rewards claimed successfully"); return; }
@@ -95,53 +94,110 @@ export default function Home() {
       </div>
 
       {/* ── Investment Overview ── */}
-      <Card>
-        <CardHeader className="pb-2 pt-4 px-4">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-blue-500" />
-              Investment Overview
-            </CardTitle>
-            <Link href="/nft/buy">
-              <Button variant="ghost" size="sm" className="text-xs h-7 gap-0.5 text-primary">
-                Buy Tokens <ChevronRight className="h-3 w-3" />
-              </Button>
-            </Link>
-          </div>
-        </CardHeader>
-        <CardContent className="px-4 pb-4">
-          {!nftGlobal ? (
-            <p className="text-xs text-muted-foreground py-2">NFT system not yet activated.</p>
-          ) : (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">V2 Purchases:</span>
-                <Badge variant={nftGlobal.canInvest ? "default" : "secondary"} className="rounded-full text-[10px] uppercase px-2">
-                  {nftGlobal.canInvest ? "Open" : "Closed"}
-                </Badge>
+      {(() => {
+        const totalTokens =
+          parseFloat(holdings?.poolRewardAvailable ?? "0") +
+          parseFloat(holdings?.referralRewardAvailable ?? "0") +
+          parseFloat(holdings?.levelRewardAvailable ?? "0");
+        const sellPrice = parseFloat(holdings?.sellPrice ?? nftGlobal?.sellPrice ?? "0");
+        const tokenValueUsdt = totalTokens * sellPrice;
+        const biddingVolume = (pools ?? []).reduce(
+          (sum, p) => sum + parseFloat(p.poolAmount ?? "0"), 0
+        );
+        const lifetimePurchased = parseFloat(holdings?.lifetimePurchased ?? "0");
+
+        return (
+          <Card className="overflow-hidden">
+            {/* coloured top stripe */}
+            <div className="h-1 w-full bg-gradient-to-r from-primary to-primary/50" />
+            <CardHeader className="pb-2 pt-4 px-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                  Investment Overview
+                </CardTitle>
+                <div className="flex items-center gap-1.5">
+                  {nftGlobal && (
+                    <Badge
+                      variant={nftGlobal.canInvest ? "default" : "secondary"}
+                      className="rounded-full text-[10px] px-2 py-0"
+                    >
+                      {nftGlobal.canInvest ? "Open" : "Paused"}
+                    </Badge>
+                  )}
+                  <Link href="/nft/buy">
+                    <Button variant="ghost" size="sm" className="text-xs h-7 gap-0.5 text-primary">
+                      Buy Tokens <ChevronRight className="h-3 w-3" />
+                    </Button>
+                  </Link>
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { label: "Buy Price", val: `$${parseFloat(nftGlobal.buyPrice).toFixed(6)}` },
-                  { label: "Sell Price", val: `$${parseFloat(nftGlobal.sellPrice).toFixed(6)}` },
-                  { label: "Liquidity", val: `$${fmtUsdt(nftGlobal.liquidity)}` },
-                  { label: "Platform Volume", val: `$${fmtUsdt(nftGlobal.totalPurchase)}` },
-                ].map((s) => (
-                  <div key={s.label} className="border rounded-lg p-2.5">
-                    <div className="text-[10px] text-muted-foreground uppercase">{s.label}</div>
-                    <div className="font-bold text-sm mt-0.5">{s.val}</div>
+            </CardHeader>
+            <CardContent className="px-4 pb-4 space-y-3">
+              {/* ── Primary metric: V2 token holding ── */}
+              <div className="rounded-xl bg-primary/5 border border-primary/20 p-3.5 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">V2 Tokens Holding</p>
+                  <p className="text-2xl font-extrabold text-primary tabular-nums mt-0.5">
+                    {totalTokens.toFixed(4)} <span className="text-sm font-semibold">TBT</span>
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    ≈ <span className="font-semibold text-foreground">${tokenValueUsdt.toFixed(4)}</span> USDT at sell price
+                  </p>
+                </div>
+                <Link href="/nft/holdings">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors cursor-pointer">
+                    <Coins className="h-5 w-5 text-primary" />
                   </div>
-                ))}
+                </Link>
               </div>
+
+              {/* ── Secondary metrics ── */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="rounded-xl bg-muted/50 border border-border p-3">
+                  <p className="text-[9px] text-muted-foreground font-semibold uppercase tracking-wide">Bidding Volume</p>
+                  <p className="font-extrabold text-sm mt-1 tabular-nums">${fmtUsdt(String(biddingVolume))}</p>
+                  <p className="text-[9px] text-muted-foreground mt-0.5">all pools</p>
+                </div>
+                <div className="rounded-xl bg-muted/50 border border-border p-3">
+                  <p className="text-[9px] text-muted-foreground font-semibold uppercase tracking-wide">Buy Price</p>
+                  <p className="font-extrabold text-sm mt-1 tabular-nums">
+                    {nftGlobal ? `$${parseFloat(nftGlobal.buyPrice).toFixed(4)}` : "—"}
+                  </p>
+                  <p className="text-[9px] text-muted-foreground mt-0.5">per TBT</p>
+                </div>
+                <div className="rounded-xl bg-muted/50 border border-border p-3">
+                  <p className="text-[9px] text-muted-foreground font-semibold uppercase tracking-wide">Invested</p>
+                  <p className="font-extrabold text-sm mt-1 tabular-nums">${fmtUsdt(String(lifetimePurchased))}</p>
+                  <p className="text-[9px] text-muted-foreground mt-0.5">lifetime</p>
+                </div>
+              </div>
+
+              {/* ── Lifetime progress bar ── */}
+              <div>
+                <div className="flex justify-between text-[10px] text-muted-foreground mb-1.5">
+                  <span>Lifetime cap</span>
+                  <span className="font-semibold text-foreground">${fmtUsdt(String(lifetimePurchased))} / $10,000</span>
+                </div>
+                <div className="h-1.5 bg-muted/60 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-primary to-primary/60 rounded-full transition-all"
+                    style={{ width: `${Math.min(100, (lifetimePurchased / 10000) * 100)}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* ── CTA ── */}
               <Link href="/nft/buy">
-                <Button size="sm" className="rounded-full text-xs gap-1.5 w-full" disabled={!nftGlobal.canInvest}>
-                  <Coins className="h-3.5 w-3.5" /> Buy V2 Tokens
-                </Button>
+                <button className="w-full h-10 rounded-xl text-xs font-bold flex items-center justify-center gap-2 bg-gradient-to-r from-primary to-primary/80 text-white hover:opacity-95 transition-opacity">
+                  <Coins className="h-3.5 w-3.5" />
+                  {lifetimePurchased > 0 ? "Buy More V2 Tokens" : "Buy V2 Tokens"}
+                </button>
               </Link>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* ── NFT Pool Bidding ── */}
       <Card>
