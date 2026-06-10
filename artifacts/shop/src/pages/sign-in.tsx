@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { useGetTelegramConfig } from "@workspace/api-client-react";
 import { useSignIn } from "@clerk/react";
-import { ShoppingBag, Send } from "lucide-react";
+import { ShoppingBag, Send, FlaskConical } from "lucide-react";
 
 declare global {
   interface Window {
@@ -27,6 +27,7 @@ export default function ShopSignInPage() {
   const widgetRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
   const ready = !!signIn;
 
   useEffect(() => {
@@ -48,17 +49,10 @@ export default function ShopSignInPage() {
           throw new Error(body.error || "Authentication failed");
         }
         const { token } = await res.json();
-
         const ticketResult = await signIn!.ticket({ ticket: token });
-        if (ticketResult.error) {
-          throw new Error(ticketResult.error.message || "Clerk sign-in failed");
-        }
-
+        if (ticketResult.error) throw new Error(ticketResult.error.message || "Clerk sign-in failed");
         const finalizeResult = await signIn!.finalize();
-        if (finalizeResult.error) {
-          throw new Error(finalizeResult.error.message || "Failed to finalize session");
-        }
-
+        if (finalizeResult.error) throw new Error(finalizeResult.error.message || "Failed to finalize session");
         setLocation("/products");
       } catch (e: any) {
         setError(e.message || "Authentication failed. Please try again.");
@@ -75,10 +69,31 @@ export default function ShopSignInPage() {
     script.async = true;
     widgetRef.current.appendChild(script);
 
-    return () => {
-      delete window.onTelegramAuthShop;
-    };
+    return () => { delete window.onTelegramAuthShop; };
   }, [config, ready, signIn, setLocation]);
+
+  const handleDemoLogin = async () => {
+    if (!signIn) return;
+    setDemoLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/auth/demo", { method: "POST" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Demo login failed");
+      }
+      const { token } = await res.json();
+      const ticketResult = await signIn.ticket({ ticket: token });
+      if (ticketResult.error) throw new Error(ticketResult.error.message || "Clerk sign-in failed");
+      const finalizeResult = await signIn.finalize();
+      if (finalizeResult.error) throw new Error(finalizeResult.error.message || "Failed to finalize session");
+      setLocation("/products");
+    } catch (e: any) {
+      setError(e.message || "Demo login failed. Please try again.");
+    } finally {
+      setDemoLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -137,15 +152,34 @@ export default function ShopSignInPage() {
                 )}
               </div>
 
-              <div className="flex items-center gap-3 my-6">
+              <div className="flex items-center gap-3 my-5">
                 <div className="h-px flex-1 bg-border" />
                 <span className="text-xs text-muted-foreground">or</span>
                 <div className="h-px flex-1 bg-border" />
               </div>
 
-              <p className="text-center text-xs text-muted-foreground">
-                Pay with your USDT wallet balance. Zero fees on shop purchases.
+              {/* Demo login */}
+              <button
+                onClick={handleDemoLogin}
+                disabled={demoLoading || !ready}
+                className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-lg border-2 border-dashed border-primary/40 bg-primary/5 hover:bg-primary/10 hover:border-primary/60 transition-all text-primary font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {demoLoading ? (
+                  <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <FlaskConical className="w-4 h-4" />
+                )}
+                {demoLoading ? "Signing in…" : "Try Demo Account"}
+              </button>
+              <p className="text-center text-[11px] text-muted-foreground mt-2">
+                100 USDT balance · no Telegram required
               </p>
+
+              {error && !loading && (
+                <div className="mt-3 bg-destructive/10 border border-destructive/20 rounded px-3 py-2 text-xs text-destructive text-center">
+                  {error}
+                </div>
+              )}
             </div>
           </div>
 

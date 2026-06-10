@@ -125,4 +125,64 @@ router.post("/auth/telegram", async (req, res): Promise<void> => {
   }
 });
 
+router.post("/auth/demo", async (req, res): Promise<void> => {
+  const demoExternalId = "demo_user_telebit";
+  const demoEmail = "demo@telebit.internal";
+
+  let clerkUserId: string;
+  try {
+    const { data: existing } = await clerkClient.users.getUserList({
+      externalId: [demoExternalId],
+    });
+
+    if (existing.length > 0) {
+      clerkUserId = existing[0].id;
+    } else {
+      const created = await clerkClient.users.createUser({
+        externalId: demoExternalId,
+        emailAddress: [demoEmail],
+        firstName: "Demo",
+        lastName: "User",
+        username: "demo_telebit",
+        skipPasswordRequirement: true,
+      });
+      clerkUserId = created.id;
+    }
+  } catch (err: any) {
+    req.log.error({ err }, "Failed to create/find demo Clerk user");
+    res.status(500).json({ error: "Demo login failed" });
+    return;
+  }
+
+  const [existingDbUser] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.clerkId, clerkUserId))
+    .limit(1);
+
+  if (!existingDbUser) {
+    const { address, privateKeyEncrypted } = generateWallet();
+    const referralCode = generateReferralCode();
+    await db.insert(usersTable).values({
+      clerkId: clerkUserId,
+      email: demoEmail,
+      depositAddress: address,
+      depositPrivateKeyEncrypted: privateKeyEncrypted,
+      referralCode,
+      walletBalance: "100.00",
+    });
+  }
+
+  try {
+    const signInToken = await clerkClient.signInTokens.createSignInToken({
+      userId: clerkUserId,
+      expiresInSeconds: 300,
+    });
+    res.json({ token: signInToken.token });
+  } catch (err: any) {
+    req.log.error({ err }, "Failed to create demo sign-in token");
+    res.status(500).json({ error: "Failed to create demo session" });
+  }
+});
+
 export default router;
