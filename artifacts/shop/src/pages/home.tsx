@@ -1,132 +1,201 @@
 import { Link } from "wouter";
-import { useGetFeatured, useListCategories } from "@workspace/api-client-react";
+import { useGetMe, useListOrders, useGetCart } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { ShoppingCart, Star, TrendingUp, Tag, Zap } from "lucide-react";
-import { fmtUsdt } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { fmtUsdt } from "@/lib/utils";
+import {
+  User, Wallet, ShoppingBag, Package, Heart, Trophy,
+  ArrowLeftRight, Zap, ChevronRight, Copy, ShoppingCart,
+} from "lucide-react";
+import { toast } from "sonner";
+import { useAuth } from "@/lib/auth-context";
 
-function ProductGrid({ title, products, icon: Icon }: { title: string, products: any[], icon: any }) {
-  if (!products || products.length === 0) return null;
+const ORDER_STATUS_COLOR: Record<string, string> = {
+  pending: "text-amber-600 bg-amber-50 border-amber-200",
+  processing: "text-blue-600 bg-blue-50 border-blue-200",
+  shipped: "text-purple-600 bg-purple-50 border-purple-200",
+  delivered: "text-green-600 bg-green-50 border-green-200",
+  cancelled: "text-red-600 bg-red-50 border-red-200",
+};
+
+export default function Home() {
+  const { user: authUser } = useAuth();
+  const { data: user, isLoading: userLoading } = useGetMe();
+  const { data: orders, isLoading: ordersLoading } = useListOrders();
+  const { data: cart } = useGetCart();
+
+  const recentOrders = orders?.slice(0, 3) ?? [];
+  const cartCount = cart?.itemCount ?? 0;
+
+  if (userLoading) {
+    return (
+      <div className="container mx-auto px-4 py-6 space-y-4 max-w-2xl">
+        {[1, 2, 3].map((i) => <Skeleton key={i} className="h-28 w-full rounded-lg" />)}
+      </div>
+    );
+  }
 
   return (
-    <section className="py-12">
-      <div className="flex items-center gap-3 mb-8">
-        <Icon className="h-6 w-6 text-primary" />
-        <h2 className="text-2xl font-bold uppercase tracking-wider">{title}</h2>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-        {products.map((product) => (
-          <Link key={product.id} href={`/products/${product.id}`}>
-            <Card className="rounded-none border-border hover:border-primary transition-colors cursor-pointer h-full bg-card hover:bg-muted/10">
-              <CardContent className="p-0 flex flex-col h-full">
-                <div className="aspect-square bg-muted relative overflow-hidden">
-                  {product.imageUrls?.[0] ? (
-                    <img 
-                      src={product.imageUrls[0]} 
-                      alt={product.name} 
-                      className="object-cover w-full h-full transition-transform hover:scale-105 duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                      No Image
-                    </div>
-                  )}
-                  {product.compareAtPrice && (
-                    <div className="absolute top-2 right-2 bg-destructive text-destructive-foreground px-2 py-1 text-xs font-bold uppercase tracking-wider">
-                      Sale
-                    </div>
-                  )}
+    <div className="container mx-auto px-4 py-6 space-y-5 max-w-2xl">
+
+      {/* ── User Profile ── */}
+      <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-transparent">
+        <CardContent className="p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                <User className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <div className="font-bold text-lg leading-tight">
+                  {user?.fullName || user?.email?.split("@")[0] || "User"}
                 </div>
-                <div className="p-4 flex flex-col flex-1">
-                  <div className="text-xs text-muted-foreground uppercase tracking-widest mb-1">
-                    {product.categoryName}
-                  </div>
-                  <h3 className="font-bold text-lg mb-2 line-clamp-2">{product.name}</h3>
-                  <div className="mt-auto">
-                    <div className="flex items-center gap-1 mb-2">
-                      <Star className="h-4 w-4 fill-primary text-primary" />
-                      <span className="text-sm font-bold">{product.averageRating}</span>
-                      <span className="text-xs text-muted-foreground">({product.reviewCount})</span>
-                    </div>
-                    <div className="flex items-end gap-2">
-                      <span className="text-xl font-bold text-primary">{fmtUsdt(product.priceUsdt)} USDT</span>
-                      {product.compareAtPrice && (
-                        <span className="text-sm text-muted-foreground line-through mb-0.5">{fmtUsdt(product.compareAtPrice)} USDT</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                <div className="text-xs text-muted-foreground mt-0.5">{user?.email}</div>
+                {user?.referralCode && (
+                  <button
+                    className="flex items-center gap-1 mt-1.5 text-[11px] text-primary font-medium hover:underline"
+                    onClick={() => { navigator.clipboard.writeText(user.referralCode); toast.success("Referral code copied"); }}
+                  >
+                    Ref: {user.referralCode} <Copy className="h-2.5 w-2.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="text-right shrink-0">
+              <div className="text-[10px] text-muted-foreground uppercase mb-0.5">Balance</div>
+              <div className="font-black text-2xl text-primary leading-tight">{fmtUsdt(user?.walletBalance)}</div>
+              <div className="text-[11px] text-muted-foreground">USDT</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Quick Nav Grid ── */}
+      <div className="grid grid-cols-3 gap-2">
+        {[
+          { label: "Products", href: "/products", icon: ShoppingBag, color: "text-blue-500", bg: "bg-blue-50 border-blue-100" },
+          { label: "Orders", href: "/orders", icon: Package, color: "text-green-500", bg: "bg-green-50 border-green-100" },
+          { label: "Cart", href: "/cart", icon: ShoppingCart, color: "text-orange-500", bg: "bg-orange-50 border-orange-100", badge: cartCount > 0 ? cartCount : undefined },
+          { label: "Wishlist", href: "/wishlist", icon: Heart, color: "text-red-500", bg: "bg-red-50 border-red-100" },
+          { label: "Wallet", href: "/wallet", icon: Wallet, color: "text-purple-500", bg: "bg-purple-50 border-purple-100" },
+          { label: "Lottery", href: "/lottery", icon: Trophy, color: "text-yellow-500", bg: "bg-yellow-50 border-yellow-100" },
+        ].map((item) => (
+          <Link key={item.href} href={item.href}>
+            <div className={`border rounded-xl p-3 flex flex-col items-center gap-1.5 cursor-pointer hover:shadow-sm transition-shadow relative ${item.bg}`}>
+              {item.badge !== undefined && (
+                <span className="absolute top-2 right-2 bg-primary text-primary-foreground text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                  {item.badge > 9 ? "9+" : item.badge}
+                </span>
+              )}
+              <item.icon className={`h-5 w-5 ${item.color}`} />
+              <span className="text-[11px] font-semibold text-center">{item.label}</span>
+            </div>
           </Link>
         ))}
       </div>
-    </section>
-  );
-}
 
-export default function Home() {
-  const { data: featuredData, isLoading: featuredLoading } = useGetFeatured();
-  const { data: categories, isLoading: categoriesLoading } = useListCategories();
-
-  return (
-    <div className="container mx-auto px-4 md:px-8 py-8">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-card border border-border mb-16">
-        <div className="absolute inset-0 bg-gradient-to-r from-background to-transparent z-10" />
-        <div className="relative z-20 px-8 py-24 md:py-32 md:px-16 flex flex-col items-start w-full md:w-2/3">
-          <div className="inline-block px-3 py-1 mb-6 border border-primary text-primary text-xs font-bold uppercase tracking-widest bg-primary/10">
-            Institutional Grade Commerce
+      {/* ── Wallet summary ── */}
+      <Card>
+        <CardContent className="p-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-purple-50 border border-purple-100 flex items-center justify-center">
+              <Wallet className="h-4.5 w-4.5 text-purple-500" />
+            </div>
+            <div>
+              <div className="text-[11px] text-muted-foreground uppercase font-medium">USDT Wallet Balance</div>
+              <div className="font-black text-xl text-foreground">{fmtUsdt(user?.walletBalance)} <span className="text-sm font-normal text-muted-foreground">USDT</span></div>
+            </div>
           </div>
-          <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-6 leading-none">
-            Spend Your Crypto <br /> With Confidence
-          </h1>
-          <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-xl">
-            Seamlessly purchase premium goods directly from your Telebit USDT balance. Zero off-ramping, immediate settlement.
-          </p>
-          <div className="flex gap-4">
-            <Link href="/products">
-              <Button size="lg" className="rounded-none uppercase tracking-wider font-bold h-14 px-8">
-                Browse Catalog
+          <Link href="/wallet">
+            <Button variant="outline" size="sm" className="rounded-full text-xs gap-1 shrink-0">
+              Manage <ChevronRight className="h-3 w-3" />
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
+
+      {/* ── Recent Orders ── */}
+      <Card>
+        <CardHeader className="pb-2 pt-4 px-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <Package className="h-4 w-4 text-green-500" />
+              Recent Orders
+            </CardTitle>
+            <Link href="/orders">
+              <Button variant="ghost" size="sm" className="text-xs h-7 gap-0.5 text-primary">
+                All Orders <ChevronRight className="h-3 w-3" />
               </Button>
             </Link>
           </div>
-        </div>
-      </section>
-
-      {/* Categories Grid */}
-      <section className="mb-16">
-        <h2 className="text-2xl font-bold uppercase tracking-wider mb-8">Shop by Category</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {categoriesLoading ? (
-            Array(6).fill(0).map((_, i) => <Skeleton key={i} className="h-32 rounded-none" />)
-          ) : (
-            categories?.map((cat) => (
-              <Link key={cat.id} href={`/products?category=${cat.id}`}>
-                <div className="h-32 bg-card border border-border flex flex-col items-center justify-center p-4 hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer group">
-                  <h3 className="font-bold uppercase tracking-wider text-center group-hover:text-primary transition-colors">{cat.name}</h3>
-                  <span className="text-xs text-muted-foreground mt-2">{cat.productCount} Products</span>
-                </div>
+        </CardHeader>
+        <CardContent className="px-4 pb-4">
+          {ordersLoading ? (
+            <div className="space-y-2">
+              {[1, 2].map((i) => <Skeleton key={i} className="h-14 w-full rounded-lg" />)}
+            </div>
+          ) : recentOrders.length === 0 ? (
+            <div className="text-center py-6">
+              <Package className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+              <p className="text-xs text-muted-foreground">No orders yet</p>
+              <Link href="/products">
+                <Button variant="outline" size="sm" className="rounded-full text-xs mt-3">Browse Products</Button>
               </Link>
-            ))
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {recentOrders.map((order) => (
+                <Link key={order.id} href={`/orders/${order.id}`}>
+                  <div className="flex items-center justify-between border rounded-lg px-3 py-2.5 hover:bg-muted/30 transition-colors cursor-pointer">
+                    <div>
+                      <div className="text-xs font-semibold truncate max-w-[160px]">Order #{order.id.slice(0, 8)}</div>
+                      <div className="text-[11px] text-muted-foreground">{order.items?.length ?? 0} item{(order.items?.length ?? 0) !== 1 ? "s" : ""}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 border rounded-full uppercase ${ORDER_STATUS_COLOR[order.status] ?? "text-muted-foreground bg-muted/30 border-border"}`}>
+                        {order.status}
+                      </span>
+                      <span className="font-bold text-sm text-primary">{fmtUsdt(order.totalUsdt)}</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
           )}
-        </div>
-      </section>
+        </CardContent>
+      </Card>
 
-      {featuredLoading ? (
-        <div className="space-y-12">
-          <Skeleton className="h-64 w-full rounded-none" />
-          <Skeleton className="h-64 w-full rounded-none" />
-        </div>
-      ) : (
-        <>
-          <ProductGrid title="Featured Products" products={featuredData?.featured || []} icon={Star} />
-          <ProductGrid title="New Arrivals" products={featuredData?.newArrivals || []} icon={Zap} />
-          <ProductGrid title="Trending Now" products={featuredData?.topRated || []} icon={TrendingUp} />
-          <ProductGrid title="On Sale" products={featuredData?.onSale || []} icon={Tag} />
-        </>
-      )}
+      {/* ── Services quick access ── */}
+      <Card>
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <Zap className="h-4 w-4 text-yellow-500" />
+            More Services
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-4 space-y-2">
+          {[
+            { label: "P2P Transfer", desc: "Send USDT to other users", href: "/p2p", icon: ArrowLeftRight, color: "text-blue-500" },
+            { label: "Services", desc: "Top-ups, gift cards & more", href: "/services", icon: Zap, color: "text-yellow-500" },
+            { label: "Lottery", desc: "Try your luck and win", href: "/lottery", icon: Trophy, color: "text-amber-500" },
+          ].map((s) => (
+            <Link key={s.href} href={s.href}>
+              <div className="flex items-center justify-between border rounded-lg px-3 py-2.5 hover:bg-muted/30 transition-colors cursor-pointer">
+                <div className="flex items-center gap-3">
+                  <s.icon className={`h-4.5 w-4.5 ${s.color} shrink-0`} />
+                  <div>
+                    <div className="text-xs font-semibold">{s.label}</div>
+                    <div className="text-[11px] text-muted-foreground">{s.desc}</div>
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </Link>
+          ))}
+        </CardContent>
+      </Card>
+
     </div>
   );
 }

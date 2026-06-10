@@ -20,7 +20,7 @@ export default function ShopSignInPage() {
   const [verifying, setVerifying] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
 
-  if (!isLoading && isSignedIn) return <Redirect to="/products" />;
+  if (!isLoading && isSignedIn) return <Redirect to="/" />;
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +63,7 @@ export default function ShopSignInPage() {
       const body = await res.json().catch(() => ({})) as { error?: string; user?: any };
       if (!res.ok) throw new Error(body.error || "Verification failed");
       if (body.user) queryClient.setQueryData(["getMe"], body.user);
-      setLocation("/products");
+      setLocation("/");
     } catch (e: any) {
       setError(e.message);
       setVerifying(false);
@@ -81,7 +81,7 @@ export default function ShopSignInPage() {
       const body = await res.json().catch(() => ({})) as { error?: string; user?: any };
       if (!res.ok) throw new Error(body.error || "Demo login failed");
       if (body.user) queryClient.setQueryData(["getMe"], body.user);
-      setLocation("/products");
+      setLocation("/");
     } catch (e: any) {
       setError(e.message);
     } finally {
