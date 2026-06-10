@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useUser } from "@clerk/react";
-import { ShoppingCart, Heart, Package, ShieldCheck, LogOut, Menu, X, LayoutGrid } from "lucide-react";
+import { ShoppingCart, Heart, Package, ShieldCheck, LogOut, Menu, X, LayoutGrid, Zap } from "lucide-react";
 import { useGetCart, useGetMe } from "@workspace/api-client-react";
 import { useClerk } from "@clerk/react";
 import { fmtUsdt } from "@/lib/utils";
@@ -137,7 +137,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Mobile bottom footer nav */}
       <nav className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-card border-t border-border">
-        <div className={cn("grid h-16", user ? "grid-cols-4" : "grid-cols-1")}>
+        <div className={cn("grid h-16", user ? "grid-cols-5" : "grid-cols-1")}>
           {user ? (
             <>
               <Link
@@ -190,6 +190,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <Package className={cn("h-5 w-5", location.startsWith("/orders") && "stroke-[2.5px]")} />
                 <span>Orders</span>
               </Link>
+
+              <a
+                href="/services"
+                className="flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors text-muted-foreground hover:text-primary"
+              >
+                <Zap className="h-5 w-5" />
+                <span>Services</span>
+              </a>
             </>
           ) : (
             <Link
