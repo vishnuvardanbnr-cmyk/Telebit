@@ -1,0 +1,73 @@
+*TeleBit Compensation Plan* 
+::::::::::::::::::::::::::::::::::::::::::::::::::::
+ *BOOSTER PLAN  TRUST PLAN* 
+               BOOSTER PLAN
+               -------------------------
+1. Subscription 
+2. Holding 
+3. NFT Bidding 
+÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷
+*Subscription Plan* 
+🚥🚥🚥🚥🚥🚥🚥
+Subscription Package Amount : 35$
+
+ 
+Direct Referral income : 10$
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ *Holding Plan*
+🚥🚥🚥🚥🚥🚥
+Token Purchase : 5$ - 10000$
+
+You will receive 90% of the purchase amount in TeleBit Tokens.
+
+If the Token appreciation in Holding is 2 times the Purchase amount, total Holding Asset  transferred to the available balance. 
+
+ *Holding Level income*
+🚥🚥🚥🚥🚥🚥
+1st   level -> 5%
+2nd  level -> 1%
+3rd - 10th -> 0.5%
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+ *Bidding Plan* 
+🚥🚥🚥🚥🚥🚥
+
+ *Bidding Reward :* 
+
+ Up to 1x Token Purchase amount , 1% bidding Reward and  Upto next *1x* 0.5% bidding Reward. upto 1st 1x ->  1%, upto next 1 x 0.5%. 
+So if the bidding Reward is 2x the Purchase amount, the Bidding Limit should be Zero. Also, the holding asset must be transferred to the available balance.
+
+
+ *Maximum bidding Reward*
+
+ *Investers - 2X* 
+( _2 times the Token Purchase amount.)_ 
+
+ *Promoters -  5X.* 
+If Total Income is 5 times the Purchase Amount then the *claim button* should be inactive. To make the button active, you need to purchase the token again.
+
+Total income  = bidding Profit + bidding Level + Holding Level + Subscription Referral.
+
+ _Criteria_👆: There must be a minimum of 3 referrals. Each of them must have purchased a Token for 50% of the Token Purchase amount on the Referral ID.
+
+ *Bidding Level income* 
+🚥🚥🚥🚥🚥🚥🚥🚥🚥
+1st level to 10th level -> 0.2%
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+ *Criteria* 
+👇👇👇👇
+One Direct Referral has get income from one Level. Those who do 10 direct Levels will get income from 10 levels.
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+ *Withdrawal*
+
+External withdrawal should be active only in bidding Profit. External should be temporarily inactive in available balance. Withdrawal 20$  in every 48 hrs.
+
+ *P2P Trading* 
+
+In P2P, you can place a Sell order with a maximum of 200 dollars and a minimum of 10 dollars.The price should increase by $0.1 with each buy.
+
+NB: Now the Sell order criteria is 10% of the Bidding amount. This is no longer necessary.
+
+You only need to show 10 orders on one screen. As the trade progresses, it should move from bottom to top. 
+Users should also get P2P Report.
+
+There should be a Search button at the top. If you give a particular speaker name, it should show and you can buy it.
