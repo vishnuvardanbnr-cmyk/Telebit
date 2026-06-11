@@ -25,6 +25,7 @@ import NftPools from "./pages/nft-pools";
 import NftHoldings from "./pages/nft-holdings";
 import { Layout } from "./components/layout";
 import { AuthProvider, useAuth } from "./lib/auth-context";
+import { OfflineBanner } from "./components/offline-banner";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -168,6 +169,7 @@ function AppWithAuth() {
 function App() {
   return (
     <div className="text-foreground bg-background min-h-[100dvh]">
+      <OfflineBanner />
       <WouterRouter base={basePath}>
         <AppWithAuth />
       </WouterRouter>
