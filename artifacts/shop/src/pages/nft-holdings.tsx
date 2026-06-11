@@ -4,6 +4,7 @@ import {
   useGetNftGlobal,
   useClaimNftHoldings,
 } from "@workspace/api-client-react";
+import { useAuth } from "@/lib/auth-context";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,7 +17,7 @@ import { toast } from "sonner";
 import { Link } from "wouter";
 import {
   ArrowLeft, Coins, TrendingUp, Wallet, BarChart3,
-  Trophy, RefreshCw, Info,
+  Trophy, RefreshCw, Info, ShieldAlert,
 } from "lucide-react";
 
 type ClaimBucket = "pool" | "referral" | "level" | "all";
@@ -107,6 +108,7 @@ function ClaimDialog({
 export default function NftHoldingsPage() {
   const { data: holdings, isLoading: holdingsLoading } = useGetNftHoldings();
   const { data: global, isLoading: globalLoading } = useGetNftGlobal();
+  const { user } = useAuth();
   const [claimBucket, setClaimBucket] = useState<ClaimBucket | null>(null);
 
   const isLoading = holdingsLoading || globalLoading;
@@ -120,6 +122,15 @@ export default function NftHoldingsPage() {
   const totalValue = totalTokens * sellPrice;
   const lifetimePurchased = parseFloat(holdings?.lifetimePurchased ?? "0");
   const capPct = Math.min(100, (lifetimePurchased / 10000) * 100);
+
+  // Income cap: 2x for investors, 5x for promoters (≥3 qualified direct refs)
+  // We show 2x cap conservatively; backend enforces the correct cap
+  const investedUsdt = parseFloat(user?.investedUsdt ?? "0");
+  const totalIncomeEarned = parseFloat(user?.totalIncomeEarned ?? "0");
+  const incomeCap2x = investedUsdt * 2;
+  const incomeCap5x = investedUsdt * 5;
+  const isCapped = investedUsdt > 0 && totalIncomeEarned >= incomeCap2x;
+  const incomeCapPct = investedUsdt > 0 ? Math.min(100, (totalIncomeEarned / incomeCap2x) * 100) : 0;
 
   const claimableTokens =
     claimBucket === "pool" ? String(poolReward) :
@@ -168,6 +179,45 @@ export default function NftHoldingsPage() {
             </CardContent>
           </Card>
 
+          {/* Income cap status */}
+          {investedUsdt > 0 && (
+            <Card className={`rounded-2xl ${isCapped ? "border-red-300 bg-red-50" : "border-border"}`}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <ShieldAlert className={`h-4 w-4 ${isCapped ? "text-red-500" : "text-muted-foreground"}`} />
+                    <span className="text-sm font-medium">Income Cap Progress</span>
+                  </div>
+                  <div className="text-right">
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isCapped ? "bg-red-100 text-red-700" : "bg-muted text-muted-foreground"}`}>
+                      {isCapped ? "CAP REACHED" : `${incomeCapPct.toFixed(1)}%`}
+                    </span>
+                  </div>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${isCapped ? "bg-red-400" : incomeCapPct >= 80 ? "bg-orange-400" : "bg-green-500"}`}
+                    style={{ width: `${incomeCapPct}%` }}
+                  />
+                </div>
+                <div className="flex justify-between mt-1.5">
+                  <p className="text-[11px] text-muted-foreground">
+                    Earned: <span className="font-semibold text-foreground">${fmtUsdt(user?.totalIncomeEarned ?? "0")}</span>
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    2× cap: <span className="font-semibold text-foreground">${fmtUsdt(String(incomeCap2x))}</span>
+                    <span className="text-muted-foreground/60"> · 5× promoter: ${fmtUsdt(String(incomeCap5x))}</span>
+                  </p>
+                </div>
+                {isCapped && (
+                  <p className="text-[11px] text-red-600 mt-2 font-medium">
+                    You have reached your 2× income cap. Promoters (≥3 qualified referrals) earn up to 5×.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Reward buckets */}
           <div className="space-y-3">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Claimable Rewards</p>
@@ -184,8 +234,8 @@ export default function NftHoldingsPage() {
                     <p className="text-xs text-muted-foreground">{poolReward.toFixed(4)} TBT · ≈ ${(poolReward * sellPrice).toFixed(4)}</p>
                   </div>
                 </div>
-                <Button size="sm" className="rounded-xl h-9 text-xs" disabled={poolReward <= 0} onClick={() => setClaimBucket("pool")}>
-                  Claim
+                <Button size="sm" className="rounded-xl h-9 text-xs" disabled={poolReward <= 0 || isCapped} onClick={() => setClaimBucket("pool")}>
+                  {isCapped ? "Capped" : "Claim"}
                 </Button>
               </CardContent>
             </Card>
@@ -202,8 +252,8 @@ export default function NftHoldingsPage() {
                     <p className="text-xs text-muted-foreground">{referralReward.toFixed(4)} TBT · ≈ ${(referralReward * sellPrice).toFixed(4)}</p>
                   </div>
                 </div>
-                <Button size="sm" variant="outline" className="rounded-xl h-9 text-xs" disabled={referralReward <= 0} onClick={() => setClaimBucket("referral")}>
-                  Claim
+                <Button size="sm" variant="outline" className="rounded-xl h-9 text-xs" disabled={referralReward <= 0 || isCapped} onClick={() => setClaimBucket("referral")}>
+                  {isCapped ? "Capped" : "Claim"}
                 </Button>
               </CardContent>
             </Card>
@@ -220,8 +270,8 @@ export default function NftHoldingsPage() {
                     <p className="text-xs text-muted-foreground">{levelReward.toFixed(4)} TBT · ≈ ${(levelReward * sellPrice).toFixed(4)}</p>
                   </div>
                 </div>
-                <Button size="sm" variant="outline" className="rounded-xl h-9 text-xs border-purple-300 text-purple-700 hover:bg-purple-50" disabled={levelReward <= 0} onClick={() => setClaimBucket("level")}>
-                  Claim
+                <Button size="sm" variant="outline" className="rounded-xl h-9 text-xs border-purple-300 text-purple-700 hover:bg-purple-50" disabled={levelReward <= 0 || isCapped} onClick={() => setClaimBucket("level")}>
+                  {isCapped ? "Capped" : "Claim"}
                 </Button>
               </CardContent>
             </Card>
@@ -236,10 +286,11 @@ export default function NftHoldingsPage() {
               <Button
                 className="w-full h-12 rounded-xl text-sm font-semibold gap-2"
                 variant="outline"
+                disabled={isCapped}
                 onClick={() => setClaimBucket("all")}
               >
                 <RefreshCw className="h-4 w-4" />
-                Claim All — {totalTokens.toFixed(4)} TBT (≈ ${totalValue.toFixed(4)})
+                {isCapped ? "Income Cap Reached — Cannot Claim" : `Claim All — ${totalTokens.toFixed(4)} TBT (≈ $${totalValue.toFixed(4)})`}
               </Button>
             )}
           </div>

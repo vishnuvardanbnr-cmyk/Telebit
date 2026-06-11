@@ -30,6 +30,12 @@ export const GetMeResponse = zod.object({
   "parentUserId": zod.string().nullish(),
   "walletBalance": zod.string(),
   "earningsBalance": zod.string(),
+  "investedUsdt": zod.string().optional(),
+  "biddingProfitBalance": zod.string().optional(),
+  "biddingRewardEarned": zod.string().optional(),
+  "totalIncomeEarned": zod.string().optional(),
+  "subscriptionActive": zod.boolean().optional(),
+  "lastWithdrawalAt": zod.coerce.date().nullish(),
   "depositAddress": zod.string(),
   "referralCode": zod.string(),
   "isAdmin": zod.boolean(),
@@ -128,6 +134,12 @@ export const SwitchSubAccountResponse = zod.object({
   "parentUserId": zod.string().nullish(),
   "walletBalance": zod.string(),
   "earningsBalance": zod.string(),
+  "investedUsdt": zod.string().optional(),
+  "biddingProfitBalance": zod.string().optional(),
+  "biddingRewardEarned": zod.string().optional(),
+  "totalIncomeEarned": zod.string().optional(),
+  "subscriptionActive": zod.boolean().optional(),
+  "lastWithdrawalAt": zod.coerce.date().nullish(),
   "depositAddress": zod.string(),
   "referralCode": zod.string(),
   "isAdmin": zod.boolean(),
@@ -267,6 +279,25 @@ export const GetSettingsResponse = zod.object({
   "withdrawFeeMode": zod.enum(['deduct_from_amount', 'deduct_from_balance']),
   "withdrawalEnabled": zod.boolean(),
   "otpWithdrawalEnabled": zod.boolean()
+})
+
+
+/**
+ * @summary Get subscription status
+ */
+export const GetSubscriptionStatusResponse = zod.object({
+  "active": zod.boolean()
+})
+
+
+/**
+ * @summary Activate subscription ($35)
+ */
+export const ActivateSubscriptionResponse = zod.object({
+  "success": zod.boolean(),
+  "message": zod.string(),
+  "newWalletBalance": zod.string(),
+  "referralBonusPaid": zod.number()
 })
 
 

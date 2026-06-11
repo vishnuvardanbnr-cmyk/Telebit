@@ -22,6 +22,13 @@ export interface User {
   parentUserId?: string | null;
   walletBalance: string;
   earningsBalance: string;
+  investedUsdt?: string;
+  biddingProfitBalance?: string;
+  biddingRewardEarned?: string;
+  totalIncomeEarned?: string;
+  subscriptionActive?: boolean;
+  /** @nullable */
+  lastWithdrawalAt?: Date | null;
   depositAddress: string;
   referralCode: string;
   isAdmin: boolean;

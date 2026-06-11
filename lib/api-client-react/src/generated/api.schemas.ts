@@ -43,6 +43,13 @@ export interface User {
   parentUserId?: string | null;
   walletBalance: string;
   earningsBalance: string;
+  investedUsdt?: string;
+  biddingProfitBalance?: string;
+  biddingRewardEarned?: string;
+  totalIncomeEarned?: string;
+  subscriptionActive?: boolean;
+  /** @nullable */
+  lastWithdrawalAt?: string | null;
   depositAddress: string;
   referralCode: string;
   isAdmin: boolean;
@@ -165,6 +172,17 @@ export interface P2PTransferRequest {
   recipientIdentifier: string;
   /** @nullable */
   note?: string | null;
+}
+
+export interface SubscriptionStatus {
+  active: boolean;
+}
+
+export interface SubscriptionResult {
+  success: boolean;
+  message: string;
+  newWalletBalance: string;
+  referralBonusPaid: number;
 }
 
 export type PublicSettingsWithdrawFeeMode = typeof PublicSettingsWithdrawFeeMode[keyof typeof PublicSettingsWithdrawFeeMode];

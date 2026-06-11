@@ -45,18 +45,24 @@ async function enrichAds(ads: (typeof shopP2pAdsTable.$inferSelect)[]) {
 // ─── Ads ──────────────────────────────────────────────────────────────────────
 
 router.get("/shop/p2p/ads", async (req, res): Promise<void> => {
-  const { side } = req.query as { side?: string };
+  const { side, search } = req.query as { side?: string; search?: string };
   const offset = Math.max(0, Number(req.query["offset"] ?? 0));
-  const limit = 20;
+  const limit = 10;
   try {
     const conditions = [
       eq(shopP2pAdsTable.status, "active"),
       ...(side === "buy" || side === "sell" ? [eq(shopP2pAdsTable.side, side)] : []),
     ];
     const where = and(...conditions);
-    const ads = await db.select().from(shopP2pAdsTable).where(where).orderBy(desc(shopP2pAdsTable.createdAt)).limit(limit).offset(offset);
-    const [totalRow] = await db.select({ count: count() }).from(shopP2pAdsTable).where(where);
-    res.json({ ads: await enrichAds(ads), total: Number(totalRow?.count ?? 0), limit, offset });
+    let ads = await db.select().from(shopP2pAdsTable).where(where).orderBy(desc(shopP2pAdsTable.createdAt));
+    const enriched = await enrichAds(ads);
+    // Filter by username search after enriching
+    const filtered = search
+      ? enriched.filter(a => a.displayName.toLowerCase().includes(search.toLowerCase()))
+      : enriched;
+    const total = filtered.length;
+    const paged = filtered.slice(offset, offset + limit);
+    res.json({ ads: paged, total, limit, offset });
   } catch (e) {
     res.status(500).json({ error: e instanceof Error ? e.message : "Failed to fetch ads" });
   }
@@ -94,6 +100,11 @@ router.post("/shop/p2p/ads", requireAuth, async (req, res): Promise<void> => {
   if (available < min) { res.status(400).json({ error: "availableAmount must be ≥ minAmount" }); return; }
 
   if (body.side === "sell") {
+    // Enforce $10 min / $200 max for sell ads
+    if (available < 10) { res.status(400).json({ error: "Minimum sell ad amount is $10 USDT" }); return; }
+    if (available > 200) { res.status(400).json({ error: "Maximum sell ad amount is $200 USDT" }); return; }
+    if (max > 200) { res.status(400).json({ error: "Maximum order amount for sell ads is $200 USDT" }); return; }
+    if (min < 10) { res.status(400).json({ error: "Minimum order amount for sell ads is $10 USDT" }); return; }
     const walletBalance = parseFloat(String(user.walletBalance));
     if (walletBalance < available) {
       res.status(400).json({ error: `Insufficient balance. Need ${available.toFixed(2)} USDT, have ${walletBalance.toFixed(2)} USDT` });
@@ -326,10 +337,15 @@ router.post("/shop/p2p/orders/:id/release", requireAuth, async (req, res): Promi
     .where(eq(shopP2pOrdersTable.id, id))
     .returning();
 
-  const [ad] = await db.select({ id: shopP2pAdsTable.id, completedOrders: shopP2pAdsTable.completedOrders }).from(shopP2pAdsTable).where(eq(shopP2pAdsTable.id, order.adId)).limit(1);
+  const [ad] = await db.select().from(shopP2pAdsTable).where(eq(shopP2pAdsTable.id, order.adId)).limit(1);
   if (ad) {
+    const newPrice = (parseFloat(String(ad.price)) + 0.1).toFixed(2);
     await db.update(shopP2pAdsTable)
-      .set({ completedOrders: (ad.completedOrders ?? 0) + 1, updatedAt: new Date() })
+      .set({
+        completedOrders: (ad.completedOrders ?? 0) + 1,
+        price: newPrice,
+        updatedAt: new Date(),
+      })
       .where(eq(shopP2pAdsTable.id, ad.id));
   }
 
@@ -491,6 +507,37 @@ router.post("/shop/p2p/orders/:id/messages", requireAuth, async (req, res): Prom
   }).returning();
 
   res.status(201).json(msg);
+});
+
+// ─── Report ───────────────────────────────────────────────────────────────────
+
+router.get("/shop/p2p/report", requireAuth, async (req, res): Promise<void> => {
+  const user = (req as any).dbUser;
+  const offset = Math.max(0, Number(req.query["offset"] ?? 0));
+  const limit = 20;
+  try {
+    const where = and(
+      or(eq(shopP2pOrdersTable.buyerUserId, user.id as string), eq(shopP2pOrdersTable.sellerUserId, user.id as string)),
+      sql`${shopP2pOrdersTable.status} IN ('released', 'resolved')`,
+    );
+    const orders = await db.select().from(shopP2pOrdersTable).where(where).orderBy(desc(shopP2pOrdersTable.createdAt)).limit(limit).offset(offset);
+    const [totalRow] = await db.select({ count: count() }).from(shopP2pOrdersTable).where(where);
+    const userIds = [...new Set([...orders.map(o => o.buyerUserId), ...orders.map(o => o.sellerUserId)])];
+    const users = userIds.length > 0
+      ? await db.select({ id: usersTable.id, email: usersTable.email }).from(usersTable)
+          .where(sql`${usersTable.id} = ANY(ARRAY[${sql.join(userIds.map(id => sql`${id}`), sql`, `)}]::text[])`)
+      : [];
+    const userMap = new Map(users.map(u => [u.id, u.email?.split("@")[0] ?? "User"]));
+    const enriched = orders.map(o => ({
+      ...o,
+      buyerName: userMap.get(o.buyerUserId) ?? "Unknown",
+      sellerName: userMap.get(o.sellerUserId) ?? "Unknown",
+      role: o.buyerUserId === (user.id as string) ? "buyer" : "seller",
+    }));
+    res.json({ orders: enriched, total: Number(totalRow?.count ?? 0), limit, offset });
+  } catch (e) {
+    res.status(500).json({ error: e instanceof Error ? e.message : "Failed to fetch report" });
+  }
 });
 
 // ─── Admin ────────────────────────────────────────────────────────────────────

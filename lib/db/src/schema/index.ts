@@ -15,3 +15,4 @@ export * from "./lottery";
 export * from "./shop_p2p";
 export * from "./telegram_mappings";
 export * from "./nft";
+export * from "./subscriptions";

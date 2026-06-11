@@ -159,7 +159,7 @@ function WithdrawSheet({ open, onClose }: { open: boolean; onClose: () => void }
 
   const watchAmount = form.watch("amount");
   const parsedAmount = parseFloat(watchAmount) || 0;
-  const balance = parseFloat(user?.walletBalance ?? "0");
+  const balance = parseFloat(user?.biddingProfitBalance ?? "0");
 
   let fee = 0;
   if (settings) {
@@ -169,9 +169,11 @@ function WithdrawSheet({ open, onClose }: { open: boolean; onClose: () => void }
   const totalDeducted = deductFromAmount ? parsedAmount : parsedAmount + fee;
   const recipientGets = deductFromAmount ? Math.max(0, parsedAmount - fee) : parsedAmount;
   const overBalance = totalDeducted > balance && parsedAmount > 0;
+  const underMinimum = parsedAmount > 0 && parsedAmount < 20;
 
   const onSubmit = (values: WithdrawForm) => {
-    if (overBalance) { toast.error("Insufficient balance"); return; }
+    if (overBalance) { toast.error("Insufficient bidding profit balance"); return; }
+    if (underMinimum) { toast.error("Minimum withdrawal amount is $20 USDT"); return; }
     createWithdrawal.mutate({ data: values }, {
       onSuccess: () => {
         toast.success("Withdrawal request submitted — awaiting admin approval");
@@ -230,10 +232,13 @@ function WithdrawSheet({ open, onClose }: { open: boolean; onClose: () => void }
 
         {!isLoading && !disabled && !blocked && (
           <div className="space-y-4">
-            {/* Balance pill */}
+            {/* Balance pill - bidding profit (withdrawable) */}
             <div className="flex items-center justify-between rounded-xl bg-muted/40 border border-border px-4 py-3">
-              <p className="text-xs text-muted-foreground font-medium">Available</p>
-              <p className="text-base font-bold text-foreground">{fmtUsdt(user?.walletBalance)} <span className="text-xs font-normal text-muted-foreground">USDT</span></p>
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">Bidding Profit (Withdrawable)</p>
+                <p className="text-[11px] text-muted-foreground/70 mt-0.5">Min $20 · 48hr cooldown</p>
+              </div>
+              <p className="text-base font-bold text-foreground">{fmtUsdt(user?.biddingProfitBalance ?? "0")} <span className="text-xs font-normal text-muted-foreground">USDT</span></p>
             </div>
 
             <Form {...form}>
@@ -256,7 +261,7 @@ function WithdrawSheet({ open, onClose }: { open: boolean; onClose: () => void }
                       Amount (USDT)
                       <button
                         type="button"
-                        onClick={() => form.setValue("amount", user?.walletBalance ?? "0", { shouldValidate: true })}
+                        onClick={() => form.setValue("amount", String(balance), { shouldValidate: true })}
                         className="text-[11px] font-bold text-primary hover:underline normal-case tracking-normal"
                       >
                         MAX
@@ -291,14 +296,17 @@ function WithdrawSheet({ open, onClose }: { open: boolean; onClose: () => void }
                     </div>
                   ))}
                   {overBalance && (
-                    <p className="text-[11px] font-semibold text-red-600 pt-0.5">Insufficient balance</p>
+                    <p className="text-[11px] font-semibold text-red-600 pt-0.5">Insufficient bidding profit balance</p>
+                  )}
+                  {underMinimum && !overBalance && (
+                    <p className="text-[11px] font-semibold text-amber-600 pt-0.5">Minimum withdrawal is $20 USDT</p>
                   )}
                 </div>
 
                 <Button
                   type="submit"
                   className="w-full h-12 rounded-xl font-bold text-sm"
-                  disabled={createWithdrawal.isPending || overBalance}
+                  disabled={createWithdrawal.isPending || overBalance || underMinimum}
                 >
                   {createWithdrawal.isPending ? (
                     <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Submitting…</>
@@ -512,7 +520,7 @@ export default function Wallet() {
 
       {/* Balance card */}
       <div className="rounded-3xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground px-6 py-6 shadow-lg shadow-primary/20">
-        <p className="text-xs font-medium opacity-70 uppercase tracking-wide mb-1">Total Balance</p>
+        <p className="text-xs font-medium opacity-70 uppercase tracking-wide mb-1">Available Balance</p>
         <p className="font-black text-4xl tracking-tight">
           {fmtUsdt(user?.walletBalance)}
         </p>
@@ -531,8 +539,20 @@ export default function Wallet() {
             className="flex-1 flex items-center justify-center gap-2 bg-white/15 hover:bg-white/25 active:bg-white/30 text-white text-sm font-semibold py-3 rounded-2xl transition-colors"
           >
             <MinusCircle className="w-4 h-4" />
-            Withdraw
+            Withdraw Profit
           </button>
+        </div>
+      </div>
+
+      {/* Bidding profit balance card */}
+      <div className="rounded-2xl border border-border bg-card px-5 py-4 flex items-center justify-between shadow-sm">
+        <div>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Bidding Profit Balance</p>
+          <p className="text-[11px] text-muted-foreground/70 mt-0.5">Withdrawable · min $20 · 48hr cooldown</p>
+        </div>
+        <div className="text-right">
+          <p className="text-xl font-black text-foreground tabular-nums">{fmtUsdt(user?.biddingProfitBalance ?? "0")}</p>
+          <p className="text-[11px] text-muted-foreground">USDT</p>
         </div>
       </div>
 

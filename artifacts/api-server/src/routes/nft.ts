@@ -102,6 +102,27 @@ async function distributeNftPool(
   return { userTokens, newBuyPrice };
 }
 
+// ─── Income helpers ───────────────────────────────────────────────────────────
+
+async function getDirectReferralCount(userId: string): Promise<number> {
+  const [row] = await db
+    .select({ c: sql<string>`COUNT(*)::text` })
+    .from(usersTable)
+    .where(eq(usersTable.uplineId, userId));
+  return parseInt(row?.c ?? "0", 10);
+}
+
+async function getIncomeCap(user: typeof usersTable.$inferSelect): Promise<number> {
+  const invested = parseFloat(user.investedUsdt);
+  if (invested <= 0) return 0;
+  const refs = await db
+    .select({ investedUsdt: usersTable.investedUsdt })
+    .from(usersTable)
+    .where(eq(usersTable.uplineId, user.id));
+  const qualified = refs.filter(r => parseFloat(r.investedUsdt) >= invested * 0.5).length;
+  return invested * (qualified >= 3 ? 5 : 2);
+}
+
 async function giveUplinesIncome(global: GlobalAmountV2, userId: string, amount: number) {
   const buyPrice = parseFloat(global.buyPrice);
   let currentUser = await db
@@ -121,8 +142,65 @@ async function giveUplinesIncome(global: GlobalAmountV2, userId: string, amount:
     if (!upline) break;
 
     if (parseFloat(upline.investedUsdt) > 0) {
-      const tokens = (NFT_LEVEL_RATES[i] * amount) / buyPrice;
-      await upsertHoldingAdd(upline.id, { referral: tokens });
+      // Gate: upline needs ≥ (i+1) direct referrals to earn level income
+      const directCount = await getDirectReferralCount(uplineId);
+      if (directCount >= i + 1) {
+        const cap = await getIncomeCap(upline);
+        const earned = parseFloat(upline.totalIncomeEarned);
+        if (earned < cap) {
+          const usdtEquiv = NFT_LEVEL_RATES[i] * amount;
+          const actual = Math.min(usdtEquiv, cap - earned);
+          const tokens = actual / buyPrice;
+          await upsertHoldingAdd(upline.id, { referral: tokens });
+          await db
+            .update(usersTable)
+            .set({ totalIncomeEarned: String(earned + actual) } as any)
+            .where(eq(usersTable.id, upline.id));
+        }
+      }
+    }
+
+    currentUser = upline;
+  }
+}
+
+const BIDDING_LEVEL_RATE = 0.002; // 0.2% per level
+
+async function giveBiddingLevelIncome(userId: string, bidAmount: number) {
+  let currentUser = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.id, userId))
+    .then((r) => r[0]);
+  const visited = new Set<string>([userId]);
+
+  for (let i = 0; i < 10; i++) {
+    if (!currentUser?.uplineId) break;
+    const uplineId = currentUser.uplineId;
+    if (visited.has(uplineId)) break;
+    visited.add(uplineId);
+
+    const [upline] = await db.select().from(usersTable).where(eq(usersTable.id, uplineId));
+    if (!upline) break;
+
+    if (parseFloat(upline.investedUsdt) > 0) {
+      const directCount = await getDirectReferralCount(uplineId);
+      if (directCount >= i + 1) {
+        const cap = await getIncomeCap(upline);
+        const earned = parseFloat(upline.totalIncomeEarned);
+        if (earned < cap) {
+          const income = Math.min(bidAmount * BIDDING_LEVEL_RATE, cap - earned);
+          if (income > 0) {
+            await db
+              .update(usersTable)
+              .set({
+                walletBalance: String(parseFloat(upline.walletBalance) + income),
+                totalIncomeEarned: String(earned + income),
+              } as any)
+              .where(eq(usersTable.id, upline.id));
+          }
+        }
+      }
     }
 
     currentUser = upline;
@@ -497,6 +575,91 @@ router.post("/nft/pools/:poolId/bid", requireAuth, async (req, res): Promise<voi
     }
   }
 
+  // ─── Bidding reward (1% → 0.5% → cap at 2×) ──────────────────────────────
+  const investedUsdt = parseFloat(user.investedUsdt);
+  if (investedUsdt > 0) {
+    const biddingRewardEarned = parseFloat(user.biddingRewardEarned);
+    const totalIncomeEarned = parseFloat(user.totalIncomeEarned);
+    const cap1 = investedUsdt;
+    const cap2 = investedUsdt * 2;
+
+    // Promoter check for overall income cap
+    const directRefs = await db
+      .select({ investedUsdt: usersTable.investedUsdt })
+      .from(usersTable)
+      .where(eq(usersTable.uplineId, user.id));
+    const qualifiedRefs = directRefs.filter(r => parseFloat(r.investedUsdt) >= investedUsdt * 0.5);
+    const incomeCap = investedUsdt * (qualifiedRefs.length >= 3 ? 5 : 2);
+
+    if (biddingRewardEarned < cap2 && totalIncomeEarned < incomeCap) {
+      let reward = 0;
+      if (biddingRewardEarned < cap1) {
+        const at1pct = Math.min(invAmount, cap1 - biddingRewardEarned);
+        reward += at1pct * 0.01;
+        const at05pct = Math.min(
+          Math.max(invAmount - at1pct, 0),
+          cap2 - Math.min(biddingRewardEarned + at1pct, cap2),
+        );
+        reward += at05pct * 0.005;
+      } else {
+        reward = Math.min(invAmount, cap2 - biddingRewardEarned) * 0.005;
+      }
+      reward = Math.min(reward, incomeCap - totalIncomeEarned);
+
+      if (reward > 0) {
+        const newBiddingProfit = parseFloat(user.biddingProfitBalance) + reward;
+        const newBiddingReward = biddingRewardEarned + reward;
+        const newTotalIncome = totalIncomeEarned + reward;
+        await db.update(usersTable).set({
+          biddingProfitBalance: String(newBiddingProfit),
+          biddingRewardEarned: String(newBiddingReward),
+          totalIncomeEarned: String(newTotalIncome),
+        } as any).where(eq(usersTable.id, user.id));
+
+        // Auto-transfer holdings when 2× bidding reward cap is reached
+        if (newBiddingReward >= cap2) {
+          const [h] = await db.select().from(nftHoldingsTable).where(eq(nftHoldingsTable.userId, user.id));
+          if (h) {
+            const sp = parseFloat(global.sellPrice);
+            const pa = parseFloat(h.poolRewardAvailable);
+            const ra = parseFloat(h.referralRewardAvailable);
+            const la = parseFloat(h.levelRewardAvailable);
+            const totalHeld = pa + ra + la;
+            if (totalHeld > 0) {
+              const usdtVal = totalHeld * sp;
+              await db.update(nftHoldingsTable).set({
+                poolRewardAvailable: "0",
+                poolRewardClaimed: String(parseFloat(h.poolRewardClaimed) + pa),
+                poolRewardClaimedUsdt: String(parseFloat(h.poolRewardClaimedUsdt) + pa * sp),
+                referralRewardAvailable: "0",
+                referralRewardClaimed: String(parseFloat(h.referralRewardClaimed) + ra),
+                referralRewardClaimedUsdt: String(parseFloat(h.referralRewardClaimedUsdt) + ra * sp),
+                levelRewardAvailable: "0",
+                levelRewardClaimed: String(parseFloat(h.levelRewardClaimed) + la),
+                levelRewardClaimedUsdt: String(parseFloat(h.levelRewardClaimedUsdt) + la * sp),
+              } as any).where(eq(nftHoldingsTable.userId, user.id));
+              await db.update(usersTable).set({
+                walletBalance: sql`${usersTable.walletBalance} + ${String(usdtVal)}`,
+              } as any).where(eq(usersTable.id, user.id));
+              // Adjust global
+              const ne = Math.max(0, parseFloat(global.expenses) - totalHeld);
+              const nl = Math.max(0, parseFloat(global.liquidity) - usdtVal);
+              const nb = ne > 0 ? nl / ne : parseFloat(global.buyPrice);
+              await db.update(globalAmountsV2Table).set({
+                expenses: String(ne),
+                liquidity: String(nl),
+                buyPrice: String(nb),
+                sellPrice: String(nb * 0.9),
+              } as any).where(eq(globalAmountsV2Table.id, global.id));
+            }
+          }
+        }
+      }
+    }
+    // Bidding level income to uplines (0.2% per level, 10 levels)
+    await giveBiddingLevelIncome(user.id, invAmount);
+  }
+
   res.json({
     success: true,
     message: `Successfully bid $${invAmount} in pool`,
@@ -541,11 +704,64 @@ router.get("/nft/holdings", requireAuth, async (req, res): Promise<void> => {
     parseFloat(holding.referralRewardAvailable) +
     parseFloat(holding.levelRewardAvailable);
 
+  // 2× appreciation auto-transfer: if total token value ≥ 2× investedUsdt
+  const investedUsdtForHolding = parseFloat(user.investedUsdt);
+  if (investedUsdtForHolding > 0 && totalTokens * buyPrice >= investedUsdtForHolding * 2) {
+    const usdtVal = totalTokens * sellPrice;
+    if (totalTokens > 0) {
+      const h = holding;
+      const pa = parseFloat(h.poolRewardAvailable);
+      const ra = parseFloat(h.referralRewardAvailable);
+      const la = parseFloat(h.levelRewardAvailable);
+      await db.update(nftHoldingsTable).set({
+        poolRewardAvailable: "0",
+        poolRewardClaimed: String(parseFloat(h.poolRewardClaimed) + pa),
+        poolRewardClaimedUsdt: String(parseFloat(h.poolRewardClaimedUsdt) + pa * sellPrice),
+        referralRewardAvailable: "0",
+        referralRewardClaimed: String(parseFloat(h.referralRewardClaimed) + ra),
+        referralRewardClaimedUsdt: String(parseFloat(h.referralRewardClaimedUsdt) + ra * sellPrice),
+        levelRewardAvailable: "0",
+        levelRewardClaimed: String(parseFloat(h.levelRewardClaimed) + la),
+        levelRewardClaimedUsdt: String(parseFloat(h.levelRewardClaimedUsdt) + la * sellPrice),
+      } as any).where(eq(nftHoldingsTable.userId, user.id));
+      await db.update(usersTable).set({
+        walletBalance: sql`${usersTable.walletBalance} + ${String(usdtVal)}`,
+      } as any).where(eq(usersTable.id, user.id));
+      const ne = Math.max(0, parseFloat(global!.expenses) - totalTokens);
+      const nl = Math.max(0, parseFloat(global!.liquidity) - usdtVal);
+      const nb = ne > 0 ? nl / ne : buyPrice;
+      await db.update(globalAmountsV2Table).set({
+        expenses: String(ne),
+        liquidity: String(nl),
+        buyPrice: String(nb),
+        sellPrice: String(nb * 0.9),
+      } as any).where(eq(globalAmountsV2Table.id, global!.id));
+      res.json({
+        ...holding,
+        poolRewardAvailable: "0",
+        referralRewardAvailable: "0",
+        levelRewardAvailable: "0",
+        holdingValueUsdt: "0",
+        autoTransferred: true,
+        autoTransferredUsdt: String(usdtVal),
+        sellPrice: String(sellPrice),
+        buyPrice: String(buyPrice),
+      });
+      return;
+    }
+  }
+
+  const incomeCap = await getIncomeCap(user);
+  const totalIncomeEarned = parseFloat(user.totalIncomeEarned);
+
   res.json({
     ...holding,
     holdingValueUsdt: String(totalTokens * sellPrice),
     sellPrice: String(sellPrice),
     buyPrice: String(buyPrice),
+    incomeCap: String(incomeCap),
+    totalIncomeEarned: String(totalIncomeEarned),
+    isCapped: incomeCap > 0 && totalIncomeEarned >= incomeCap,
   });
 });
 

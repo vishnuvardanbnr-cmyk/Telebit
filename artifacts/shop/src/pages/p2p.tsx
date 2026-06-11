@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { Link } from "wouter";
-import { ArrowLeftRight, Plus, X, ChevronLeft, ChevronRight, MessageSquare, CheckCircle2, AlertTriangle, Clock, Ban, RotateCcw, Send, ChevronDown } from "lucide-react";
+import { ArrowLeftRight, Plus, X, ChevronLeft, ChevronRight, MessageSquare, CheckCircle2, AlertTriangle, Clock, Ban, RotateCcw, Send, ChevronDown, Search, FileText } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { fmtUsdt } from "@/lib/utils";
@@ -635,24 +635,34 @@ export default function P2PPage() {
   const { user: dbUser, isSignedIn: user } = useAuth();
   const walletBalance = parseFloat(String(dbUser?.walletBalance ?? "0"));
 
+  const [mainTab, setMainTab] = useState<"market" | "report">("market");
   const [side, setSide] = useState<"buy" | "sell">("sell");
+  const [search, setSearch] = useState("");
   const [ads, setAds] = useState<Ad[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  const [reportOrders, setReportOrders] = useState<any[]>([]);
+  const [reportTotal, setReportTotal] = useState(0);
+  const [reportPage, setReportPage] = useState(0);
+  const [reportLoading, setReportLoading] = useState(false);
 
   const [showPostAd, setShowPostAd] = useState(false);
   const [selectedAd, setSelectedAd] = useState<Ad | null>(null);
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [showMyOrders, setShowMyOrders] = useState(false);
 
-  const LIMIT = 20;
+  const LIMIT = 10;
+  const REPORT_LIMIT = 20;
   const totalPages = Math.ceil(total / LIMIT);
+  const totalReportPages = Math.ceil(reportTotal / REPORT_LIMIT);
 
-  async function loadAds(p: number, s: "buy" | "sell") {
+  async function loadAds(p: number, s: "buy" | "sell", q: string = "") {
     setLoading(true);
     try {
-      const data = await api(`/ads?side=${s}&offset=${p * LIMIT}`);
+      const searchParam = q ? `&search=${encodeURIComponent(q)}` : "";
+      const data = await api(`/ads?side=${s}&offset=${p * LIMIT}${searchParam}`);
       setAds(data.ads ?? []);
       setTotal(data.total ?? 0);
     } catch {
@@ -662,15 +672,44 @@ export default function P2PPage() {
     }
   }
 
+  async function loadReport(p: number) {
+    setReportLoading(true);
+    try {
+      const data = await api(`/report?offset=${p * REPORT_LIMIT}`);
+      setReportOrders(data.orders ?? []);
+      setReportTotal(data.total ?? 0);
+    } catch {
+      // ignore
+    } finally {
+      setReportLoading(false);
+    }
+  }
+
   useEffect(() => {
     setPage(0);
-    void loadAds(0, side);
+    void loadAds(0, side, search);
   }, [side]);
+
+  useEffect(() => {
+    if (mainTab === "report") void loadReport(0);
+  }, [mainTab]);
 
   function changePage(newPage: number) {
     setPage(newPage);
-    void loadAds(newPage, side);
+    void loadAds(newPage, side, search);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function changeReportPage(newPage: number) {
+    setReportPage(newPage);
+    void loadReport(newPage);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function handleSearch(q: string) {
+    setSearch(q);
+    setPage(0);
+    void loadAds(0, side, q);
   }
 
   return (
@@ -711,57 +750,146 @@ export default function P2PPage() {
         </div>
       )}
 
-      {/* Buy / Sell tabs */}
-      <div className="flex gap-2 mb-4">
-        {(["sell", "buy"] as const).map(s => (
-          <button key={s} onClick={() => setSide(s)}
-            className={cn("flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all",
-              side === s
-                ? s === "sell" ? "border-primary bg-primary/10 text-primary" : "border-emerald-500 bg-emerald-50 text-emerald-700"
-                : "border-border text-muted-foreground hover:border-muted-foreground"
+      {/* Main tab: Market / Report */}
+      <div className="flex bg-muted/40 rounded-2xl p-1 gap-1 mb-4">
+        {([
+          { key: "market", label: "Market", icon: ArrowLeftRight },
+          { key: "report", label: "My Report", icon: FileText },
+        ] as const).map(({ key, label, icon: Icon }) => (
+          <button key={key} onClick={() => setMainTab(key)}
+            className={cn("flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold transition-all",
+              mainTab === key ? "bg-white shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
             )}>
-            {s === "sell" ? "Buy USDT (Sell ads)" : "Sell USDT (Buy ads)"}
+            <Icon className="h-3.5 w-3.5" />
+            {label}
           </button>
         ))}
       </div>
 
-      {/* Ad listing */}
-      {loading ? (
-        <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-40 w-full rounded-xl" />)}</div>
-      ) : ads.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground">
-          <ArrowLeftRight className="h-10 w-10 mx-auto mb-3 opacity-30" />
-          <p className="font-medium text-foreground">No ads available</p>
-          <p className="text-sm mt-1">Be the first to post a {side === "sell" ? "sell" : "buy"} ad</p>
-          {user && (
-            <button onClick={() => setShowPostAd(true)} className="mt-4 px-5 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90">
-              Post Ad
-            </button>
+      {mainTab === "market" && (
+        <>
+          {/* Search bar */}
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              value={search}
+              onChange={e => handleSearch(e.target.value)}
+              placeholder="Search by username…"
+              className="w-full pl-9 pr-4 py-2.5 text-sm border border-border rounded-xl bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+
+          {/* Buy / Sell tabs */}
+          <div className="flex gap-2 mb-4">
+            {(["sell", "buy"] as const).map(s => (
+              <button key={s} onClick={() => setSide(s)}
+                className={cn("flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all",
+                  side === s
+                    ? s === "sell" ? "border-primary bg-primary/10 text-primary" : "border-emerald-500 bg-emerald-50 text-emerald-700"
+                    : "border-border text-muted-foreground hover:border-muted-foreground"
+                )}>
+                {s === "sell" ? "Buy USDT (Sell ads)" : "Sell USDT (Buy ads)"}
+              </button>
+            ))}
+          </div>
+
+          {/* Ad listing */}
+          {loading ? (
+            <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-40 w-full rounded-xl" />)}</div>
+          ) : ads.length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground">
+              <ArrowLeftRight className="h-10 w-10 mx-auto mb-3 opacity-30" />
+              <p className="font-medium text-foreground">{search ? `No ads found for "${search}"` : "No ads available"}</p>
+              {!search && <p className="text-sm mt-1">Be the first to post a {side === "sell" ? "sell" : "buy"} ad</p>}
+              {!search && user && (
+                <button onClick={() => setShowPostAd(true)} className="mt-4 px-5 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90">
+                  Post Ad
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {ads.map(ad => (
+                <AdCard key={ad.id} ad={ad} myUserId={dbUser?.id} onOrder={ad => {
+                  if (!user) { toast.error("Please sign in to trade"); return; }
+                  setSelectedAd(ad);
+                }} />
+              ))}
+            </div>
           )}
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {ads.map(ad => (
-            <AdCard key={ad.id} ad={ad} myUserId={dbUser?.id} onOrder={ad => {
-              if (!user) { toast.error("Please sign in to trade"); return; }
-              setSelectedAd(ad);
-            }} />
-          ))}
-        </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-6">
+              <button onClick={() => changePage(page - 1)} disabled={page === 0}
+                className="flex items-center gap-1 px-4 py-2 border border-border rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted/50 disabled:opacity-40">
+                <ChevronLeft className="h-4 w-4" /> Prev
+              </button>
+              <span className="text-sm text-muted-foreground">Page {page + 1} of {totalPages}</span>
+              <button onClick={() => changePage(page + 1)} disabled={page >= totalPages - 1}
+                className="flex items-center gap-1 px-4 py-2 border border-border rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted/50 disabled:opacity-40">
+                Next <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+        </>
       )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-6">
-          <button onClick={() => changePage(page - 1)} disabled={page === 0}
-            className="flex items-center gap-1 px-4 py-2 border border-border rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted/50 disabled:opacity-40">
-            <ChevronLeft className="h-4 w-4" /> Prev
-          </button>
-          <span className="text-sm text-muted-foreground">Page {page + 1} of {totalPages}</span>
-          <button onClick={() => changePage(page + 1)} disabled={page >= totalPages - 1}
-            className="flex items-center gap-1 px-4 py-2 border border-border rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted/50 disabled:opacity-40">
-            Next <ChevronRight className="h-4 w-4" />
-          </button>
+      {mainTab === "report" && (
+        <div className="space-y-3">
+          {!user && (
+            <div className="text-center py-16 text-muted-foreground text-sm">Sign in to view your trade report</div>
+          )}
+          {user && reportLoading && (
+            <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+          )}
+          {user && !reportLoading && reportOrders.length === 0 && (
+            <div className="text-center py-16 text-muted-foreground">
+              <FileText className="h-10 w-10 mx-auto mb-3 opacity-30" />
+              <p className="font-medium text-foreground">No completed trades yet</p>
+              <p className="text-sm mt-1">Completed and resolved trades will appear here</p>
+            </div>
+          )}
+          {user && !reportLoading && reportOrders.map((order: any) => (
+            <div key={order.id} className="bg-white border border-border rounded-xl p-4 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className={cn(
+                    "text-[10px] font-bold px-2 py-0.5 rounded-full border",
+                    order.role === "buyer" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-primary/5 text-primary border-primary/20"
+                  )}>
+                    {order.role === "buyer" ? "Bought" : "Sold"}
+                  </span>
+                  <span className="text-sm font-semibold">{fmtUsdt(order.amount)} USDT</span>
+                </div>
+                <span className={cn(
+                  "text-[10px] font-semibold px-2 py-0.5 rounded-full border",
+                  order.status === "released" ? "bg-green-50 text-green-700 border-green-200" : "bg-blue-50 text-blue-700 border-blue-200"
+                )}>
+                  {order.status === "released" ? "Completed" : "Resolved"}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>{order.role === "buyer" ? `From ${order.sellerName}` : `To ${order.buyerName}`}</span>
+                <span>@ {fmtUsdt(order.price)} / USDT</span>
+                <span>{new Date(order.createdAt).toLocaleDateString()}</span>
+              </div>
+            </div>
+          ))}
+          {user && totalReportPages > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <button onClick={() => changeReportPage(reportPage - 1)} disabled={reportPage === 0}
+                className="flex items-center gap-1 px-4 py-2 border border-border rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted/50 disabled:opacity-40">
+                <ChevronLeft className="h-4 w-4" /> Prev
+              </button>
+              <span className="text-sm text-muted-foreground">Page {reportPage + 1} of {totalReportPages}</span>
+              <button onClick={() => changeReportPage(reportPage + 1)} disabled={reportPage >= totalReportPages - 1}
+                className="flex items-center gap-1 px-4 py-2 border border-border rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted/50 disabled:opacity-40">
+                Next <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
         </div>
       )}
 

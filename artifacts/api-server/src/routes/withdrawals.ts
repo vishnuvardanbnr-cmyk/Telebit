@@ -53,6 +53,22 @@ router.post("/withdrawals", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
+  // Minimum withdrawal $20
+  if (amountNum < 20) {
+    res.status(400).json({ error: "Minimum withdrawal amount is $20 USDT" });
+    return;
+  }
+
+  // 48-hour cooldown between withdrawals
+  if (user.lastWithdrawalAt) {
+    const hoursSinceLast = (Date.now() - new Date(user.lastWithdrawalAt).getTime()) / (1000 * 60 * 60);
+    if (hoursSinceLast < 48) {
+      const hoursLeft = Math.ceil(48 - hoursSinceLast);
+      res.status(400).json({ error: `You can withdraw again in ${hoursLeft} hour${hoursLeft === 1 ? "" : "s"}` });
+      return;
+    }
+  }
+
   // Calculate fee
   const flatFee = parseFloat(settings.withdrawFeeFlat);
   const percentFee = parseFloat(settings.withdrawFeePercent) / 100 * amountNum;
@@ -69,15 +85,19 @@ router.post("/withdrawals", requireAuth, async (req, res): Promise<void> => {
     deductFrom = amountNum + totalFee;
   }
 
-  const walletBalance = parseFloat(user.walletBalance);
-  if (walletBalance < deductFrom) {
-    res.status(400).json({ error: `Insufficient balance. Required: ${deductFrom.toFixed(4)} USDT` });
+  // Withdraw from biddingProfitBalance
+  const biddingProfitBalance = parseFloat(user.biddingProfitBalance);
+  if (biddingProfitBalance < deductFrom) {
+    res.status(400).json({ error: `Insufficient bidding profit balance. Required: ${deductFrom.toFixed(4)} USDT, available: ${biddingProfitBalance.toFixed(4)} USDT` });
     return;
   }
 
-  // Deduct from balance
+  // Deduct from biddingProfitBalance and record lastWithdrawalAt
   await db.update(usersTable)
-    .set({ walletBalance: String(walletBalance - deductFrom) })
+    .set({
+      biddingProfitBalance: String(biddingProfitBalance - deductFrom),
+      lastWithdrawalAt: new Date(),
+    } as any)
     .where(eq(usersTable.id, user.id));
 
   const [withdrawal] = await db.insert(withdrawalsTable).values({
