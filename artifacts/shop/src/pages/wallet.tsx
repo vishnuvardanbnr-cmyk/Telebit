@@ -553,15 +553,15 @@ export default function Wallet() {
         </div>
       </div>
 
-      {/* Bidding profit balance card */}
-      <div className="rounded-2xl border border-border bg-card px-5 py-4 flex items-center justify-between shadow-sm">
+      {/* Income balance card */}
+      <div className="rounded-2xl border border-green-200 bg-green-50/60 px-5 py-4 flex items-center justify-between shadow-sm">
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Bidding Profit Balance</p>
-          <p className="text-[11px] text-muted-foreground/70 mt-0.5">Withdrawable · min $20 · 48hr cooldown</p>
+          <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">Income Balance</p>
+          <p className="text-[11px] text-green-600/80 mt-0.5">Withdrawable · Min $10 · 1st &amp; 15th only · Max 2/month</p>
         </div>
         <div className="text-right">
-          <p className="text-xl font-black text-foreground tabular-nums">{fmtUsdt(user?.biddingProfitBalance ?? "0")}</p>
-          <p className="text-[11px] text-muted-foreground">USDT</p>
+          <p className="text-xl font-black text-green-800 tabular-nums">{fmtUsdt(user?.biddingProfitBalance ?? "0")}</p>
+          <p className="text-[11px] text-green-600">USDT</p>
         </div>
       </div>
 
