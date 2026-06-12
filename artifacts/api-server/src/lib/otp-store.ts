@@ -50,9 +50,52 @@ export function hasRecentOtp(phone: string): boolean {
   return true;
 }
 
+// ─── Tg-code flow (code → chatId, for bot OTP sign-in) ──────────────────────
+
+interface TgCodeEntry {
+  chatId: string;
+  expiresAt: number;
+}
+
+const tgCodeStore = new Map<string, TgCodeEntry>();
+const tgCodeByChatId = new Map<string, string>();
+
+export function generateAndStoreTgCode(chatId: string): string {
+  const existing = tgCodeByChatId.get(chatId);
+  if (existing) tgCodeStore.delete(existing);
+
+  const code = generateOtp();
+  tgCodeStore.set(code, { chatId, expiresAt: Date.now() + TTL_MS });
+  tgCodeByChatId.set(chatId, code);
+  return code;
+}
+
+export type TgCodeVerifyResult =
+  | { ok: true; chatId: string }
+  | { ok: false; reason: "invalid" | "expired" };
+
+export function verifyTgCode(code: string): TgCodeVerifyResult {
+  const entry = tgCodeStore.get(code);
+  if (!entry) return { ok: false, reason: "invalid" };
+  if (Date.now() > entry.expiresAt) {
+    tgCodeStore.delete(code);
+    tgCodeByChatId.delete(entry.chatId);
+    return { ok: false, reason: "expired" };
+  }
+  tgCodeStore.delete(code);
+  tgCodeByChatId.delete(entry.chatId);
+  return { ok: true, chatId: entry.chatId };
+}
+
 setInterval(() => {
   const now = Date.now();
   for (const [key, entry] of store.entries()) {
     if (now > entry.expiresAt) store.delete(key);
+  }
+  for (const [code, entry] of tgCodeStore.entries()) {
+    if (now > entry.expiresAt) {
+      tgCodeByChatId.delete(entry.chatId);
+      tgCodeStore.delete(code);
+    }
   }
 }, 60_000);

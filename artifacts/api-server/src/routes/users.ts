@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, usersTable, depositsTable, withdrawalsTable } from "@workspace/db";
-import { eq, sum, and, or } from "drizzle-orm";
+import { eq, sum, and, or, count } from "drizzle-orm";
 import { requireAuth } from "../lib/auth";
 import { setAuthCookie } from "../lib/auth";
 import { generateWallet, generateReferralCode } from "../lib/wallet";
@@ -199,6 +199,31 @@ router.post("/users/accounts/switch/:accountId", requireAuth, async (req, res): 
 
   setAuthCookie(res, target.id);
   res.json(serializeUser(target));
+});
+
+router.get("/users/me/referrals", requireAuth, async (req, res): Promise<void> => {
+  const user = (req as any).dbUser;
+
+  const referred = await db
+    .select({
+      id: usersTable.id,
+      fullName: usersTable.fullName,
+      telegramUsername: usersTable.telegramUsername,
+      createdAt: usersTable.createdAt,
+    })
+    .from(usersTable)
+    .where(eq(usersTable.uplineId, user.id))
+    .orderBy(usersTable.createdAt);
+
+  res.json({
+    count: referred.length,
+    users: referred.map((u) => ({
+      id: u.id,
+      fullName: u.fullName,
+      telegramUsername: u.telegramUsername ?? null,
+      joinedAt: u.createdAt,
+    })),
+  });
 });
 
 export default router;

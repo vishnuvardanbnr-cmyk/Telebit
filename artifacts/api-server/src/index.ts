@@ -1,5 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { getSettings } from "./lib/settings";
+import { setTelegramWebhook } from "./lib/telegram-bot";
 
 const rawPort = process.env["PORT"];
 
@@ -22,4 +24,22 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+
+  // Auto-register Telegram webhook using REPLIT_DOMAINS
+  const rawDomains = process.env.REPLIT_DOMAINS;
+  const domain = rawDomains?.split(",")[0]?.trim();
+  if (domain) {
+    const webhookUrl = `https://${domain}/api/auth/bot-webhook`;
+    setTimeout(async () => {
+      try {
+        const settings = await getSettings();
+        if (settings.telegramBotToken) {
+          await setTelegramWebhook(settings.telegramBotToken, webhookUrl);
+          logger.info({ webhookUrl }, "Telegram webhook auto-registered");
+        }
+      } catch (err) {
+        logger.warn({ err }, "Telegram webhook auto-registration failed (non-fatal)");
+      }
+    }, 5_000);
+  }
 });

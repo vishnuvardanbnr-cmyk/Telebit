@@ -5,7 +5,7 @@ import { eq, or } from "drizzle-orm";
 import { getSettings } from "../lib/settings";
 import { generateWallet, generateReferralCode } from "../lib/wallet";
 import { setAuthCookie, clearAuthCookie } from "../lib/auth";
-import { generateOtp, storeOtp, verifyOtp, hasRecentOtp } from "../lib/otp-store";
+import { generateOtp, storeOtp, verifyOtp, hasRecentOtp, generateAndStoreTgCode, verifyTgCode } from "../lib/otp-store";
 import { sendTelegramMessage, normalizePhone, setTelegramWebhook, fetchTelegramPhotoUrl } from "../lib/telegram-bot";
 
 const router = Router();
@@ -56,7 +56,7 @@ router.post("/auth/otp/send", async (req, res): Promise<void> => {
     await sendTelegramMessage(
       settings.telegramBotToken,
       mapping.chatId,
-      `Your Telebit verification code: *${code}*\n\nThis code expires in 5 minutes. Do not share it with anyone.`,
+      `Your Telebit verification code: ${code}\n\nThis code expires in 5 minutes. Do not share it with anyone.`,
     );
     res.json({ success: true });
   } catch (err: any) {
@@ -167,6 +167,118 @@ router.post("/auth/otp/verify", async (req, res): Promise<void> => {
   });
 });
 
+// ─── Bot OTP code flow ──────────────────────────────────────────────────────
+
+router.post("/auth/tg-code/verify", async (req, res): Promise<void> => {
+  const { code, referralCode } = req.body as { code?: string; referralCode?: string };
+  if (!code || typeof code !== "string") {
+    res.status(400).json({ error: "Code is required" });
+    return;
+  }
+
+  const result = verifyTgCode(code.trim());
+  if (!result.ok) {
+    const msg = result.reason === "expired"
+      ? "Code expired. Open the bot and send any message to get a new one."
+      : "Invalid code. Please try again.";
+    res.status(401).json({ error: msg });
+    return;
+  }
+
+  const { chatId } = result;
+  const syntheticPhone = `tg_${chatId}`;
+  const externalId = `tg_${chatId}`;
+  const telegramEmail = `tg_${chatId}@telebit.internal`;
+
+  const [mapping] = await db
+    .select()
+    .from(telegramMappingsTable)
+    .where(eq(telegramMappingsTable.phone, syntheticPhone))
+    .limit(1);
+
+  const settings = await getSettings();
+  const photoUrl = settings.telegramBotToken
+    ? await fetchTelegramPhotoUrl(settings.telegramBotToken, BigInt(chatId)).catch(() => null)
+    : mapping?.photoUrl ?? null;
+
+  const telegramUsername = mapping?.username ?? null;
+  const fullName =
+    [mapping?.firstName, mapping?.lastName].filter(Boolean).join(" ") ||
+    telegramUsername ||
+    `tg${chatId}`;
+
+  let [user] = await db
+    .select()
+    .from(usersTable)
+    .where(or(eq(usersTable.clerkId, externalId), eq(usersTable.email, telegramEmail)))
+    .limit(1);
+
+  if (!user) {
+    const { address, privateKeyEncrypted } = generateWallet();
+    const userReferralCode = generateReferralCode();
+
+    let uplineId: string | undefined;
+    if (referralCode && typeof referralCode === "string") {
+      const ref = referralCode.trim().toUpperCase();
+      const [upline] = await db
+        .select({ id: usersTable.id })
+        .from(usersTable)
+        .where(eq(usersTable.referralCode, ref))
+        .limit(1);
+      if (upline) uplineId = upline.id;
+    }
+
+    [user] = await db
+      .insert(usersTable)
+      .values({
+        clerkId: externalId,
+        email: telegramEmail,
+        fullName,
+        telegramUsername,
+        telegramPhotoUrl: photoUrl,
+        telegramChatId: chatId,
+        depositAddress: address,
+        depositPrivateKeyEncrypted: privateKeyEncrypted,
+        referralCode: userReferralCode,
+        ...(uplineId ? { uplineId } : {}),
+      })
+      .returning();
+  } else {
+    const updates: Record<string, any> = {};
+    if (user.clerkId !== externalId) updates.clerkId = externalId;
+    if (telegramUsername && user.telegramUsername !== telegramUsername) updates.telegramUsername = telegramUsername;
+    if (photoUrl && user.telegramPhotoUrl !== photoUrl) updates.telegramPhotoUrl = photoUrl;
+    if (!user.telegramChatId) updates.telegramChatId = chatId;
+    if (Object.keys(updates).length > 0) {
+      await db.update(usersTable).set(updates as any).where(eq(usersTable.id, user.id));
+      user = { ...user, ...updates };
+    }
+  }
+
+  setAuthCookie(res, user.id);
+  res.json({
+    user: {
+      id: user.id,
+      clerkId: user.clerkId,
+      email: user.email,
+      fullName: user.fullName,
+      telegramUsername: user.telegramUsername ?? null,
+      telegramPhotoUrl: user.telegramPhotoUrl ?? null,
+      telegramChatId: user.telegramChatId ?? null,
+      parentUserId: user.parentUserId ?? null,
+      walletBalance: user.walletBalance,
+      earningsBalance: user.earningsBalance,
+      depositAddress: user.depositAddress,
+      referralCode: user.referralCode,
+      isAdmin: user.isAdmin,
+      withdrawalBlocked: user.withdrawalBlocked,
+      createdAt: user.createdAt,
+    },
+  });
+});
+
+// ─── Bot Webhook ────────────────────────────────────────────────────────────
+
 router.post("/auth/bot-webhook", async (req, res): Promise<void> => {
   const settings = await getSettings();
   if (!settings.telegramBotToken) {
@@ -185,79 +297,40 @@ router.post("/auth/bot-webhook", async (req, res): Promise<void> => {
   const chatId = message.chat.id;
   const from = message.from;
 
-  if (message.text === "/start") {
-    await sendTelegramMessage(
-      settings.telegramBotToken,
-      chatId,
-      "Welcome to Telebit! 👋\n\nTo enable phone-based login, please share your phone number by tapping the button below.",
-    ).catch(() => {});
-
-    const keyboard = JSON.stringify({
-      keyboard: [[{ text: "📱 Share my phone number", request_contact: true }]],
-      resize_keyboard: true,
-      one_time_keyboard: true,
-    });
-
-    const url = `https://api.telegram.org/bot${settings.telegramBotToken}/sendMessage`;
-    await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: "Tap the button to share your phone number:",
-        reply_markup: keyboard,
-      }),
-    }).catch(() => {});
-
-    res.sendStatus(200);
-    return;
-  }
-
-  if (message.contact) {
-    const contact = message.contact;
-    const phone = normalizePhone(contact.phone_number);
-
-    const photoUrl = settings.telegramBotToken
-      ? await fetchTelegramPhotoUrl(settings.telegramBotToken, chatId)
-      : null;
-
+  // Upsert profile info into telegramMappings so verify can retrieve it
+  if (from) {
+    const syntheticPhone = `tg_${chatId}`;
     await db
       .insert(telegramMappingsTable)
       .values({
-        phone,
+        phone: syntheticPhone,
         chatId: BigInt(chatId),
-        firstName: from?.first_name ?? contact.first_name ?? null,
-        lastName: from?.last_name ?? contact.last_name ?? null,
-        username: from?.username ?? null,
-        photoUrl,
+        firstName: from.first_name ?? null,
+        lastName: from.last_name ?? null,
+        username: from.username ?? null,
+        photoUrl: null,
       })
       .onConflictDoUpdate({
         target: telegramMappingsTable.phone,
         set: {
-          chatId: BigInt(chatId),
-          firstName: from?.first_name ?? contact.first_name ?? null,
-          lastName: from?.last_name ?? contact.last_name ?? null,
-          username: from?.username ?? null,
-          photoUrl: photoUrl ?? undefined,
+          firstName: from.first_name ?? null,
+          lastName: from.last_name ?? null,
+          username: from.username ?? null,
           updatedAt: new Date(),
         },
-      });
-
-    const removeKeyboard = JSON.stringify({ remove_keyboard: true });
-    const url = `https://api.telegram.org/bot${settings.telegramBotToken}/sendMessage`;
-    await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: "✅ Phone number registered! You can now sign in to Telebit using your phone number.",
-        reply_markup: removeKeyboard,
-      }),
-    }).catch(() => {});
-
-    res.sendStatus(200);
-    return;
+      })
+      .catch(() => {});
   }
+
+  // Generate a fresh login code for any message (including /start)
+  const code = generateAndStoreTgCode(String(chatId));
+
+  const isStart = message.text === "/start";
+  const text = isStart
+    ? `Welcome to Telebit! 👋\n\nYour login code is:\n\n🔑 ${code}\n\nEnter this on the sign-in page. Valid for 5 minutes — do not share it.`
+    : `Your Telebit login code:\n\n🔑 ${code}\n\nEnter this on the sign-in page. Valid for 5 minutes — do not share it.`;
+
+  await sendTelegramMessage(settings.telegramBotToken, chatId, text).catch(() => {});
 
   res.sendStatus(200);
 });
@@ -359,7 +432,7 @@ interface TelegramUpdate {
   };
 }
 
-// ─── Telegram Login Widget ─────────────────────────────────────────────────
+// ─── Telegram Login Widget (kept for backward compat) ──────────────────────
 
 router.get("/auth/bot-info", async (req, res): Promise<void> => {
   const settings = await getSettings();
@@ -386,7 +459,6 @@ router.post("/auth/telegram/login", async (req, res): Promise<void> => {
     return;
   }
 
-  // Verify Telegram hash: secret_key = SHA256(bot_token), then HMAC-SHA256 of sorted k=v pairs
   const secretKey = crypto.createHash("sha256").update(settings.telegramBotToken).digest();
   const pairs: Record<string, string> = { auth_date, id };
   if (first_name) pairs.first_name = first_name;
@@ -405,7 +477,6 @@ router.post("/auth/telegram/login", async (req, res): Promise<void> => {
     return;
   }
 
-  // Reject stale auth (older than 24 hours)
   if (Date.now() / 1000 - Number(auth_date) > 86400) {
     res.status(401).json({ error: "Authentication expired — please try again" });
     return;
@@ -416,7 +487,6 @@ router.post("/auth/telegram/login", async (req, res): Promise<void> => {
   const externalId = `tg_${id}`;
   const email = `${syntheticPhone}@telegram.user`;
 
-  // Look up by synthetic phone (set on first widget login)
   let [mapping] = await db.select().from(telegramMappingsTable)
     .where(eq(telegramMappingsTable.phone, syntheticPhone));
 
@@ -424,7 +494,6 @@ router.post("/auth/telegram/login", async (req, res): Promise<void> => {
   if (mapping) {
     [user] = await db.select().from(usersTable)
       .where(or(eq(usersTable.clerkId, externalId), eq(usersTable.email, email)));
-    // Refresh profile info
     await db.update(telegramMappingsTable)
       .set({ firstName: first_name ?? null, lastName: last_name ?? null, username: username ?? null, photoUrl: photo_url ?? null })
       .where(eq(telegramMappingsTable.phone, syntheticPhone));
@@ -473,8 +542,6 @@ router.post("/auth/telegram/login", async (req, res): Promise<void> => {
 });
 
 // ─── One-time admin bootstrap ──────────────────────────────────────────────
-// Requires the SESSION_SECRET as a bearer token. Safe to leave in permanently
-// because without the secret it does nothing.
 router.post("/auth/admin-setup", async (req, res): Promise<void> => {
   const secret = process.env.SESSION_SECRET;
   if (!secret) { res.status(503).json({ error: "No SESSION_SECRET configured" }); return; }

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { ShoppingCart, Trophy, ArrowLeftRight, ShieldCheck, Menu, X, Zap, Wallet, Home } from "lucide-react";
+import { ShoppingCart, Trophy, ArrowLeftRight, ShieldCheck, Menu, X, Zap, Wallet, Home, Gift } from "lucide-react";
 import { useGetCart } from "@workspace/api-client-react";
 import { useAuth } from "@/lib/auth-context";
 import { fmtUsdt } from "@/lib/utils";
@@ -35,6 +35,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Link href="/products" className={cn("transition-colors font-medium", location.startsWith("/products") ? "text-primary" : "text-muted-foreground hover:text-foreground")}>
               Catalog
             </Link>
+            {isSignedIn && (
+              <Link href="/invite" className={cn("transition-colors font-medium flex items-center gap-1.5", location.startsWith("/invite") ? "text-primary" : "text-muted-foreground hover:text-foreground")}>
+                <Gift className="w-3.5 h-3.5" />
+                Invite
+              </Link>
+            )}
           </nav>
 
           {/* Right actions */}
@@ -96,6 +102,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 )}
               >
                 Catalog
+              </Link>
+              <Link
+                href="/invite"
+                onClick={() => setMobileMenuOpen(false)}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
+                  location.startsWith("/invite") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                )}
+              >
+                <Gift className="h-4 w-4" />
+                Invite Friends
               </Link>
               {user?.isAdmin && (
                 <Link

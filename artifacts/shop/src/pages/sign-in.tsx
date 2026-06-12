@@ -1,95 +1,53 @@
-import { useState, useEffect, useCallback } from "react";
-import { useLocation, Redirect } from "wouter";
+import { useState, useEffect } from "react";
+import { useLocation, Redirect, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
-import { FlaskConical } from "lucide-react";
+import { FlaskConical, ExternalLink, MessageCircle, Key } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
-declare global {
-  interface Window {
-    onTelegramWidgetAuth?: (user: TelegramAuthUser) => void;
-  }
-}
-
-interface TelegramAuthUser {
-  id: number;
-  first_name: string;
-  last_name?: string;
-  username?: string;
-  photo_url?: string;
-  auth_date: number;
-  hash: string;
-}
-
-function TelegramLoginButton({ botUsername, onAuth, disabled }: {
-  botUsername: string;
-  onAuth: (user: TelegramAuthUser) => void;
-  disabled?: boolean;
-}) {
-  useEffect(() => {
-    window.onTelegramWidgetAuth = onAuth;
-
-    const container = document.getElementById("tg-login-container");
-    if (!container) return;
-    container.innerHTML = "";
-
-    const script = document.createElement("script");
-    script.src = "https://telegram.org/js/telegram-widget.js?22";
-    script.setAttribute("data-telegram-login", botUsername);
-    script.setAttribute("data-size", "large");
-    script.setAttribute("data-onauth", "onTelegramWidgetAuth(user)");
-    script.setAttribute("data-request-access", "write");
-    script.setAttribute("data-radius", "8");
-    script.async = true;
-    container.appendChild(script);
-
-    return () => {
-      delete window.onTelegramWidgetAuth;
-    };
-  }, [botUsername, onAuth]);
-
-  return (
-    <div
-      id="tg-login-container"
-      className={`flex justify-center ${disabled ? "opacity-50 pointer-events-none" : ""}`}
-    />
-  );
-}
-
 export default function ShopSignInPage() {
   const [, setLocation] = useLocation();
+  const search = useSearch();
   const queryClient = useQueryClient();
   const { isSignedIn, isLoading } = useAuth();
 
   const [botUsername, setBotUsername] = useState<string | null>(null);
-  const [botLoading, setBotLoading] = useState(true);
+  const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [logging, setLogging] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
 
-  if (!isLoading && isSignedIn) return <Redirect to="/" />;
+  const params = new URLSearchParams(search);
+  const referralCode = params.get("ref") ?? undefined;
 
   useEffect(() => {
     fetch(`${BASE}/api/auth/bot-info`, { credentials: "include" })
-      .then(r => r.json())
+      .then((r) => r.json())
       .then((d: any) => { if (d.botUsername) setBotUsername(d.botUsername); })
-      .catch(() => {})
-      .finally(() => setBotLoading(false));
+      .catch(() => {});
   }, []);
 
-  const handleTelegramAuth = useCallback(async (tgUser: TelegramAuthUser) => {
+  if (!isLoading && isSignedIn) return <Redirect to="/" />;
+
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = code.replace(/\s/g, "");
+    if (trimmed.length !== 6 || !/^\d{6}$/.test(trimmed)) {
+      setError("Please enter the 6-digit code from the bot.");
+      return;
+    }
     setLogging(true);
     setError(null);
     try {
-      const res = await fetch(`${BASE}/api/auth/telegram/login`, {
+      const res = await fetch(`${BASE}/api/auth/tg-code/verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(tgUser),
+        body: JSON.stringify({ code: trimmed, referralCode }),
       });
       const body = await res.json().catch(() => ({})) as { error?: string; user?: any };
-      if (!res.ok) throw new Error(body.error || "Login failed");
+      if (!res.ok) throw new Error(body.error || "Verification failed");
       if (body.user) queryClient.setQueryData(["getMe"], body.user);
       setLocation("/");
     } catch (e: any) {
@@ -97,7 +55,7 @@ export default function ShopSignInPage() {
     } finally {
       setLogging(false);
     }
-  }, [queryClient, setLocation]);
+  };
 
   const handleDemoLogin = async () => {
     setDemoLoading(true);
@@ -132,43 +90,113 @@ export default function ShopSignInPage() {
           <div className="bg-card border border-border rounded-lg shadow-md overflow-hidden">
             <div className="h-1 bg-primary w-full" />
             <div className="p-6 sm:p-8">
+              {/* Logo + title */}
               <div className="flex flex-col items-center mb-6">
                 <div className="w-14 h-14 rounded-2xl overflow-hidden mb-4 shadow-md">
                   <img src="/logo.png" alt="Telebit" className="w-full h-full object-cover" />
                 </div>
                 <h1 className="text-xl font-bold text-foreground text-center">Sign In to Shop</h1>
                 <p className="text-sm text-muted-foreground text-center mt-1">
-                  One tap with your Telegram account — no password needed
+                  Get a one-time code from our Telegram bot — no password needed
                 </p>
               </div>
 
-              {logging ? (
-                <div className="flex items-center justify-center gap-2 py-5 text-sm text-muted-foreground">
-                  <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                  Signing you in…
-                </div>
-              ) : botLoading ? (
-                <div className="w-full h-12 bg-muted/40 rounded-lg animate-pulse" />
-              ) : botUsername ? (
-                <TelegramLoginButton
-                  botUsername={botUsername}
-                  onAuth={handleTelegramAuth}
-                  disabled={logging}
-                />
-              ) : (
-                <div className="w-full text-center text-xs text-muted-foreground bg-muted/30 rounded-lg py-5 px-4">
-                  <p className="font-medium mb-1">Telegram login not configured</p>
-                  <p>An admin needs to set the Bot Username in Settings.</p>
+              {referralCode && (
+                <div className="mb-4 bg-primary/10 border border-primary/20 rounded-lg px-3 py-2 text-xs text-primary text-center font-medium">
+                  🎁 You were invited! Referral code applied.
                 </div>
               )}
 
+              {/* Steps */}
+              <div className="space-y-3 mb-5">
+                {/* Step 1 */}
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center mt-0.5">
+                    1
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-foreground">Open the Telebit Bot</p>
+                    {botUsername ? (
+                      <a
+                        href={`https://t.me/${botUsername}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 mt-1.5 px-3 py-1.5 rounded-md bg-[#229ED9] hover:bg-[#1a8bbf] text-white text-xs font-semibold transition-colors"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5" />
+                        Open @{botUsername}
+                        <ExternalLink className="w-3 h-3 opacity-80" />
+                      </a>
+                    ) : (
+                      <span className="text-xs text-muted-foreground mt-1 block">
+                        Bot not configured — ask an admin to set it up.
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Step 2 */}
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center mt-0.5">
+                    2
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-foreground">Send any message</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      The bot will reply with a 6-digit login code.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Step 3 */}
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center mt-0.5">
+                    3
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-foreground mb-2">Enter the code below</p>
+                    <form onSubmit={handleVerify} className="space-y-2">
+                      <div className="relative">
+                        <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          pattern="\d{6}"
+                          maxLength={6}
+                          placeholder="123456"
+                          value={code}
+                          onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                          className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm font-mono tracking-widest placeholder:tracking-normal placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                          autoComplete="one-time-code"
+                          disabled={logging}
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={logging || code.length !== 6}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {logging ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                            Verifying…
+                          </>
+                        ) : (
+                          "Verify & Sign In"
+                        )}
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+
               {error && (
-                <div className="mt-3 bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2 text-xs text-destructive text-center">
+                <div className="mb-4 bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2 text-xs text-destructive text-center">
                   {error}
                 </div>
               )}
 
-              <div className="flex items-center gap-3 my-5">
+              <div className="flex items-center gap-3 my-4">
                 <div className="h-px flex-1 bg-border" />
                 <span className="text-xs text-muted-foreground">or</span>
                 <div className="h-px flex-1 bg-border" />

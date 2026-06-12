@@ -24,6 +24,7 @@ import NftBuy from "./pages/nft-buy";
 import NftPools from "./pages/nft-pools";
 import NftHoldings from "./pages/nft-holdings";
 import AdminSetup from "./pages/admin-setup";
+import InvitePage from "./pages/invite";
 import { Layout } from "./components/layout";
 import { AuthProvider, useAuth } from "./lib/auth-context";
 import { OfflineBanner } from "./components/offline-banner";
@@ -147,6 +148,11 @@ function AppRoutes() {
       <Route path="/nft/holdings">
         <Layout>
           <ProtectedRoute component={NftHoldings} />
+        </Layout>
+      </Route>
+      <Route path="/invite">
+        <Layout>
+          <ProtectedRoute component={InvitePage} />
         </Layout>
       </Route>
       <Route component={NotFound} />
