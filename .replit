@@ -41,3 +41,8 @@ externalPort = 3000
 [[ports]]
 localPort = 24349
 externalPort = 3002
+
+[userenv]
+
+[userenv.production]
+APP_DATABASE_URL = "postgresql://postgres:password@172.24.0.3/heliumdb?sslmode=disable"
