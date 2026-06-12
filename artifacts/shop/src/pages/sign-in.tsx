@@ -104,7 +104,7 @@ export default function ShopSignInPage() {
                   <img src="/logo.png" alt="Telebit" className="w-full h-full object-cover" />
                 </div>
                 <h1 className="text-xl font-bold text-foreground text-center">
-                  {mode === "login" ? "Sign In" : "Create Account"}
+                  {mode === "login" ? "Sign In to Telebit" : "Create Account"}
                 </h1>
                 <p className="text-sm text-muted-foreground text-center mt-1">
                   {mode === "login"
