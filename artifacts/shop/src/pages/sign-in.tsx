@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation, Redirect, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
-import { FlaskConical, Mail, Lock, User, Eye, EyeOff, Gift, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Mail, Lock, User, Eye, EyeOff, Gift, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -27,8 +27,6 @@ export default function ShopSignInPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [demoLoading, setDemoLoading] = useState(false);
-
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const checkRef = (code: string) => {
@@ -108,25 +106,6 @@ export default function ShopSignInPage() {
       setError(e.message);
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const handleDemoLogin = async () => {
-    setDemoLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`${BASE}/api/auth/demo`, {
-        method: "POST",
-        credentials: "include",
-      });
-      const data = await res.json().catch(() => ({})) as { error?: string; user?: any };
-      if (!res.ok) throw new Error(data.error || "Demo login failed");
-      if (data.user) queryClient.setQueryData(["getMe"], data.user);
-      setLocation("/");
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setDemoLoading(false);
     }
   };
 
@@ -313,22 +292,6 @@ export default function ShopSignInPage() {
                 </button>
               </form>
 
-              <div className="flex items-center gap-3 my-5">
-                <div className="h-px flex-1 bg-border" />
-                <span className="text-xs text-muted-foreground">or</span>
-                <div className="h-px flex-1 bg-border" />
-              </div>
-
-              <button
-                onClick={handleDemoLogin}
-                disabled={demoLoading}
-                className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-lg border-2 border-dashed border-primary/40 bg-primary/5 hover:bg-primary/10 hover:border-primary/60 transition-all text-primary font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {demoLoading
-                  ? <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                  : <FlaskConical className="w-4 h-4" />}
-                {demoLoading ? "Signing in…" : "Try Demo Account"}
-              </button>
             </div>
           </div>
 
