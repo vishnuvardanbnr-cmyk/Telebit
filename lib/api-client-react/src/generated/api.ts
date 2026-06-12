@@ -20,6 +20,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AddBalanceRequest,
   AdminListDepositsParams,
   AdminListOrdersParams,
   AdminListProductsParams,
@@ -3272,6 +3273,78 @@ export const useAdminToggleUserBlock = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getAdminToggleUserBlockMutationOptions(options));
+    }
+
+export const getAdminAddUserBalanceUrl = (userId: string,) => {
+
+
+
+
+  return `/api/admin/users/${userId}/add-balance`
+}
+
+/**
+ * @summary Credit wallet balance for a user (admin)
+ */
+export const adminAddUserBalance = async (userId: string,
+    addBalanceRequest: AddBalanceRequest, options?: RequestInit): Promise<AdminUser> => {
+
+  return customFetch<AdminUser>(getAdminAddUserBalanceUrl(userId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      addBalanceRequest,)
+  }
+);}
+
+
+
+
+export const getAdminAddUserBalanceMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminAddUserBalance>>, TError,{userId: string;data: BodyType<AddBalanceRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminAddUserBalance>>, TError,{userId: string;data: BodyType<AddBalanceRequest>}, TContext> => {
+
+const mutationKey = ['adminAddUserBalance'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminAddUserBalance>>, {userId: string;data: BodyType<AddBalanceRequest>}> = (props) => {
+          const {userId,data} = props ?? {};
+
+          return  adminAddUserBalance(userId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminAddUserBalanceMutationResult = NonNullable<Awaited<ReturnType<typeof adminAddUserBalance>>>
+    export type AdminAddUserBalanceMutationBody = BodyType<AddBalanceRequest>
+    export type AdminAddUserBalanceMutationError = ErrorType<void>
+
+    /**
+ * @summary Credit wallet balance for a user (admin)
+ */
+export const useAdminAddUserBalance = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminAddUserBalance>>, TError,{userId: string;data: BodyType<AddBalanceRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminAddUserBalance>>,
+        TError,
+        {userId: string;data: BodyType<AddBalanceRequest>},
+        TContext
+      > => {
+      return useMutation(getAdminAddUserBalanceMutationOptions(options));
     }
 
 export const getAdminListDepositsUrl = (params?: AdminListDepositsParams,) => {

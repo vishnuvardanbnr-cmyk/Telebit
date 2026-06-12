@@ -873,6 +873,38 @@ paths:
         "403":
           description: Forbidden
 
+  /admin/users/{userId}/add-balance:
+    post:
+      operationId: adminAddUserBalance
+      tags: [admin]
+      summary: Credit wallet balance for a user (admin)
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddBalanceRequest"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: User not found
+
   /admin/deposits:
     get:
       operationId: adminListDeposits
@@ -1688,6 +1720,17 @@ components:
       required: [blocked]
       properties:
         blocked: { type: boolean }
+
+    AddBalanceRequest:
+      type: object
+      required: [amount]
+      properties:
+        amount:
+          type: string
+          description: USDT amount to credit (must be positive)
+        note:
+          type: string
+          description: Optional admin note
 
     AdminStats:
       type: object

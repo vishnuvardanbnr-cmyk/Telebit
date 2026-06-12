@@ -290,6 +290,13 @@ export interface BlockToggle {
   blocked: boolean;
 }
 
+export interface AddBalanceRequest {
+  /** USDT amount to credit (must be positive) */
+  amount: string;
+  /** Optional admin note */
+  note?: string;
+}
+
 export interface AdminStats {
   totalUsers: number;
   totalDeposited: string;

@@ -11,6 +11,7 @@ import {
   useListCategories,
   useAdminListUsers,
   useAdminToggleUserBlock,
+  useAdminAddUserBalance,
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,7 +28,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Package, DollarSign, ShoppingCart, Tag, Edit, Trash2, Users, Ticket, ArrowLeftRight, Star, Ban, CheckCircle, Play, AlertTriangle, Settings, Eye, EyeOff } from "lucide-react";
+import { Package, DollarSign, ShoppingCart, Tag, Edit, Trash2, Users, Ticket, ArrowLeftRight, Star, Ban, CheckCircle, Play, AlertTriangle, Settings, Eye, EyeOff, PlusCircle } from "lucide-react";
 import { useEffect, useCallback } from "react";
 
 const BASE = import.meta.env.BASE_URL;
@@ -112,6 +113,11 @@ function UsersTab() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { data: users, isLoading } = useAdminListUsers({});
+
+  const [balanceTarget, setBalanceTarget] = useState<{ id: string; name: string; email: string; balance: string } | null>(null);
+  const [balanceAmount, setBalanceAmount] = useState("");
+  const [balanceNote, setBalanceNote] = useState("");
+
   const toggle = useAdminToggleUserBlock({
     mutation: {
       onSuccess: () => {
@@ -120,6 +126,26 @@ function UsersTab() {
       }
     }
   });
+
+  const addBalance = useAdminAddUserBalance({
+    mutation: {
+      onSuccess: (data) => {
+        toast({ title: "Balance credited", description: `New balance: ${parseFloat(data.walletBalance).toFixed(2)} USDT` });
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+        setBalanceTarget(null);
+        setBalanceAmount("");
+        setBalanceNote("");
+      },
+      onError: (err: any) => {
+        toast({ title: "Failed", description: err?.message ?? "Unknown error", variant: "destructive" });
+      }
+    }
+  });
+
+  const submitAddBalance = () => {
+    if (!balanceTarget) return;
+    addBalance.mutate({ userId: balanceTarget.id, data: { amount: balanceAmount, note: balanceNote || undefined } });
+  };
 
   return (
     <div className="space-y-4">
@@ -158,20 +184,85 @@ function UsersTab() {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggle.mutate({ userId: user.id, data: { blocked: !user.withdrawalBlocked } })}
-                    className={`h-8 rounded-none text-xs font-bold uppercase tracking-wider ${user.withdrawalBlocked ? 'text-green-600 hover:text-green-700' : 'text-destructive hover:text-destructive/80'}`}
-                  >
-                    {user.withdrawalBlocked ? <><CheckCircle className="h-3 w-3 mr-1" />Unblock</> : <><Ban className="h-3 w-3 mr-1" />Block</>}
-                  </Button>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setBalanceTarget({ id: user.id, name: user.fullName ?? user.email, email: user.email, balance: user.walletBalance })}
+                      className="h-8 rounded-none text-xs font-bold uppercase tracking-wider text-green-600 hover:text-green-700 hover:bg-green-500/10"
+                    >
+                      <PlusCircle className="h-3 w-3 mr-1" />Add Balance
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggle.mutate({ userId: user.id, data: { blocked: !user.withdrawalBlocked } })}
+                      className={`h-8 rounded-none text-xs font-bold uppercase tracking-wider ${user.withdrawalBlocked ? 'text-green-600 hover:text-green-700' : 'text-destructive hover:text-destructive/80'}`}
+                    >
+                      {user.withdrawalBlocked ? <><CheckCircle className="h-3 w-3 mr-1" />Unblock</> : <><Ban className="h-3 w-3 mr-1" />Block</>}
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
+
+      {/* Add Balance Dialog */}
+      <Dialog open={!!balanceTarget} onOpenChange={(open) => { if (!open) { setBalanceTarget(null); setBalanceAmount(""); setBalanceNote(""); } }}>
+        <DialogContent className="sm:max-w-sm rounded-none border-border">
+          <DialogHeader>
+            <DialogTitle className="uppercase tracking-wider text-sm font-bold">Add Wallet Balance</DialogTitle>
+          </DialogHeader>
+          {balanceTarget && (
+            <div className="space-y-4 pt-1">
+              <div className="bg-muted/50 border border-border rounded-none p-3 space-y-0.5">
+                <p className="text-xs font-bold">{balanceTarget.name}</p>
+                <p className="text-[11px] text-muted-foreground font-mono">{balanceTarget.email}</p>
+                <p className="text-xs text-muted-foreground">Current balance: <span className="font-bold text-primary font-mono">{parseFloat(balanceTarget.balance).toFixed(2)} USDT</span></p>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider">Amount (USDT)</label>
+                <Input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={balanceAmount}
+                  onChange={(e) => setBalanceAmount(e.target.value)}
+                  className="font-mono rounded-none"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider">Note <span className="font-normal text-muted-foreground normal-case tracking-normal">(optional)</span></label>
+                <Input
+                  placeholder="e.g. Manual deposit, bonus, correction…"
+                  value={balanceNote}
+                  onChange={(e) => setBalanceNote(e.target.value)}
+                  className="rounded-none text-sm"
+                />
+              </div>
+              <div className="flex gap-2 pt-1">
+                <Button
+                  variant="outline"
+                  className="flex-1 rounded-none"
+                  onClick={() => { setBalanceTarget(null); setBalanceAmount(""); setBalanceNote(""); }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1 rounded-none font-bold uppercase tracking-wider"
+                  disabled={!balanceAmount || parseFloat(balanceAmount) <= 0 || addBalance.isPending}
+                  onClick={submitAddBalance}
+                >
+                  {addBalance.isPending ? "Crediting…" : `Credit ${balanceAmount ? parseFloat(balanceAmount).toFixed(2) : "0.00"} USDT`}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

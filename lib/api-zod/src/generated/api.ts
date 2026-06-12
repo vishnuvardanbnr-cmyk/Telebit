@@ -1155,6 +1155,35 @@ export const AdminToggleUserBlockResponse = zod.object({
 
 
 /**
+ * @summary Credit wallet balance for a user (admin)
+ */
+export const AdminAddUserBalanceParams = zod.object({
+  "userId": zod.coerce.string()
+})
+
+export const AdminAddUserBalanceBody = zod.object({
+  "amount": zod.string().describe('USDT amount to credit (must be positive)'),
+  "note": zod.string().optional().describe('Optional admin note')
+})
+
+export const AdminAddUserBalanceResponse = zod.object({
+  "id": zod.string(),
+  "clerkId": zod.string(),
+  "email": zod.string(),
+  "fullName": zod.string().nullish(),
+  "walletBalance": zod.string(),
+  "earningsBalance": zod.string(),
+  "depositAddress": zod.string(),
+  "referralCode": zod.string(),
+  "isAdmin": zod.boolean(),
+  "withdrawalBlocked": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "totalDeposited": zod.string().optional(),
+  "totalWithdrawn": zod.string().optional()
+})
+
+
+/**
  * @summary List all deposits (admin)
  */
 export const adminListDepositsQueryLimitDefault = 50;

@@ -78,6 +78,50 @@ router.patch("/admin/users/:userId/block", requireAuth, requireAdmin, async (req
   });
 });
 
+router.post("/admin/users/:userId/add-balance", requireAuth, requireAdmin, async (req, res): Promise<void> => {
+  const userId = req.params.userId as string;
+  const { amount, note } = req.body as { amount?: string; note?: string };
+
+  const parsed = parseFloat(amount ?? "");
+  if (!amount || isNaN(parsed) || parsed <= 0) {
+    res.status(400).json({ error: "amount must be a positive number" });
+    return;
+  }
+
+  const [existing] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  if (!existing) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  const newBalance = (parseFloat(existing.walletBalance) + parsed).toFixed(8);
+  const [user] = await db.update(usersTable)
+    .set({ walletBalance: newBalance })
+    .where(eq(usersTable.id, userId))
+    .returning();
+
+  logger.info({ userId, amount: parsed, note, newBalance }, "Admin credited balance");
+
+  const [depTotal] = await db.select({ total: sum(depositsTable.netAmount) }).from(depositsTable).where(eq(depositsTable.userId, user.id));
+  const [wdTotal] = await db.select({ total: sum(withdrawalsTable.netAmount) }).from(withdrawalsTable).where(eq(withdrawalsTable.userId, user.id));
+
+  res.json({
+    id: user.id,
+    clerkId: user.clerkId,
+    email: user.email,
+    fullName: user.fullName,
+    walletBalance: user.walletBalance,
+    earningsBalance: user.earningsBalance,
+    depositAddress: user.depositAddress,
+    referralCode: user.referralCode,
+    isAdmin: user.isAdmin,
+    withdrawalBlocked: user.withdrawalBlocked,
+    createdAt: user.createdAt,
+    totalDeposited: depTotal?.total ?? "0",
+    totalWithdrawn: wdTotal?.total ?? "0",
+  });
+});
+
 router.get("/admin/deposits", requireAuth, requireAdmin, async (req, res): Promise<void> => {
   const limit = Math.min(Number(req.query.limit) || 50, 200);
   const offset = Number(req.query.offset) || 0;

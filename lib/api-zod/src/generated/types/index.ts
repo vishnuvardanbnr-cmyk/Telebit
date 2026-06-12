@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './addBalanceRequest';
 export * from './adminListDepositsParams';
 export * from './adminListOrdersParams';
 export * from './adminListProductsParams';
