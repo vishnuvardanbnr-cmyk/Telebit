@@ -1,4 +1,5 @@
 import { Router } from "express";
+import crypto from "node:crypto";
 import { db, usersTable, telegramMappingsTable } from "@workspace/db";
 import { eq, or } from "drizzle-orm";
 import { getSettings } from "../lib/settings";
@@ -357,6 +358,119 @@ interface TelegramUpdate {
     };
   };
 }
+
+// ─── Telegram Login Widget ─────────────────────────────────────────────────
+
+router.get("/auth/bot-info", async (req, res): Promise<void> => {
+  const settings = await getSettings();
+  res.json({
+    botUsername: settings.telegramBotUsername || null,
+    configured: !!settings.telegramBotUsername,
+  });
+});
+
+router.post("/auth/telegram/login", async (req, res): Promise<void> => {
+  const settings = await getSettings();
+  if (!settings.telegramBotToken) {
+    res.status(503).json({ error: "Telegram bot not configured" });
+    return;
+  }
+
+  const { id, first_name, last_name, username, photo_url, auth_date, hash } = req.body as {
+    id?: string; first_name?: string; last_name?: string;
+    username?: string; photo_url?: string; auth_date?: string; hash?: string;
+  };
+
+  if (!id || !hash || !auth_date) {
+    res.status(400).json({ error: "Missing required fields" });
+    return;
+  }
+
+  // Verify Telegram hash: secret_key = SHA256(bot_token), then HMAC-SHA256 of sorted k=v pairs
+  const secretKey = crypto.createHash("sha256").update(settings.telegramBotToken).digest();
+  const pairs: Record<string, string> = { auth_date, id };
+  if (first_name) pairs.first_name = first_name;
+  if (last_name) pairs.last_name = last_name;
+  if (username) pairs.username = username;
+  if (photo_url) pairs.photo_url = photo_url;
+
+  const dataCheckString = Object.entries(pairs)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => `${k}=${v}`)
+    .join("\n");
+
+  const expectedHash = crypto.createHmac("sha256", secretKey).update(dataCheckString).digest("hex");
+  if (hash !== expectedHash) {
+    res.status(401).json({ error: "Invalid Telegram authentication" });
+    return;
+  }
+
+  // Reject stale auth (older than 24 hours)
+  if (Date.now() / 1000 - Number(auth_date) > 86400) {
+    res.status(401).json({ error: "Authentication expired — please try again" });
+    return;
+  }
+
+  const telegramChatId = BigInt(id);
+  const syntheticPhone = `tg_${id}`;
+  const externalId = `tg_${id}`;
+  const email = `${syntheticPhone}@telegram.user`;
+
+  // Look up by synthetic phone (set on first widget login)
+  let [mapping] = await db.select().from(telegramMappingsTable)
+    .where(eq(telegramMappingsTable.phone, syntheticPhone));
+
+  let user;
+  if (mapping) {
+    [user] = await db.select().from(usersTable)
+      .where(or(eq(usersTable.clerkId, externalId), eq(usersTable.email, email)));
+    // Refresh profile info
+    await db.update(telegramMappingsTable)
+      .set({ firstName: first_name ?? null, lastName: last_name ?? null, username: username ?? null, photoUrl: photo_url ?? null })
+      .where(eq(telegramMappingsTable.phone, syntheticPhone));
+  }
+
+  if (!user) {
+    const fullName = [first_name, last_name].filter(Boolean).join(" ") || username || `User ${id}`;
+    const { address, privateKeyEncrypted } = generateWallet();
+    const referralCode = generateReferralCode();
+    [user] = await db.insert(usersTable).values({
+      clerkId: externalId,
+      email,
+      fullName,
+      depositAddress: address,
+      depositPrivateKeyEncrypted: privateKeyEncrypted,
+      referralCode,
+      walletBalance: "0",
+    }).returning();
+
+    await db.insert(telegramMappingsTable).values({
+      phone: syntheticPhone,
+      chatId: telegramChatId,
+      firstName: first_name ?? null,
+      lastName: last_name ?? null,
+      username: username ?? null,
+      photoUrl: photo_url ?? null,
+    }).onConflictDoNothing();
+  }
+
+  setAuthCookie(res, user.id);
+  res.json({
+    user: {
+      id: user.id,
+      clerkId: user.clerkId,
+      email: user.email,
+      fullName: user.fullName,
+      walletBalance: user.walletBalance,
+      earningsBalance: user.earningsBalance ?? "0.00",
+      depositAddress: user.depositAddress,
+      referralCode: user.referralCode,
+      isAdmin: user.isAdmin,
+      withdrawalBlocked: user.withdrawalBlocked,
+      createdAt: user.createdAt,
+    },
+  });
+});
 
 // ─── One-time admin bootstrap ──────────────────────────────────────────────
 // Requires the SESSION_SECRET as a bearer token. Safe to leave in permanently
