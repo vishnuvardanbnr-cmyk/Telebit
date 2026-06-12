@@ -767,15 +767,20 @@ function SettingsTab() {
   const { toast } = useToast();
   const [cfg, setCfg] = useState<AdminSettings | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [registeringWebhook, setRegisteringWebhook] = useState(false);
 
   const load = useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
     try {
       const data = await apiFetch("/admin/settings");
       setCfg(data);
-    } catch {
-      toast({ title: "Failed to load settings", variant: "destructive" });
+    } catch (err: any) {
+      const msg = err?.status === 403 ? "Access denied — your account does not have admin privileges." : (err?.message ?? "Failed to load settings");
+      setLoadError(msg);
+      toast({ title: "Failed to load settings", description: msg, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -820,9 +825,24 @@ function SettingsTab() {
     }
   };
 
-  if (loading || !cfg) return (
+  if (loading) return (
     <div className="space-y-4 py-8">
       {[...Array(6)].map((_, i) => <div key={i} className="h-10 bg-muted/40 rounded animate-pulse" />)}
+    </div>
+  );
+
+  if (loadError || !cfg) return (
+    <div className="py-12 flex flex-col items-center gap-4 text-center">
+      <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
+        <AlertTriangle className="w-6 h-6 text-destructive" />
+      </div>
+      <div>
+        <p className="font-bold text-sm uppercase tracking-wider">Settings unavailable</p>
+        <p className="text-sm text-muted-foreground mt-1 max-w-xs">{loadError ?? "Could not load platform settings."}</p>
+      </div>
+      <Button variant="outline" size="sm" className="rounded-none text-xs uppercase tracking-wider font-bold" onClick={load}>
+        Retry
+      </Button>
     </div>
   );
 
