@@ -792,8 +792,16 @@ function SettingsTab() {
     setCfg((prev) => prev ? { ...prev, [key]: v } : prev);
 
   const registerWebhook = async () => {
+    if (!cfg) return;
     setRegisteringWebhook(true);
     try {
+      // Save settings first so the DB has the latest bot token
+      await apiFetch("/admin/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(cfg),
+      });
+      // Then register webhook
       const webhookUrl = `${window.location.origin}/api/auth/bot-webhook`;
       const result = await apiFetch("/auth/bot-webhook/setup", {
         method: "POST",
@@ -801,7 +809,7 @@ function SettingsTab() {
         body: JSON.stringify({ webhookUrl }),
       }) as { success: boolean; description?: string };
       toast({
-        title: "Webhook registered!",
+        title: "Settings saved & webhook registered!",
         description: result.description ?? webhookUrl,
       });
     } catch (err: any) {
