@@ -179,7 +179,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Mobile bottom footer nav */}
       <nav className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-card border-t border-border">
-        <div className={cn("grid h-16", isSignedIn ? "grid-cols-7" : "grid-cols-1")}>
+        <div className={cn("grid h-16", isSignedIn ? "grid-cols-6" : "grid-cols-1")}>
           {isSignedIn ? (
             <>
               <Link
@@ -213,17 +213,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
               >
                 <TrendingUp className={cn("h-5 w-5", location.startsWith("/packages") && "stroke-[2.5px]")} />
                 <span>Invest</span>
-              </Link>
-
-              <Link
-                href="/income"
-                className={cn(
-                  "flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
-                  (location === "/income" || location.startsWith("/income/")) ? "text-primary" : "text-muted-foreground"
-                )}
-              >
-                <BarChart2 className={cn("h-5 w-5", (location === "/income" || location.startsWith("/income/")) && "stroke-[2.5px]")} />
-                <span>Income</span>
               </Link>
 
               <Link
