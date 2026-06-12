@@ -32,6 +32,7 @@ export default function ShopSignInPage() {
     setError(null);
 
     if (!email.trim()) { setError("Email is required."); return; }
+    if (mode === "register" && !fullName.trim()) { setError("Full name is required."); return; }
     if (!password) { setError("Password is required."); return; }
     if (mode === "register" && password.length < 6) {
       setError("Password must be at least 6 characters.");
@@ -148,7 +149,7 @@ export default function ShopSignInPage() {
                   <>
                     <div>
                       <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                        Full name (optional)
+                        Full name <span className="text-destructive">*</span>
                       </label>
                       <div className="relative">
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
