@@ -24,4 +24,6 @@ export interface SettingsUpdate {
   withdrawWalletPrivateKey?: string;
   telegramBotToken?: string;
   telegramBotUsername?: string;
+  shareValueUsdt?: string;
+  sharesPerPackage?: string;
 }

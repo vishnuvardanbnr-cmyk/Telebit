@@ -1935,7 +1935,7 @@ components:
 
     PublicSettings:
       type: object
-      required: [minDepositUsdt, depositFeeFlat, depositFeePercent, withdrawFeeFlat, withdrawFeePercent, withdrawFeeMode, withdrawalEnabled, otpWithdrawalEnabled]
+      required: [minDepositUsdt, depositFeeFlat, depositFeePercent, withdrawFeeFlat, withdrawFeePercent, withdrawFeeMode, withdrawalEnabled, otpWithdrawalEnabled, shareValueUsdt, sharesPerPackage]
       properties:
         minDepositUsdt: { type: string }
         depositFeeFlat: { type: string }
@@ -1947,6 +1947,8 @@ components:
           enum: [deduct_from_amount, deduct_from_balance]
         withdrawalEnabled: { type: boolean }
         otpWithdrawalEnabled: { type: boolean }
+        shareValueUsdt: { type: string }
+        sharesPerPackage: { type: string }
 
     PlatformSettings:
       type: object
@@ -1970,6 +1972,8 @@ components:
         gasWalletAddress: { type: ["string", "null"] }
         telegramBotToken: { type: string }
         telegramBotUsername: { type: string }
+        shareValueUsdt: { type: string }
+        sharesPerPackage: { type: string }
 
     SettingsUpdate:
       type: object
@@ -1993,6 +1997,8 @@ components:
         withdrawWalletPrivateKey: { type: string }
         telegramBotToken: { type: string }
         telegramBotUsername: { type: string }
+        shareValueUsdt: { type: string }
+        sharesPerPackage: { type: string }
 
     OtpSendRequest:
       type: object

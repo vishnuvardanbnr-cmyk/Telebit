@@ -31,6 +31,8 @@ export interface Settings {
   smtpFromEmail: string;
   smtpFromName: string;
   adminExcessWallet: string;
+  shareValueUsdt: string;
+  sharesPerPackage: string;
 }
 
 const DEFAULTS: Settings = {
@@ -63,6 +65,8 @@ const DEFAULTS: Settings = {
   smtpFromEmail: "",
   smtpFromName: "Telebit Shop",
   adminExcessWallet: "0",
+  shareValueUsdt: "0",
+  sharesPerPackage: "50",
 };
 
 export async function getSettings(): Promise<Settings> {
@@ -102,6 +106,8 @@ export async function getSettings(): Promise<Settings> {
     smtpFromEmail: map.smtpFromEmail ?? DEFAULTS.smtpFromEmail,
     smtpFromName: map.smtpFromName ?? DEFAULTS.smtpFromName,
     adminExcessWallet: map.adminExcessWallet ?? DEFAULTS.adminExcessWallet,
+  shareValueUsdt: map.shareValueUsdt ?? DEFAULTS.shareValueUsdt,
+  sharesPerPackage: map.sharesPerPackage ?? DEFAULTS.sharesPerPackage,
   };
 }
 

@@ -202,6 +202,8 @@ export interface PublicSettings {
   withdrawFeeMode: PublicSettingsWithdrawFeeMode;
   withdrawalEnabled: boolean;
   otpWithdrawalEnabled: boolean;
+  shareValueUsdt: string;
+  sharesPerPackage: string;
 }
 
 export type PlatformSettingsWithdrawFeeMode = typeof PlatformSettingsWithdrawFeeMode[keyof typeof PlatformSettingsWithdrawFeeMode];
@@ -236,6 +238,8 @@ export interface PlatformSettings {
   gasWalletAddress?: string | null;
   telegramBotToken?: string;
   telegramBotUsername?: string;
+  shareValueUsdt?: string;
+  sharesPerPackage?: string;
 }
 
 export type SettingsUpdateWithdrawFeeMode = typeof SettingsUpdateWithdrawFeeMode[keyof typeof SettingsUpdateWithdrawFeeMode];
@@ -270,6 +274,8 @@ export interface SettingsUpdate {
   withdrawWalletPrivateKey?: string;
   telegramBotToken?: string;
   telegramBotUsername?: string;
+  shareValueUsdt?: string;
+  sharesPerPackage?: string;
 }
 
 export interface OtpSendRequest {

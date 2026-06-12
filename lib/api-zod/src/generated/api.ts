@@ -278,7 +278,9 @@ export const GetSettingsResponse = zod.object({
   "withdrawFeePercent": zod.string(),
   "withdrawFeeMode": zod.enum(['deduct_from_amount', 'deduct_from_balance']),
   "withdrawalEnabled": zod.boolean(),
-  "otpWithdrawalEnabled": zod.boolean()
+  "otpWithdrawalEnabled": zod.boolean(),
+  "shareValueUsdt": zod.string(),
+  "sharesPerPackage": zod.string()
 })
 
 
@@ -1333,7 +1335,9 @@ export const AdminGetSettingsResponse = zod.object({
   "bscRpcUrl": zod.string(),
   "gasWalletAddress": zod.string().nullish(),
   "telegramBotToken": zod.string().optional(),
-  "telegramBotUsername": zod.string().optional()
+  "telegramBotUsername": zod.string().optional(),
+  "shareValueUsdt": zod.string().optional(),
+  "sharesPerPackage": zod.string().optional()
 })
 
 
@@ -1355,7 +1359,9 @@ export const AdminUpdateSettingsBody = zod.object({
   "gasWalletPrivateKey": zod.string().optional(),
   "withdrawWalletPrivateKey": zod.string().optional(),
   "telegramBotToken": zod.string().optional(),
-  "telegramBotUsername": zod.string().optional()
+  "telegramBotUsername": zod.string().optional(),
+  "shareValueUsdt": zod.string().optional(),
+  "sharesPerPackage": zod.string().optional()
 })
 
 export const AdminUpdateSettingsResponse = zod.object({
@@ -1372,7 +1378,9 @@ export const AdminUpdateSettingsResponse = zod.object({
   "bscRpcUrl": zod.string(),
   "gasWalletAddress": zod.string().nullish(),
   "telegramBotToken": zod.string().optional(),
-  "telegramBotUsername": zod.string().optional()
+  "telegramBotUsername": zod.string().optional(),
+  "shareValueUsdt": zod.string().optional(),
+  "sharesPerPackage": zod.string().optional()
 })
 
 

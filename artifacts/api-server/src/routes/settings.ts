@@ -16,6 +16,8 @@ router.get("/settings", async (_req, res): Promise<void> => {
     otpWithdrawalEnabled: settings.otpWithdrawalEnabled,
     emailVerificationEnabled: settings.emailVerificationEnabled,
     loginOtpEnabled: settings.loginOtpEnabled,
+    shareValueUsdt: settings.shareValueUsdt,
+    sharesPerPackage: settings.sharesPerPackage,
   });
 });
 

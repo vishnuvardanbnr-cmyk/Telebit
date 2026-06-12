@@ -16,4 +16,6 @@ export interface PublicSettings {
   withdrawFeeMode: PublicSettingsWithdrawFeeMode;
   withdrawalEnabled: boolean;
   otpWithdrawalEnabled: boolean;
+  shareValueUsdt: string;
+  sharesPerPackage: string;
 }

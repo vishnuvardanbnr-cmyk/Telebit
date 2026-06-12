@@ -4,13 +4,14 @@ import {
   useGetIncomeSummary,
   useListMyPackages,
   useGetMyRankProgress,
+  useGetSettings,
 } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fmtUsdt } from "@/lib/utils";
 import {
   Wallet, ShoppingBag, ChevronRight, Trophy,
   Copy, TrendingUp, Users, Percent, Crown,
-  ArrowDownLeft, ArrowUpRight, ArrowLeftRight,
+  ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Leaf,
 } from "lucide-react";
 import { toast } from "sonner";
 import { UserProfileCard } from "@/components/user-profile-card";
@@ -20,6 +21,7 @@ export default function Home() {
   const { data: income, isLoading: incomeLoading } = useGetIncomeSummary();
   const { data: myPackages } = useListMyPackages({});
   const { data: rankProgress } = useGetMyRankProgress();
+  const { data: settings } = useGetSettings();
 
   const activePackages = myPackages?.filter((p) => p.isActive) ?? [];
   const totalInvested = activePackages.reduce((s, p) => s + parseFloat(p.principalUsdt), 0);
@@ -225,6 +227,64 @@ export default function Home() {
         </Link>
 
       </div>
+
+      {/* ── Athnol Bio Fuel Share Guarantee ── */}
+      {(() => {
+        const sharesQty = parseInt(settings?.sharesPerPackage ?? "50");
+        const shareVal = parseFloat(settings?.shareValueUsdt ?? "0");
+        const totalVal = sharesQty * shareVal;
+        return (
+          <div className="rounded-2xl overflow-hidden border border-green-200 shadow-sm">
+            {/* Green header band */}
+            <div className="bg-gradient-to-r from-green-700 to-emerald-600 px-5 py-4 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                <Leaf className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-green-200 uppercase tracking-widest">Package Guarantee</p>
+                <p className="text-sm font-black text-white leading-tight">Athnol Bio Fuel Company</p>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="bg-white px-5 py-4 space-y-4">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Every <strong className="text-foreground">$125 package purchase</strong> earns you <strong className="text-green-700">{sharesQty} shares</strong> of Athnol Bio Fuel Company as a guaranteed reward — backed by real equity.
+              </p>
+
+              {/* Stats */}
+              <div className="grid grid-cols-3 gap-2.5">
+                <div className="rounded-xl bg-green-50 border border-green-100 px-3 py-3 text-center">
+                  <p className="text-[10px] text-green-600 font-semibold uppercase tracking-wide mb-0.5">Shares</p>
+                  <p className="text-lg font-black text-green-800 tabular-nums">{sharesQty}</p>
+                  <p className="text-[9px] text-green-600 mt-0.5">per package</p>
+                </div>
+                <div className="rounded-xl bg-green-50 border border-green-100 px-3 py-3 text-center">
+                  <p className="text-[10px] text-green-600 font-semibold uppercase tracking-wide mb-0.5">Share Value</p>
+                  <p className="text-lg font-black text-green-800 tabular-nums">
+                    {shareVal > 0 ? `$${shareVal.toFixed(2)}` : "—"}
+                  </p>
+                  <p className="text-[9px] text-green-600 mt-0.5">per share</p>
+                </div>
+                <div className="rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-3 text-center">
+                  <p className="text-[10px] text-emerald-600 font-semibold uppercase tracking-wide mb-0.5">Total Value</p>
+                  <p className="text-lg font-black text-emerald-800 tabular-nums">
+                    {totalVal > 0 ? `$${totalVal.toFixed(2)}` : "—"}
+                  </p>
+                  <p className="text-[9px] text-emerald-600 mt-0.5">USDT equiv.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5">
+                <span className="text-amber-500 text-base leading-none mt-0.5">🔒</span>
+                <p className="text-[11px] text-amber-800 font-medium">
+                  Shares are issued as collateral guaranteeing your investment returns. Value updates reflect live company valuation.
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
     </div>
   );

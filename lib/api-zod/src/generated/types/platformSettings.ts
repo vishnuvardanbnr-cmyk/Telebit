@@ -24,4 +24,6 @@ export interface PlatformSettings {
   gasWalletAddress?: string | null;
   telegramBotToken?: string;
   telegramBotUsername?: string;
+  shareValueUsdt?: string;
+  sharesPerPackage?: string;
 }
