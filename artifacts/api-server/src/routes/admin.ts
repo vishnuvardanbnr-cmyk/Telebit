@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { sendWithdrawalStatusEmail } from "../lib/mailer";
 import { db, usersTable, depositsTable, withdrawalsTable, p2pTransfersTable, globalAmountsV2Table, nftsTable, nftPoolsTable } from "@workspace/db";
 import { eq, desc, like, or, sum, count } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../lib/auth";
@@ -191,6 +192,12 @@ router.post("/admin/withdrawals/:id/approve", requireAuth, requireAdmin, async (
     .where(eq(withdrawalsTable.id, raw))
     .returning();
 
+  // Send withdrawal approved email (fire-and-forget)
+  db.select().from(usersTable).where(eq(usersTable.id, withdrawal.userId)).limit(1).then((rows: any[]) => {
+    const u = rows[0];
+    if (u) sendWithdrawalStatusEmail(u.email, u.fullName ?? u.email, "approved", withdrawal.amount).catch(() => {});
+  }).catch(() => {});
+
   res.json(updated);
 });
 
@@ -222,6 +229,9 @@ router.post("/admin/withdrawals/:id/reject", requireAuth, requireAdmin, async (r
     .where(eq(withdrawalsTable.id, raw))
     .returning();
 
+  // Send withdrawal rejected email (fire-and-forget)
+  if (user) sendWithdrawalStatusEmail(user.email, user.fullName ?? user.email, "rejected", withdrawal.amount).catch(() => {});
+
   res.json(updated);
 });
 
@@ -242,8 +252,13 @@ router.get("/admin/settings", requireAuth, requireAdmin, async (_req, res): Prom
     gasWalletAddress: null,
     telegramBotToken: settings.telegramBotToken,
     telegramBotUsername: settings.telegramBotUsername,
+    smtpEnabled: settings.smtpEnabled,
     emailVerificationEnabled: settings.emailVerificationEnabled,
     loginOtpEnabled: settings.loginOtpEnabled,
+    welcomeEmailEnabled: settings.welcomeEmailEnabled,
+    orderConfirmEmailEnabled: settings.orderConfirmEmailEnabled,
+    depositCreditEmailEnabled: settings.depositCreditEmailEnabled,
+    withdrawalStatusEmailEnabled: settings.withdrawalStatusEmailEnabled,
     smtpHost: settings.smtpHost,
     smtpPort: settings.smtpPort,
     smtpUser: settings.smtpUser,
@@ -271,8 +286,13 @@ router.put("/admin/settings", requireAuth, requireAdmin, async (req, res): Promi
     gasWalletAddress: null,
     telegramBotToken: settings.telegramBotToken,
     telegramBotUsername: settings.telegramBotUsername,
+    smtpEnabled: settings.smtpEnabled,
     emailVerificationEnabled: settings.emailVerificationEnabled,
     loginOtpEnabled: settings.loginOtpEnabled,
+    welcomeEmailEnabled: settings.welcomeEmailEnabled,
+    orderConfirmEmailEnabled: settings.orderConfirmEmailEnabled,
+    depositCreditEmailEnabled: settings.depositCreditEmailEnabled,
+    withdrawalStatusEmailEnabled: settings.withdrawalStatusEmailEnabled,
     smtpHost: settings.smtpHost,
     smtpPort: settings.smtpPort,
     smtpUser: settings.smtpUser,

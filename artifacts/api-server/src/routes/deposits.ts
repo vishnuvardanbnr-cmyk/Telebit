@@ -3,6 +3,7 @@ import { db, usersTable, depositsTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 import { requireAuth } from "../lib/auth";
 import { getSettings } from "../lib/settings";
+import { sendDepositCreditEmail } from "../lib/mailer";
 import { getProvider, getUsdtBalance, formatUsdt, parseUsdt, sweepUsdt, sendBnbGas, getBnbBalance } from "../lib/wallet";
 import { decrypt } from "../lib/crypto";
 import { ethers } from "ethers";
@@ -104,6 +105,9 @@ router.post("/deposits/check", requireAuth, async (req, res): Promise<void> => {
       sweepTxHash,
       creditedAt: new Date(),
     }).returning();
+
+    // Send deposit credited email (fire-and-forget)
+    sendDepositCreditEmail(user.email, user.fullName ?? user.email, String(netAmount)).catch(() => {});
 
     res.json({
       found: true,

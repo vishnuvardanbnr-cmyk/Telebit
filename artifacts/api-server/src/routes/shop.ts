@@ -4,6 +4,7 @@ import { verifyToken } from "../lib/auth";
 import { eq, desc, asc, and, ilike, gte, lte, sql, inArray } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../lib/auth";
 import { logger } from "../lib/logger";
+import { sendOrderConfirmEmail } from "../lib/mailer";
 
 const router = Router();
 
@@ -564,6 +565,19 @@ router.post("/shop/orders", requireAuth, async (req, res): Promise<void> => {
 
   // Update category product counts
   await db.delete(shopCartItems).where(eq(shopCartItems.userId, user.id));
+
+  // Send order confirmation email (fire-and-forget)
+  sendOrderConfirmEmail(
+    user.email,
+    user.fullName ?? user.email,
+    order.id,
+    items.map((it) => ({
+      productName: it.productName,
+      quantity: it.quantity,
+      subtotal: it.subtotal,
+    })),
+    String(total),
+  ).catch(() => {});
 
   res.status(201).json(serializeOrder(order, items));
 });

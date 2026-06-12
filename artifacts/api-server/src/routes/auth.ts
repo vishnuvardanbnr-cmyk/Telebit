@@ -6,7 +6,7 @@ import { generateWallet, generateReferralCode } from "../lib/wallet";
 import { setAuthCookie, clearAuthCookie } from "../lib/auth";
 import { getSettings } from "../lib/settings";
 import { generateOtp, storeOtp, verifyOtp, hasRecentOtp } from "../lib/otp-store";
-import { sendOtpEmail } from "../lib/mailer";
+import { sendOtpEmail, sendWelcomeEmail } from "../lib/mailer";
 
 const router = Router();
 
@@ -163,6 +163,10 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     .returning();
 
   setAuthCookie(res, user.id);
+
+  // Send welcome email (fire-and-forget)
+  sendWelcomeEmail(user.email, user.fullName ?? user.email).catch(() => {});
+
   res.status(201).json({
     user: {
       id: user.id,

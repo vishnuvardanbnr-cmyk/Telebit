@@ -731,8 +731,13 @@ type AdminSettings = {
   minDepositUsdt: string;
   depositFeeFlat: string;
   depositFeePercent: string;
+  smtpEnabled: boolean;
   emailVerificationEnabled: boolean;
   loginOtpEnabled: boolean;
+  welcomeEmailEnabled: boolean;
+  orderConfirmEmailEnabled: boolean;
+  depositCreditEmailEnabled: boolean;
+  withdrawalStatusEmailEnabled: boolean;
   smtpHost: string;
   smtpPort: string;
   smtpUser: string;
@@ -1252,45 +1257,33 @@ function SettingsTab() {
         </div>
       </div>
 
-      {/* Email & OTP */}
+      {/* Email & SMTP */}
       <div className="bg-card border border-border p-5 space-y-4">
         <div className="flex items-center gap-2 mb-1">
           <div className="w-7 h-7 rounded bg-blue-500/10 flex items-center justify-center">
             <Mail className="w-4 h-4 text-blue-500" />
           </div>
-          <h3 className="font-bold uppercase tracking-wider text-sm">Email &amp; OTP</h3>
+          <h3 className="font-bold uppercase tracking-wider text-sm">Email &amp; SMTP</h3>
         </div>
 
-        <div className="flex items-center justify-between pt-1">
+        {/* Master SMTP switch */}
+        <div className="flex items-center justify-between p-3 rounded-lg bg-muted/40 border border-border">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider">Email Verification on Register</p>
-            <p className="text-xs text-muted-foreground">Require OTP code to create a new account</p>
+            <p className="text-xs font-bold uppercase tracking-wider">SMTP Enabled</p>
+            <p className="text-xs text-muted-foreground">Master switch — must be ON for any email to send</p>
           </div>
           <button
             type="button"
-            onClick={() => set("emailVerificationEnabled")(!cfg.emailVerificationEnabled)}
-            className={`relative w-10 h-5 rounded-full transition-colors ${cfg.emailVerificationEnabled ? "bg-primary" : "bg-muted"}`}
+            onClick={() => set("smtpEnabled")(!cfg.smtpEnabled)}
+            className={`relative w-10 h-5 rounded-full transition-colors ${cfg.smtpEnabled ? "bg-primary" : "bg-muted"}`}
           >
-            <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${cfg.emailVerificationEnabled ? "translate-x-5" : ""}`} />
+            <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${cfg.smtpEnabled ? "translate-x-5" : ""}`} />
           </button>
         </div>
 
-        <div className="flex items-center justify-between pt-1">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider">OTP Required on Login</p>
-            <p className="text-xs text-muted-foreground">Send email code after password check on sign-in</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => set("loginOtpEnabled")(!cfg.loginOtpEnabled)}
-            className={`relative w-10 h-5 rounded-full transition-colors ${cfg.loginOtpEnabled ? "bg-primary" : "bg-muted"}`}
-          >
-            <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${cfg.loginOtpEnabled ? "translate-x-5" : ""}`} />
-          </button>
-        </div>
-
+        {/* SMTP credentials */}
         <div className="border-t border-border pt-4 space-y-3">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">SMTP Configuration</p>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">SMTP Credentials</p>
           <div className="grid grid-cols-2 gap-4">
             <SettingField
               label="SMTP Host"
@@ -1332,6 +1325,59 @@ function SettingsTab() {
               onChange={set("smtpFromName")}
             />
           </div>
+        </div>
+
+        {/* Email feature toggles */}
+        <div className="border-t border-border pt-4 space-y-1">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-3">Email Features</p>
+          {(
+            [
+              {
+                key: "emailVerificationEnabled" as const,
+                label: "Email Verification on Register",
+                desc: "Require OTP code to create a new account",
+              },
+              {
+                key: "loginOtpEnabled" as const,
+                label: "OTP Required on Login",
+                desc: "Send email code after password check on sign-in",
+              },
+              {
+                key: "welcomeEmailEnabled" as const,
+                label: "Welcome Email",
+                desc: "Send a welcome email when a new user registers",
+              },
+              {
+                key: "orderConfirmEmailEnabled" as const,
+                label: "Order Confirmation Email",
+                desc: "Notify customer when their order is placed",
+              },
+              {
+                key: "depositCreditEmailEnabled" as const,
+                label: "Deposit Credited Email",
+                desc: "Notify user when a USDT deposit is confirmed",
+              },
+              {
+                key: "withdrawalStatusEmailEnabled" as const,
+                label: "Withdrawal Status Email",
+                desc: "Notify user when a withdrawal is approved or rejected",
+              },
+            ] as Array<{ key: keyof AdminSettings; label: string; desc: string }>
+          ).map(({ key, label, desc }) => (
+            <div key={key} className="flex items-center justify-between py-2.5 px-1 border-b border-border/50 last:border-0">
+              <div>
+                <p className="text-xs font-semibold">{label}</p>
+                <p className="text-xs text-muted-foreground">{desc}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => set(key)(!(cfg[key] as boolean))}
+                className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ml-4 ${cfg[key] ? "bg-primary" : "bg-muted"}`}
+              >
+                <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${cfg[key] ? "translate-x-5" : ""}`} />
+              </button>
+            </div>
+          ))}
         </div>
       </div>
 

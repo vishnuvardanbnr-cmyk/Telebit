@@ -17,8 +17,13 @@ export interface Settings {
   bscRpcUrl: string;
   telegramBotToken: string;
   telegramBotUsername: string;
+  smtpEnabled: boolean;
   emailVerificationEnabled: boolean;
   loginOtpEnabled: boolean;
+  welcomeEmailEnabled: boolean;
+  orderConfirmEmailEnabled: boolean;
+  depositCreditEmailEnabled: boolean;
+  withdrawalStatusEmailEnabled: boolean;
   smtpHost: string;
   smtpPort: string;
   smtpUser: string;
@@ -43,8 +48,13 @@ const DEFAULTS: Settings = {
   bscRpcUrl: "https://bsc-dataseed.binance.org/",
   telegramBotToken: "",
   telegramBotUsername: "",
+  smtpEnabled: false,
   emailVerificationEnabled: false,
   loginOtpEnabled: false,
+  welcomeEmailEnabled: false,
+  orderConfirmEmailEnabled: false,
+  depositCreditEmailEnabled: false,
+  withdrawalStatusEmailEnabled: false,
   smtpHost: "",
   smtpPort: "587",
   smtpUser: "",
@@ -76,8 +86,13 @@ export async function getSettings(): Promise<Settings> {
     bscRpcUrl: map.bscRpcUrl ?? DEFAULTS.bscRpcUrl,
     telegramBotToken: map.telegramBotToken ?? DEFAULTS.telegramBotToken,
     telegramBotUsername: map.telegramBotUsername ?? DEFAULTS.telegramBotUsername,
+    smtpEnabled: map.smtpEnabled === "true",
     emailVerificationEnabled: map.emailVerificationEnabled === "true",
     loginOtpEnabled: map.loginOtpEnabled === "true",
+    welcomeEmailEnabled: map.welcomeEmailEnabled === "true",
+    orderConfirmEmailEnabled: map.orderConfirmEmailEnabled === "true",
+    depositCreditEmailEnabled: map.depositCreditEmailEnabled === "true",
+    withdrawalStatusEmailEnabled: map.withdrawalStatusEmailEnabled === "true",
     smtpHost: map.smtpHost ?? DEFAULTS.smtpHost,
     smtpPort: map.smtpPort ?? DEFAULTS.smtpPort,
     smtpUser: map.smtpUser ?? DEFAULTS.smtpUser,
