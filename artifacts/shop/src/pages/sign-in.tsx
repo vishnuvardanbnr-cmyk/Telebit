@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation, Redirect, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
-import { FlaskConical, ExternalLink, MessageCircle, Key } from "lucide-react";
+import { FlaskConical, Phone, Key, Send } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -13,9 +13,12 @@ export default function ShopSignInPage() {
   const { isSignedIn, isLoading } = useAuth();
 
   const [botUsername, setBotUsername] = useState<string | null>(null);
+  const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
+  const [step, setStep] = useState<"phone" | "code">("phone");
   const [error, setError] = useState<string | null>(null);
-  const [logging, setLogging] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
 
   const params = new URLSearchParams(search);
@@ -30,21 +33,45 @@ export default function ShopSignInPage() {
 
   if (!isLoading && isSignedIn) return <Redirect to="/" />;
 
-  const handleVerify = async (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmed = code.replace(/\s/g, "");
-    if (trimmed.length !== 6 || !/^\d{6}$/.test(trimmed)) {
-      setError("Please enter the 6-digit code from the bot.");
-      return;
-    }
-    setLogging(true);
+    const trimmed = phone.trim();
+    if (!trimmed) { setError("Please enter your phone number."); return; }
+    setSending(true);
     setError(null);
     try {
-      const res = await fetch(`${BASE}/api/auth/tg-code/verify`, {
+      const res = await fetch(`${BASE}/api/auth/otp/send`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ code: trimmed, referralCode }),
+        body: JSON.stringify({ phone: trimmed }),
+      });
+      const body = await res.json().catch(() => ({})) as { error?: string; hint?: string; botUsername?: string };
+      if (!res.ok) {
+        if (body.hint) throw new Error(`${body.error} — ${body.hint}`);
+        throw new Error(body.error || "Failed to send code");
+      }
+      setStep("code");
+      setCode("");
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = code.replace(/\s/g, "");
+    if (trimmed.length !== 6) { setError("Please enter the 6-digit code."); return; }
+    setVerifying(true);
+    setError(null);
+    try {
+      const res = await fetch(`${BASE}/api/auth/otp/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ phone: phone.trim(), code: trimmed }),
       });
       const body = await res.json().catch(() => ({})) as { error?: string; user?: any };
       if (!res.ok) throw new Error(body.error || "Verification failed");
@@ -53,7 +80,7 @@ export default function ShopSignInPage() {
     } catch (e: any) {
       setError(e.message);
     } finally {
-      setLogging(false);
+      setVerifying(false);
     }
   };
 
@@ -97,7 +124,7 @@ export default function ShopSignInPage() {
                 </div>
                 <h1 className="text-xl font-bold text-foreground text-center">Sign In to Shop</h1>
                 <p className="text-sm text-muted-foreground text-center mt-1">
-                  Get a one-time code from our Telegram bot — no password needed
+                  Enter your Telegram phone number to receive a one-time code
                 </p>
               </div>
 
@@ -107,96 +134,122 @@ export default function ShopSignInPage() {
                 </div>
               )}
 
-              {/* Steps */}
-              <div className="space-y-3 mb-5">
-                {/* Step 1 */}
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center mt-0.5">
-                    1
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">Open the Telebit Bot</p>
-                    {botUsername ? (
-                      <a
-                        href={`https://t.me/${botUsername}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 mt-1.5 px-3 py-1.5 rounded-md bg-[#229ED9] hover:bg-[#1a8bbf] text-white text-xs font-semibold transition-colors"
-                      >
-                        <MessageCircle className="w-3.5 h-3.5" />
-                        Open @{botUsername}
-                        <ExternalLink className="w-3 h-3 opacity-80" />
-                      </a>
-                    ) : (
-                      <span className="text-xs text-muted-foreground mt-1 block">
-                        Bot not configured — ask an admin to set it up.
-                      </span>
+              {step === "phone" ? (
+                <form onSubmit={handleSendOtp} className="space-y-3">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                      Phone number (with country code)
+                    </label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <input
+                        type="tel"
+                        placeholder="+1 234 567 8900"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                        autoComplete="tel"
+                        disabled={sending}
+                        autoFocus
+                      />
+                    </div>
+                    {botUsername && (
+                      <p className="text-[11px] text-muted-foreground mt-1.5">
+                        You must have started{" "}
+                        <a
+                          href={`https://t.me/${botUsername}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary underline underline-offset-2"
+                        >
+                          @{botUsername}
+                        </a>{" "}
+                        and shared your number with it first.
+                      </p>
                     )}
                   </div>
-                </div>
 
-                {/* Step 2 */}
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center mt-0.5">
-                    2
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">Send any message</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      The bot will reply with a 6-digit login code.
+                  <button
+                    type="submit"
+                    disabled={sending || !phone.trim()}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {sending ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                        Sending code…
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4" />
+                        Send Code via Telegram
+                      </>
+                    )}
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleVerify} className="space-y-3">
+                  <div className="text-center mb-2">
+                    <p className="text-sm text-muted-foreground">
+                      Code sent to <span className="font-semibold text-foreground">{phone}</span>
                     </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Check your Telegram for the 6-digit code</p>
                   </div>
-                </div>
 
-                {/* Step 3 */}
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center mt-0.5">
-                    3
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                      Enter the code
+                    </label>
+                    <div className="relative">
+                      <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="\d{6}"
+                        maxLength={6}
+                        placeholder="123456"
+                        value={code}
+                        onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                        className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm font-mono tracking-widest placeholder:tracking-normal placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                        autoComplete="one-time-code"
+                        disabled={verifying}
+                        autoFocus
+                      />
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground mb-2">Enter the code below</p>
-                    <form onSubmit={handleVerify} className="space-y-2">
-                      <div className="relative">
-                        <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          pattern="\d{6}"
-                          maxLength={6}
-                          placeholder="123456"
-                          value={code}
-                          onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                          className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm font-mono tracking-widest placeholder:tracking-normal placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                          autoComplete="one-time-code"
-                          disabled={logging}
-                        />
-                      </div>
-                      <button
-                        type="submit"
-                        disabled={logging || code.length !== 6}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {logging ? (
-                          <>
-                            <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-                            Verifying…
-                          </>
-                        ) : (
-                          "Verify & Sign In"
-                        )}
-                      </button>
-                    </form>
-                  </div>
-                </div>
-              </div>
+
+                  <button
+                    type="submit"
+                    disabled={verifying || code.length !== 6}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {verifying ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                        Verifying…
+                      </>
+                    ) : (
+                      "Verify & Sign In"
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { setStep("phone"); setError(null); setCode(""); }}
+                    className="w-full text-xs text-muted-foreground hover:text-foreground text-center py-1 transition-colors"
+                  >
+                    ← Use a different number
+                  </button>
+                </form>
+              )}
 
               {error && (
-                <div className="mb-4 bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2 text-xs text-destructive text-center">
+                <div className="mt-3 bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2 text-xs text-destructive text-center">
                   {error}
                 </div>
               )}
 
-              <div className="flex items-center gap-3 my-4">
+              <div className="flex items-center gap-3 my-5">
                 <div className="h-px flex-1 bg-border" />
                 <span className="text-xs text-muted-foreground">or</span>
                 <div className="h-px flex-1 bg-border" />
