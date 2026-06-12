@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation, Redirect, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
-import { Mail, Lock, User, Eye, EyeOff, Gift, CheckCircle2, XCircle, Loader2, ShieldCheck } from "lucide-react";
+import { Mail, Lock, User, Eye, EyeOff, Gift, CheckCircle2, XCircle, Loader2, ShieldCheck, KeyRound } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -16,7 +16,7 @@ export default function ShopSignInPage() {
   const referralCode = params.get("ref") ?? undefined;
   const refFromUrl = !!referralCode;
 
-  const [mode, setMode] = useState<"login" | "register">(referralCode ? "register" : "login");
+  const [mode, setMode] = useState<"login" | "register" | "forgot">(referralCode ? "register" : "login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -33,6 +33,17 @@ export default function ShopSignInPage() {
   const [otpStep, setOtpStep] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [sendingOtp, setSendingOtp] = useState(false);
+
+  // Forgot password state
+  const [forgotStep, setForgotStep] = useState<"email" | "otp" | "done">("email");
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotOtp, setForgotOtp] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [forgotError, setForgotError] = useState<string | null>(null);
+  const [forgotSubmitting, setForgotSubmitting] = useState(false);
 
   // Settings from server
   const [emailVerifEnabled, setEmailVerifEnabled] = useState(false);
@@ -190,6 +201,72 @@ export default function ShopSignInPage() {
     }
   };
 
+  // ── Forgot password handlers ──────────────────────────────────────────────
+
+  const handleForgotSendCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail.trim()) { setForgotError("Email is required."); return; }
+    setForgotSubmitting(true);
+    setForgotError(null);
+    try {
+      const res = await fetch(`${BASE}/api/auth/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email: forgotEmail.trim().toLowerCase() }),
+      });
+      const data = await res.json().catch(() => ({})) as { error?: string };
+      if (!res.ok) throw new Error(data.error || "Failed to send reset code");
+      setForgotStep("otp");
+    } catch (e: any) {
+      setForgotError(e.message);
+    } finally {
+      setForgotSubmitting(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (forgotOtp.length < 6) { setForgotError("Please enter the 6-digit code."); return; }
+    if (!newPassword || newPassword.length < 6) { setForgotError("Password must be at least 6 characters."); return; }
+    if (newPassword !== confirmPassword) { setForgotError("Passwords do not match."); return; }
+    setForgotSubmitting(true);
+    setForgotError(null);
+    try {
+      const res = await fetch(`${BASE}/api/auth/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          email: forgotEmail.trim().toLowerCase(),
+          otpCode: forgotOtp.trim(),
+          newPassword,
+        }),
+      });
+      const data = await res.json().catch(() => ({})) as { error?: string };
+      if (!res.ok) throw new Error(data.error || "Failed to reset password");
+      setForgotStep("done");
+    } catch (e: any) {
+      setForgotError(e.message);
+    } finally {
+      setForgotSubmitting(false);
+    }
+  };
+
+  const resetForgotFlow = () => {
+    setForgotStep("email");
+    setForgotEmail("");
+    setForgotOtp("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setForgotError(null);
+  };
+
+  const enterForgot = () => {
+    resetForgotFlow();
+    setMode("forgot");
+  };
+
   const refStatusIcon = () => {
     if (refStatus === "checking") return <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />;
     if (refStatus === "valid") return <CheckCircle2 className="w-4 h-4 text-green-500" />;
@@ -212,6 +289,22 @@ export default function ShopSignInPage() {
     return otpStep ? "Create Account" : emailVerifEnabled ? "Send Verification Code" : "Create Account";
   };
 
+  const headerTitle = () => {
+    if (mode === "forgot") return "Reset Password";
+    if (mode === "login") return "Sign In to Telebit";
+    return "Create Account";
+  };
+
+  const headerSubtitle = () => {
+    if (mode === "forgot") {
+      if (forgotStep === "email") return "Enter your email to receive a reset code";
+      if (forgotStep === "otp") return "Enter the code and choose a new password";
+      return "Your password has been reset";
+    }
+    if (mode === "login") return "Welcome back to Telebit Shop";
+    return "Join Telebit and start shopping";
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="flex items-center px-4 sm:px-6 py-4 border-b border-border bg-card">
@@ -232,12 +325,10 @@ export default function ShopSignInPage() {
                   <img src="/logo.png" alt="Telebit" className="w-full h-full object-cover" />
                 </div>
                 <h1 className="text-xl font-bold text-foreground text-center">
-                  {mode === "login" ? "Sign In to Telebit" : "Create Account"}
+                  {headerTitle()}
                 </h1>
                 <p className="text-sm text-muted-foreground text-center mt-1">
-                  {mode === "login"
-                    ? "Welcome back to Telebit Shop"
-                    : "Join Telebit and start shopping"}
+                  {headerSubtitle()}
                 </p>
               </div>
 
@@ -253,7 +344,8 @@ export default function ShopSignInPage() {
                 </div>
               )}
 
-              {!otpStep && (
+              {/* Tab bar — hidden in forgot mode */}
+              {mode !== "forgot" && !otpStep && (
                 <div className="flex rounded-lg border border-border overflow-hidden mb-5 text-sm font-medium">
                   <button
                     type="button"
@@ -272,193 +364,395 @@ export default function ShopSignInPage() {
                 </div>
               )}
 
-              {/* ── OTP Step ── */}
-              {otpStep ? (
-                <div className="space-y-4">
-                  <div className="bg-primary/10 border border-primary/20 rounded-lg px-4 py-3 text-center">
-                    <div className="flex items-center justify-center gap-2 mb-1">
-                      <Mail className="w-4 h-4 text-primary" />
-                      <span className="font-semibold text-sm text-foreground">Check your email</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      We sent a 6-digit code to <strong className="text-foreground">{email}</strong>
-                    </p>
-                  </div>
-
-                  <form onSubmit={handleSubmit} className="space-y-3">
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                        Verification code <span className="text-destructive">*</span>
-                      </label>
-                      <div className="relative">
-                        <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          placeholder="000000"
-                          value={otpCode}
-                          onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                          className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors font-mono tracking-[0.4em] text-center"
-                          autoComplete="one-time-code"
-                          maxLength={6}
-                          autoFocus
-                          disabled={submitting}
-                        />
-                      </div>
-                      <p className="text-[11px] text-muted-foreground mt-1">
-                        Code expires in 5 minutes.
-                      </p>
-                    </div>
-
-                    {error && (
-                      <div className="bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2 text-xs text-destructive text-center">
-                        {error}
-                      </div>
-                    )}
-
-                    <button
-                      type="submit"
-                      disabled={submitting || otpCode.length < 6}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {submitting ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-                          {mode === "login" ? "Verifying…" : "Creating account…"}
-                        </>
-                      ) : (
-                        mode === "login" ? "Verify & Sign In" : "Create Account"
-                      )}
-                    </button>
-                  </form>
-
-                  <button
-                    type="button"
-                    onClick={() => { setOtpStep(false); setOtpCode(""); setError(null); }}
-                    className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
-                  >
-                    ← Back
-                  </button>
-                </div>
-              ) : (
-                /* ── Normal Form ── */
-                <form onSubmit={handleSubmit} className="space-y-3">
-                  {mode === "register" && (
-                    <>
+              {/* ── Forgot Password Flow ── */}
+              {mode === "forgot" ? (
+                <>
+                  {forgotStep === "email" && (
+                    <form onSubmit={handleForgotSendCode} className="space-y-4">
                       <div>
                         <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                          Full name <span className="text-destructive">*</span>
+                          Email address
                         </label>
                         <div className="relative">
-                          <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                           <input
-                            type="text"
-                            placeholder="Your name"
-                            value={fullName}
-                            onChange={(e) => setFullName(e.target.value)}
+                            type="email"
+                            placeholder="you@example.com"
+                            value={forgotEmail}
+                            onChange={(e) => setForgotEmail(e.target.value)}
                             className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                            autoComplete="name"
-                            disabled={submitting || sendingOtp}
+                            autoComplete="email"
+                            autoFocus
+                            disabled={forgotSubmitting}
                           />
                         </div>
                       </div>
 
-                      {!isFirstUser && <div>
-                        <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                          Referral code <span className="text-destructive">*</span>
-                        </label>
-                        <div className="relative">
-                          <Gift className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                          <input
-                            type="text"
-                            placeholder="e.g. ABC123"
-                            value={refInput}
-                            onChange={(e) => handleRefChange(e.target.value)}
-                            readOnly={refFromUrl}
-                            className={`w-full pl-9 pr-10 py-2.5 rounded-lg border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 transition-colors font-mono tracking-widest ${refBorderClass()} ${refFromUrl ? "opacity-75 cursor-not-allowed select-none" : ""}`}
-                            autoComplete="off"
-                            disabled={submitting || sendingOtp}
-                          />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2">
-                            {refStatusIcon()}
-                          </span>
+                      {forgotError && (
+                        <div className="bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2 text-xs text-destructive text-center">
+                          {forgotError}
                         </div>
-                        {refStatus === "valid" && (
-                          <p className="text-[11px] text-green-600 mt-1">✓ Valid referral code</p>
-                        )}
-                        {refStatus === "invalid" && (
-                          <p className="text-[11px] text-destructive mt-1">✗ Referral code not found</p>
-                        )}
-                      </div>}
-                    </>
-                  )}
+                      )}
 
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                      Email address
-                    </label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <input
-                        type="email"
-                        placeholder="you@example.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                        autoComplete="email"
-                        disabled={submitting || sendingOtp}
-                        autoFocus
-                      />
-                    </div>
-                  </div>
+                      <button
+                        type="submit"
+                        disabled={forgotSubmitting || !forgotEmail.trim()}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {forgotSubmitting ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                            Sending code…
+                          </>
+                        ) : "Send Reset Code"}
+                      </button>
 
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                      Password {mode === "register" && <span className="font-normal">(min 6 characters)</span>}
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full pl-9 pr-10 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                        autoComplete={mode === "login" ? "current-password" : "new-password"}
-                        disabled={submitting || sendingOtp}
-                      />
                       <button
                         type="button"
-                        onClick={() => setShowPassword((v) => !v)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                        tabIndex={-1}
+                        onClick={() => { setMode("login"); resetForgotFlow(); }}
+                        className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
                       >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        ← Back to Sign In
                       </button>
-                    </div>
-                  </div>
-
-                  {error && (
-                    <div className="bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2 text-xs text-destructive text-center">
-                      {error}
-                    </div>
+                    </form>
                   )}
 
-                  <button
-                    type="submit"
-                    disabled={submitting || sendingOtp || (mode === "register" && (refStatus === "invalid" || refStatus === "checking"))}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-1"
-                  >
-                    {(submitting || sendingOtp) ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-                        {submitLabel()}
-                      </>
-                    ) : (
-                      submitLabel()
-                    )}
-                  </button>
-                </form>
+                  {forgotStep === "otp" && (
+                    <form onSubmit={handleResetPassword} className="space-y-4">
+                      <div className="bg-primary/10 border border-primary/20 rounded-lg px-4 py-3 text-center">
+                        <div className="flex items-center justify-center gap-2 mb-1">
+                          <Mail className="w-4 h-4 text-primary" />
+                          <span className="font-semibold text-sm text-foreground">Check your email</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          We sent a reset code to <strong className="text-foreground">{forgotEmail}</strong>
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                          Reset code <span className="text-destructive">*</span>
+                        </label>
+                        <div className="relative">
+                          <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            placeholder="000000"
+                            value={forgotOtp}
+                            onChange={(e) => setForgotOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                            className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors font-mono tracking-[0.4em] text-center"
+                            autoComplete="one-time-code"
+                            maxLength={6}
+                            autoFocus
+                            disabled={forgotSubmitting}
+                          />
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-1">Code expires in 5 minutes.</p>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                          New password <span className="text-destructive">*</span>
+                        </label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <input
+                            type={showNewPassword ? "text" : "password"}
+                            placeholder="Min 6 characters"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            className="w-full pl-9 pr-10 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                            autoComplete="new-password"
+                            disabled={forgotSubmitting}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowNewPassword((v) => !v)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                            tabIndex={-1}
+                          >
+                            {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                          Confirm password <span className="text-destructive">*</span>
+                        </label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <input
+                            type={showConfirmPassword ? "text" : "password"}
+                            placeholder="Repeat password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            className="w-full pl-9 pr-10 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                            autoComplete="new-password"
+                            disabled={forgotSubmitting}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword((v) => !v)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                            tabIndex={-1}
+                          >
+                            {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {forgotError && (
+                        <div className="bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2 text-xs text-destructive text-center">
+                          {forgotError}
+                        </div>
+                      )}
+
+                      <button
+                        type="submit"
+                        disabled={forgotSubmitting || forgotOtp.length < 6 || !newPassword || !confirmPassword}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {forgotSubmitting ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                            Resetting…
+                          </>
+                        ) : "Reset Password"}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => { setForgotStep("email"); setForgotOtp(""); setForgotError(null); }}
+                        className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+                      >
+                        ← Back
+                      </button>
+                    </form>
+                  )}
+
+                  {forgotStep === "done" && (
+                    <div className="space-y-4 text-center">
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center">
+                          <KeyRound className="w-6 h-6 text-green-500" />
+                        </div>
+                        <p className="text-sm text-foreground font-medium">Password reset successfully!</p>
+                        <p className="text-xs text-muted-foreground">You can now sign in with your new password.</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setMode("login"); resetForgotFlow(); }}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all"
+                      >
+                        Sign In
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  {/* ── OTP Step ── */}
+                  {otpStep ? (
+                    <div className="space-y-4">
+                      <div className="bg-primary/10 border border-primary/20 rounded-lg px-4 py-3 text-center">
+                        <div className="flex items-center justify-center gap-2 mb-1">
+                          <Mail className="w-4 h-4 text-primary" />
+                          <span className="font-semibold text-sm text-foreground">Check your email</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          We sent a 6-digit code to <strong className="text-foreground">{email}</strong>
+                        </p>
+                      </div>
+
+                      <form onSubmit={handleSubmit} className="space-y-3">
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                            Verification code <span className="text-destructive">*</span>
+                          </label>
+                          <div className="relative">
+                            <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              placeholder="000000"
+                              value={otpCode}
+                              onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                              className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors font-mono tracking-[0.4em] text-center"
+                              autoComplete="one-time-code"
+                              maxLength={6}
+                              autoFocus
+                              disabled={submitting}
+                            />
+                          </div>
+                          <p className="text-[11px] text-muted-foreground mt-1">
+                            Code expires in 5 minutes.
+                          </p>
+                        </div>
+
+                        {error && (
+                          <div className="bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2 text-xs text-destructive text-center">
+                            {error}
+                          </div>
+                        )}
+
+                        <button
+                          type="submit"
+                          disabled={submitting || otpCode.length < 6}
+                          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {submitting ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                              {mode === "login" ? "Verifying…" : "Creating account…"}
+                            </>
+                          ) : (
+                            mode === "login" ? "Verify & Sign In" : "Create Account"
+                          )}
+                        </button>
+                      </form>
+
+                      <button
+                        type="button"
+                        onClick={() => { setOtpStep(false); setOtpCode(""); setError(null); }}
+                        className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+                      >
+                        ← Back
+                      </button>
+                    </div>
+                  ) : (
+                    /* ── Normal Form ── */
+                    <form onSubmit={handleSubmit} className="space-y-3">
+                      {mode === "register" && (
+                        <>
+                          <div>
+                            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                              Full name <span className="text-destructive">*</span>
+                            </label>
+                            <div className="relative">
+                              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                              <input
+                                type="text"
+                                placeholder="Your name"
+                                value={fullName}
+                                onChange={(e) => setFullName(e.target.value)}
+                                className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                                autoComplete="name"
+                                disabled={submitting || sendingOtp}
+                              />
+                            </div>
+                          </div>
+
+                          {!isFirstUser && <div>
+                            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                              Referral code <span className="text-destructive">*</span>
+                            </label>
+                            <div className="relative">
+                              <Gift className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                              <input
+                                type="text"
+                                placeholder="e.g. ABC123"
+                                value={refInput}
+                                onChange={(e) => handleRefChange(e.target.value)}
+                                readOnly={refFromUrl}
+                                className={`w-full pl-9 pr-10 py-2.5 rounded-lg border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 transition-colors font-mono tracking-widest ${refBorderClass()} ${refFromUrl ? "opacity-75 cursor-not-allowed select-none" : ""}`}
+                                autoComplete="off"
+                                disabled={submitting || sendingOtp}
+                              />
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                                {refStatusIcon()}
+                              </span>
+                            </div>
+                            {refStatus === "valid" && (
+                              <p className="text-[11px] text-green-600 mt-1">✓ Valid referral code</p>
+                            )}
+                            {refStatus === "invalid" && (
+                              <p className="text-[11px] text-destructive mt-1">✗ Referral code not found</p>
+                            )}
+                          </div>}
+                        </>
+                      )}
+
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                          Email address
+                        </label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <input
+                            type="email"
+                            placeholder="you@example.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                            autoComplete="email"
+                            disabled={submitting || sendingOtp}
+                            autoFocus
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                          Password {mode === "register" && <span className="font-normal">(min 6 characters)</span>}
+                        </label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="••••••••"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="w-full pl-9 pr-10 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                            autoComplete={mode === "login" ? "current-password" : "new-password"}
+                            disabled={submitting || sendingOtp}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword((v) => !v)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                            tabIndex={-1}
+                          >
+                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                        {mode === "login" && (
+                          <div className="text-right mt-1">
+                            <button
+                              type="button"
+                              onClick={enterForgot}
+                              className="text-[11px] text-primary hover:underline"
+                            >
+                              Forgot password?
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {error && (
+                        <div className="bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2 text-xs text-destructive text-center">
+                          {error}
+                        </div>
+                      )}
+
+                      <button
+                        type="submit"
+                        disabled={submitting || sendingOtp || (mode === "register" && (refStatus === "invalid" || refStatus === "checking"))}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-1"
+                      >
+                        {(submitting || sendingOtp) ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                            {submitLabel()}
+                          </>
+                        ) : (
+                          submitLabel()
+                        )}
+                      </button>
+                    </form>
+                  )}
+                </>
               )}
             </div>
           </div>

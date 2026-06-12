@@ -34,7 +34,7 @@ router.post("/auth/send-email-otp", async (req, res): Promise<void> => {
     res.status(400).json({ error: "Email is required" });
     return;
   }
-  if (purpose !== "register" && purpose !== "login") {
+  if (purpose !== "register" && purpose !== "login" && purpose !== "password_reset") {
     res.status(400).json({ error: "Invalid purpose" });
     return;
   }
@@ -59,21 +59,123 @@ router.post("/auth/send-email-otp", async (req, res): Promise<void> => {
     }
   }
 
+  // Use namespaced key for password_reset OTPs to avoid collisions
+  const otpKey = purpose === "password_reset" ? `reset:${normalizedEmail}` : normalizedEmail;
+
   // Rate limit: don't allow resend if a code was sent recently
-  if (hasRecentOtp(normalizedEmail)) {
+  if (hasRecentOtp(otpKey)) {
     res.status(429).json({ error: "A code was already sent. Please wait before requesting a new one." });
     return;
   }
 
   const code = generateOtp();
-  storeOtp(normalizedEmail, code);
+  storeOtp(otpKey, code);
 
   try {
-    await sendOtpEmail(normalizedEmail, code, purpose as "register" | "login");
+    await sendOtpEmail(normalizedEmail, code, purpose as "register" | "login" | "password_reset");
   } catch (err: any) {
     res.status(503).json({ error: err?.message ?? "Failed to send email" });
     return;
   }
+
+  res.json({ success: true });
+});
+
+// ─── Forgot Password ─────────────────────────────────────────────────────────
+
+router.post("/auth/forgot-password", async (req, res): Promise<void> => {
+  const { email } = req.body as { email?: string };
+  if (!email || typeof email !== "string") {
+    res.status(400).json({ error: "Email is required" });
+    return;
+  }
+  const normalizedEmail = email.trim().toLowerCase();
+  const otpKey = `reset:${normalizedEmail}`;
+
+  // Always return success to avoid email enumeration
+  const [user] = await db
+    .select({ id: usersTable.id })
+    .from(usersTable)
+    .where(eq(usersTable.email, normalizedEmail))
+    .limit(1);
+
+  if (!user) {
+    res.json({ success: true });
+    return;
+  }
+
+  if (hasRecentOtp(otpKey)) {
+    res.status(429).json({ error: "A reset code was already sent. Please wait a moment before trying again." });
+    return;
+  }
+
+  const code = generateOtp();
+  storeOtp(otpKey, code);
+
+  try {
+    await sendOtpEmail(normalizedEmail, code, "password_reset");
+  } catch (err: any) {
+    res.status(503).json({ error: err?.message ?? "Failed to send reset email. Check SMTP settings." });
+    return;
+  }
+
+  res.json({ success: true });
+});
+
+// ─── Reset Password ───────────────────────────────────────────────────────────
+
+router.post("/auth/reset-password", async (req, res): Promise<void> => {
+  const { email, otpCode, newPassword } = req.body as {
+    email?: string;
+    otpCode?: string;
+    newPassword?: string;
+  };
+
+  if (!email || typeof email !== "string") {
+    res.status(400).json({ error: "Email is required" });
+    return;
+  }
+  if (!otpCode || typeof otpCode !== "string") {
+    res.status(400).json({ error: "Reset code is required" });
+    return;
+  }
+  if (!newPassword || typeof newPassword !== "string" || newPassword.length < 6) {
+    res.status(400).json({ error: "New password must be at least 6 characters" });
+    return;
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const otpKey = `reset:${normalizedEmail}`;
+
+  const result = verifyOtp(otpKey, otpCode.trim());
+  if (result === "expired") {
+    res.status(400).json({ error: "Reset code has expired. Please request a new one." });
+    return;
+  }
+  if (result === "too_many_attempts") {
+    res.status(400).json({ error: "Too many incorrect attempts. Please request a new code." });
+    return;
+  }
+  if (result === "invalid") {
+    res.status(400).json({ error: "Incorrect reset code. Please try again." });
+    return;
+  }
+
+  const [user] = await db
+    .select({ id: usersTable.id })
+    .from(usersTable)
+    .where(eq(usersTable.email, normalizedEmail))
+    .limit(1);
+
+  if (!user) {
+    res.status(404).json({ error: "Account not found" });
+    return;
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 12);
+  await db.update(usersTable)
+    .set({ passwordHash })
+    .where(eq(usersTable.id, user.id));
 
   res.json({ success: true });
 });

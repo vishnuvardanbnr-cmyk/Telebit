@@ -57,13 +57,13 @@ function wrap(body: string) {
 export async function sendOtpEmail(
   to: string,
   code: string,
-  purpose: "register" | "login",
+  purpose: "register" | "login" | "password_reset",
 ): Promise<void> {
   const ctx = await buildTransport();
   if (!ctx) throw new Error("Email service is not configured. Please contact support.");
 
-  const label = purpose === "register" ? "Registration" : "Sign-In";
-  const action = purpose === "register" ? "complete your registration" : "sign in";
+  const label = purpose === "register" ? "Registration" : purpose === "login" ? "Sign-In" : "Password Reset";
+  const action = purpose === "register" ? "complete your registration" : purpose === "login" ? "sign in" : "reset your password";
 
   await ctx.transport.sendMail({
     from: ctx.from,
