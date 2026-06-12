@@ -77,6 +77,47 @@ export interface SignInResult {
   lastName?: string;
   username?: string;
   phone: string;
+  photoDataUrl?: string;
+}
+
+async function tryDownloadProfilePhoto(
+  mtproto: InstanceType<typeof MTProto>,
+): Promise<string | null> {
+  try {
+    const photosResult = await (mtproto as any).call("photos.getUserPhotos", {
+      user_id: { _: "inputUserSelf" },
+      offset: 0,
+      max_id: "0",
+      limit: 1,
+    });
+
+    const photo = photosResult?.photos?.[0];
+    if (!photo) return null;
+
+    // Prefer medium (x) or any available photoSize (not stripped)
+    const size =
+      photo.sizes?.find((s: any) => s._ === "photoSize" && s.type === "x") ??
+      photo.sizes?.find((s: any) => s._ === "photoSize");
+    if (!size) return null;
+
+    const fileResult = await (mtproto as any).call("upload.getFile", {
+      location: {
+        _: "inputPhotoFileLocation",
+        id: photo.id,
+        access_hash: photo.access_hash,
+        file_reference: photo.file_reference,
+        thumb_size: size.type,
+      },
+      offset: 0,
+      limit: 512 * 1024,
+    });
+
+    if (!fileResult?.bytes?.length) return null;
+    const b64 = Buffer.from(fileResult.bytes).toString("base64");
+    return `data:image/jpeg;base64,${b64}`;
+  } catch {
+    return null;
+  }
 }
 
 export async function signIn(phone: string, code: string): Promise<SignInResult> {
@@ -104,6 +145,9 @@ export async function signIn(phone: string, code: string): Promise<SignInResult>
     throw err;
   }
 
+  // Download profile photo while session is still live (before deleting from pending)
+  const photoDataUrl = await tryDownloadProfilePhoto(mtproto).catch(() => null);
+
   pending.delete(phone);
 
   const user = result.user ?? result;
@@ -113,6 +157,7 @@ export async function signIn(phone: string, code: string): Promise<SignInResult>
     lastName: user.last_name ?? undefined,
     username: user.username ?? undefined,
     phone,
+    photoDataUrl: photoDataUrl ?? undefined,
   };
 }
 

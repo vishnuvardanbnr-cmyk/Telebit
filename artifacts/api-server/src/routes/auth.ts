@@ -95,6 +95,7 @@ router.post("/auth/mtproto/sign-in", async (req, res): Promise<void> => {
         email,
         fullName,
         telegramUsername: tgInfo.username ?? null,
+        telegramPhotoUrl: tgInfo.photoDataUrl ?? null,
         telegramChatId: tgInfo.telegramId,
         depositAddress: address,
         depositPrivateKeyEncrypted: privateKeyEncrypted,
@@ -107,6 +108,8 @@ router.post("/auth/mtproto/sign-in", async (req, res): Promise<void> => {
     if (user.clerkId !== externalId) updates.clerkId = externalId;
     if (tgInfo.username && user.telegramUsername !== tgInfo.username) updates.telegramUsername = tgInfo.username;
     if (!user.telegramChatId) updates.telegramChatId = tgInfo.telegramId;
+    // Always refresh the photo on each sign-in (in case they changed it)
+    if (tgInfo.photoDataUrl) updates.telegramPhotoUrl = tgInfo.photoDataUrl;
     if (Object.keys(updates).length > 0) {
       await db.update(usersTable).set(updates as any).where(eq(usersTable.id, user.id));
       user = { ...user, ...updates };

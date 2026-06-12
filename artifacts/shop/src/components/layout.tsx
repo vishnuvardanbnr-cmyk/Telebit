@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { ShoppingCart, Trophy, ArrowLeftRight, ShieldCheck, Menu, X, Zap, Wallet, Home, Gift } from "lucide-react";
+import { ShoppingCart, ShieldCheck, Menu, X, Zap, Wallet, Home, Gift, Share2, ListOrdered } from "lucide-react";
 import { useGetCart } from "@workspace/api-client-react";
 import { useAuth } from "@/lib/auth-context";
 import { fmtUsdt } from "@/lib/utils";
@@ -173,25 +173,25 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </Link>
 
               <Link
-                href="/lottery"
+                href="/invite"
                 className={cn(
                   "flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
-                  location.startsWith("/lottery") ? "text-primary" : "text-muted-foreground"
+                  location.startsWith("/invite") ? "text-primary" : "text-muted-foreground"
                 )}
               >
-                <Trophy className={cn("h-5 w-5", location.startsWith("/lottery") && "stroke-[2.5px]")} />
-                <span>Lottery</span>
+                <Share2 className={cn("h-5 w-5", location.startsWith("/invite") && "stroke-[2.5px]")} />
+                <span>Share</span>
               </Link>
 
               <Link
-                href="/p2p"
+                href="/orders"
                 className={cn(
                   "flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
-                  location.startsWith("/p2p") ? "text-primary" : "text-muted-foreground"
+                  location.startsWith("/orders") ? "text-primary" : "text-muted-foreground"
                 )}
               >
-                <ArrowLeftRight className={cn("h-5 w-5", location.startsWith("/p2p") && "stroke-[2.5px]")} />
-                <span>P2P</span>
+                <ListOrdered className={cn("h-5 w-5", location.startsWith("/orders") && "stroke-[2.5px]")} />
+                <span>Transactions</span>
               </Link>
 
               <Link
