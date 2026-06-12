@@ -275,10 +275,10 @@ router.post("/auth/bot-webhook/setup", async (req, res): Promise<void> => {
   }
 
   try {
-    await setTelegramWebhook(settings.telegramBotToken, webhookUrl);
-    res.json({ success: true });
+    const result = await setTelegramWebhook(settings.telegramBotToken, webhookUrl);
+    res.json({ success: true, description: result.description });
   } catch (err: any) {
-    res.status(502).json({ error: err.message });
+    res.status(502).json({ error: err.message ?? "Unknown error from Telegram" });
   }
 });
 

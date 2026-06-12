@@ -18,17 +18,28 @@ export async function sendTelegramMessage(
 export async function setTelegramWebhook(
   botToken: string,
   webhookUrl: string,
-): Promise<void> {
+): Promise<{ description: string }> {
   const url = `https://api.telegram.org/bot${botToken}/setWebhook`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ url: webhookUrl }),
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({})) as { description?: string };
-    throw new Error(`setWebhook error: ${body.description ?? res.statusText}`);
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), 10_000);
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: webhookUrl }),
+      signal: ac.signal,
+    });
+  } catch (err: any) {
+    clearTimeout(timer);
+    throw new Error(err.name === "AbortError" ? "Request timed out after 10s" : err.message);
   }
+  clearTimeout(timer);
+  const body = await res.json().catch(() => ({})) as { ok?: boolean; description?: string; result?: unknown };
+  if (!res.ok || body.ok === false) {
+    throw new Error(`Telegram: ${body.description ?? res.statusText}`);
+  }
+  return { description: String(body.description ?? "Webhook was set") };
 }
 
 export async function fetchTelegramPhotoUrl(

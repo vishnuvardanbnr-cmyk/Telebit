@@ -795,14 +795,19 @@ function SettingsTab() {
     setRegisteringWebhook(true);
     try {
       const webhookUrl = `${window.location.origin}/api/auth/bot-webhook`;
-      await apiFetch("/auth/bot-webhook/setup", {
+      const result = await apiFetch("/auth/bot-webhook/setup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ webhookUrl }),
+      }) as { success: boolean; description?: string };
+      toast({
+        title: "Webhook registered!",
+        description: result.description ?? webhookUrl,
       });
-      toast({ title: "Webhook registered!", description: webhookUrl });
     } catch (err: any) {
-      toast({ title: "Webhook registration failed", description: err.message ?? "Unknown error", variant: "destructive" });
+      let msg = err?.message ?? "Unknown error";
+      try { const parsed = JSON.parse(msg); msg = parsed.error ?? msg; } catch {}
+      toast({ title: "Webhook registration failed", description: msg, variant: "destructive" });
     } finally {
       setRegisteringWebhook(false);
     }
