@@ -694,6 +694,26 @@ export interface IncomeSummary {
   packages: UserPackage[];
 }
 
+export interface NetworkMember {
+  id: string;
+  fullName?: string | null;
+  telegramUsername?: string | null;
+  telegramPhotoUrl?: string | null;
+  joinedAt: string;
+  investedUsdt: string;
+}
+
+export interface NetworkLevel {
+  level: number;
+  count: number;
+  members: NetworkMember[];
+}
+
+export interface ReferralNetwork {
+  totalCount: number;
+  levels: NetworkLevel[];
+}
+
 export interface AdminIncomeResponse {
   total: string;
   entries: IncomeEntry[];

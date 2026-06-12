@@ -91,6 +91,7 @@ import type {
   RankProgressResponse,
   ReferralLevel,
   ReferralLevelsBulkUpdate,
+  ReferralNetwork,
   RequestPhoneOtp200,
   RequestPhoneOtp404,
   Review,
@@ -5669,6 +5670,83 @@ export function useListIncome<TData = Awaited<ReturnType<typeof listIncome>>, TE
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListIncomeQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetMyNetworkUrl = () => {
+
+
+
+
+  return `/api/users/me/network`
+}
+
+/**
+ * @summary Get multi-level referral network (10 levels)
+ */
+export const getMyNetwork = async ( options?: RequestInit): Promise<ReferralNetwork> => {
+
+  return customFetch<ReferralNetwork>(getGetMyNetworkUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyNetworkQueryKey = () => {
+    return [
+    `/api/users/me/network`
+    ] as const;
+    }
+
+
+export const getGetMyNetworkQueryOptions = <TData = Awaited<ReturnType<typeof getMyNetwork>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyNetwork>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyNetworkQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyNetwork>>> = ({ signal }) => getMyNetwork({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyNetwork>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyNetworkQueryResult = NonNullable<Awaited<ReturnType<typeof getMyNetwork>>>
+export type GetMyNetworkQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get multi-level referral network (10 levels)
+ */
+
+export function useGetMyNetwork<TData = Awaited<ReturnType<typeof getMyNetwork>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyNetwork>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyNetworkQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

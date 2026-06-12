@@ -1885,6 +1885,26 @@ export const ListIncomeResponse = zod.array(ListIncomeResponseItem)
 
 
 /**
+ * @summary Get multi-level referral network (10 levels)
+ */
+export const GetMyNetworkResponse = zod.object({
+  "totalCount": zod.number(),
+  "levels": zod.array(zod.object({
+  "level": zod.number(),
+  "count": zod.number(),
+  "members": zod.array(zod.object({
+  "id": zod.string(),
+  "fullName": zod.string().nullish(),
+  "telegramUsername": zod.string().nullish(),
+  "telegramPhotoUrl": zod.string().nullish(),
+  "joinedAt": zod.string(),
+  "investedUsdt": zod.string()
+}))
+}))
+})
+
+
+/**
  * @summary Get income summary for current user
  */
 export const GetIncomeSummaryResponse = zod.object({

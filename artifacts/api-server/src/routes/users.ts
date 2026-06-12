@@ -226,4 +226,65 @@ router.get("/users/me/referrals", requireAuth, async (req, res): Promise<void> =
   });
 });
 
+router.get("/users/me/network", requireAuth, async (req, res): Promise<void> => {
+  const user = (req as any).dbUser;
+
+  const rows = await db.execute(
+    `WITH RECURSIVE network AS (
+      SELECT
+        id, full_name, telegram_username, telegram_photo_url,
+        created_at, invested_usdt, 1 AS level
+      FROM users
+      WHERE upline_id = $1
+      UNION ALL
+      SELECT
+        u.id, u.full_name, u.telegram_username, u.telegram_photo_url,
+        u.created_at, u.invested_usdt, n.level + 1
+      FROM users u
+      INNER JOIN network n ON u.upline_id = n.id
+      WHERE n.level < 10
+    )
+    SELECT * FROM network ORDER BY level, created_at` as any,
+    [user.id]
+  );
+
+  type Row = {
+    id: string;
+    full_name: string | null;
+    telegram_username: string | null;
+    telegram_photo_url: string | null;
+    created_at: string;
+    invested_usdt: string;
+    level: number;
+  };
+
+  const allRows = (rows as any).rows as Row[];
+
+  // Group by level
+  const byLevel: Record<number, Row[]> = {};
+  for (const row of allRows) {
+    const lvl = Number(row.level);
+    if (!byLevel[lvl]) byLevel[lvl] = [];
+    byLevel[lvl].push(row);
+  }
+
+  const levels = Array.from({ length: 10 }, (_, i) => {
+    const lvl = i + 1;
+    const members = (byLevel[lvl] ?? []).map((u) => ({
+      id: u.id,
+      fullName: u.full_name,
+      telegramUsername: u.telegram_username ?? null,
+      telegramPhotoUrl: u.telegram_photo_url ?? null,
+      joinedAt: u.created_at,
+      investedUsdt: u.invested_usdt ?? "0",
+    }));
+    return { level: lvl, count: members.length, members };
+  });
+
+  res.json({
+    totalCount: allRows.length,
+    levels,
+  });
+});
+
 export default router;

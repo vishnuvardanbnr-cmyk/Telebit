@@ -1539,6 +1539,21 @@ paths:
         "401":
           description: Unauthorized
 
+  /users/me/network:
+    get:
+      operationId: getMyNetwork
+      tags: [users]
+      summary: Get multi-level referral network (10 levels)
+      responses:
+        "200":
+          description: Network levels with members
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReferralNetwork"
+        "401":
+          description: Unauthorized
+
   /income/summary:
     get:
       operationId: getIncomeSummary
@@ -2476,6 +2491,38 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/UserPackage"
+
+    NetworkMember:
+      type: object
+      required: [id, joinedAt, investedUsdt]
+      properties:
+        id: { type: string }
+        fullName: { type: string, nullable: true }
+        telegramUsername: { type: string, nullable: true }
+        telegramPhotoUrl: { type: string, nullable: true }
+        joinedAt: { type: string }
+        investedUsdt: { type: string }
+
+    NetworkLevel:
+      type: object
+      required: [level, count, members]
+      properties:
+        level: { type: integer }
+        count: { type: integer }
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/NetworkMember"
+
+    ReferralNetwork:
+      type: object
+      required: [totalCount, levels]
+      properties:
+        totalCount: { type: integer }
+        levels:
+          type: array
+          items:
+            $ref: "#/components/schemas/NetworkLevel"
 
     AdminIncomeResponse:
       type: object
