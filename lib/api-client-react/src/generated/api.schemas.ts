@@ -1021,5 +1021,6 @@ export const ListIncomeType = {
   roi: 'roi',
   referral: 'referral',
   royalty: 'royalty',
+  rank_reward: 'rank_reward',
 } as const;
 

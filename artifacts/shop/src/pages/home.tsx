@@ -99,18 +99,12 @@ export default function Home() {
       {/* ── Investment Overview + Rank + Shop — unified card ── */}
       <div className="rounded-2xl border border-border bg-white shadow-sm overflow-hidden">
 
-        {/* Investment Overview header */}
-        <Link href="/packages">
-          <div className="flex items-center justify-between px-5 py-4 hover:bg-muted/30 transition-colors cursor-pointer">
-            <p className="text-sm font-bold text-foreground">Investment Overview</p>
-            <div className="flex items-center gap-1 text-muted-foreground/50">
-              <span className="text-[11px]">Details</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </div>
-          </div>
-        </Link>
+        {/* Investment Overview header — no link, just a label */}
+        <div className="px-5 py-4">
+          <p className="text-sm font-bold text-foreground">Investment Overview</p>
+        </div>
 
-        {/* Income rows */}
+        {/* Income rows — each individually clickable */}
         {incomeLoading ? (
           <div className="px-5 py-4 space-y-3 border-t border-border/50">
             {[1,2,3].map(i => <Skeleton key={i} className="h-5 w-full" />)}
@@ -118,12 +112,13 @@ export default function Home() {
         ) : (
           <>
             {[
-              { label: "ROI Income", sub: "Daily returns from packages", value: income?.roi ?? "0", dot: "bg-blue-500" },
-              { label: "Spot Referral", sub: "10-level network commissions", value: income?.referral ?? "0", dot: "bg-violet-500" },
-              { label: "Royalty Income", sub: "15% on upline withdrawals", value: income?.royalty ?? "0", dot: "bg-amber-500" },
-              { label: "Rank Rewards", sub: "One-time rank achievement bonuses", value: income?.rankReward ?? "0", dot: "bg-emerald-500" },
-            ].map(({ label, sub, value, dot }) => (
-              <div key={label} className="flex items-center justify-between px-5 py-5 border-t border-border/50">
+              { label: "ROI Income",       sub: "Daily returns from packages",       value: income?.roi ?? "0",        dot: "bg-blue-500",   href: "/income/roi" },
+              { label: "Spot Referral",    sub: "10-level network commissions",      value: income?.referral ?? "0",   dot: "bg-violet-500", href: "/income/referral" },
+              { label: "Royalty Income",   sub: "15% on upline withdrawals",         value: income?.royalty ?? "0",    dot: "bg-amber-500",  href: "/income/royalty" },
+              { label: "Rank Rewards",     sub: "One-time rank achievement bonuses", value: income?.rankReward ?? "0", dot: "bg-emerald-500",href: "/income/rank_reward" },
+            ].map(({ label, sub, value, dot, href }) => (
+              <Link key={label} href={href}>
+              <div className="flex items-center justify-between px-5 py-5 border-t border-border/50 hover:bg-muted/30 transition-colors cursor-pointer group">
                 <div className="flex items-center gap-3.5">
                   <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${dot}`} />
                   <div>
@@ -131,11 +126,15 @@ export default function Home() {
                     <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold tabular-nums text-foreground">{fmtUsdt(value)}</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">USDT</p>
+                <div className="flex items-center gap-2.5">
+                  <div className="text-right">
+                    <p className="text-sm font-bold tabular-nums text-foreground">{fmtUsdt(value)}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">USDT</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:translate-x-0.5 transition-transform shrink-0" />
                 </div>
               </div>
+              </Link>
             ))}
 
             {/* Total earned */}

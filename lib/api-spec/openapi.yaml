@@ -1526,7 +1526,7 @@ paths:
           schema: { type: integer, default: 0 }
         - name: type
           in: query
-          schema: { type: string, enum: [roi, referral, royalty] }
+          schema: { type: string, enum: [roi, referral, royalty, rank_reward] }
       responses:
         "200":
           description: Income entries

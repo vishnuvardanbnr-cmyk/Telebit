@@ -1868,7 +1868,7 @@ export const listIncomeQueryOffsetDefault = 0;
 export const ListIncomeQueryParams = zod.object({
   "limit": zod.coerce.number().default(listIncomeQueryLimitDefault),
   "offset": zod.coerce.number().default(listIncomeQueryOffsetDefault),
-  "type": zod.enum(['roi', 'referral', 'royalty']).optional()
+  "type": zod.enum(['roi', 'referral', 'royalty', 'rank_reward']).optional()
 })
 
 export const ListIncomeResponseItem = zod.object({
