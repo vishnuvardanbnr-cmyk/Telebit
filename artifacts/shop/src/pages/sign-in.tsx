@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, Redirect, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
-import { FlaskConical, Mail, Lock, User, Eye, EyeOff, Gift } from "lucide-react";
+import { FlaskConical, Mail, Lock, User, Eye, EyeOff, Gift, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -14,18 +14,50 @@ export default function ShopSignInPage() {
 
   const params = new URLSearchParams(search);
   const referralCode = params.get("ref") ?? undefined;
+  const refFromUrl = !!referralCode;
 
   const [mode, setMode] = useState<"login" | "register">(referralCode ? "register" : "login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [refInput, setRefInput] = useState(referralCode ?? "");
+  const [refStatus, setRefStatus] = useState<"idle" | "checking" | "valid" | "invalid">(
+    referralCode ? "checking" : "idle"
+  );
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
 
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const checkRef = (code: string) => {
+    const trimmed = code.trim().toUpperCase();
+    if (!trimmed) { setRefStatus("idle"); return; }
+    setRefStatus("checking");
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`${BASE}/api/auth/check-referral?code=${encodeURIComponent(trimmed)}`, { credentials: "include" });
+        const data = await res.json() as { valid: boolean };
+        setRefStatus(data.valid ? "valid" : "invalid");
+      } catch {
+        setRefStatus("idle");
+      }
+    }, 500);
+  };
+
+  useEffect(() => {
+    if (referralCode) checkRef(referralCode);
+  }, []);
+
   if (!isLoading && isSignedIn) return <Redirect to="/" />;
+
+  const handleRefChange = (val: string) => {
+    const upper = val.toUpperCase();
+    setRefInput(upper);
+    checkRef(upper);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,6 +72,14 @@ export default function ShopSignInPage() {
     }
     if (mode === "register" && !refInput.trim()) {
       setError("A referral code is required to register.");
+      return;
+    }
+    if (mode === "register" && refStatus === "invalid") {
+      setError("The referral code is invalid. Please check and try again.");
+      return;
+    }
+    if (mode === "register" && refStatus === "checking") {
+      setError("Please wait while we verify your referral code.");
       return;
     }
 
@@ -90,6 +130,19 @@ export default function ShopSignInPage() {
     }
   };
 
+  const refStatusIcon = () => {
+    if (refStatus === "checking") return <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />;
+    if (refStatus === "valid") return <CheckCircle2 className="w-4 h-4 text-green-500" />;
+    if (refStatus === "invalid") return <XCircle className="w-4 h-4 text-destructive" />;
+    return null;
+  };
+
+  const refBorderClass = () => {
+    if (refStatus === "valid") return "border-green-500 focus:ring-green-500/50 focus:border-green-500";
+    if (refStatus === "invalid") return "border-destructive focus:ring-destructive/50 focus:border-destructive";
+    return "border-border focus:ring-primary/50 focus:border-primary";
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="flex items-center px-4 sm:px-6 py-4 border-b border-border bg-card">
@@ -105,7 +158,6 @@ export default function ShopSignInPage() {
             <div className="h-1 bg-primary w-full" />
 
             <div className="p-6 sm:p-8">
-              {/* Logo + title */}
               <div className="flex flex-col items-center mb-6">
                 <div className="w-14 h-14 rounded-2xl overflow-hidden mb-4 shadow-md">
                   <img src="/logo.png" alt="Telebit" className="w-full h-full object-cover" />
@@ -120,13 +172,12 @@ export default function ShopSignInPage() {
                 </p>
               </div>
 
-              {referralCode && mode === "register" && (
+              {refFromUrl && mode === "register" && (
                 <div className="mb-4 bg-primary/10 border border-primary/20 rounded-lg px-3 py-2 text-xs text-primary text-center font-medium">
                   🎁 You were invited! Referral code applied.
                 </div>
               )}
 
-              {/* Tab toggle */}
               <div className="flex rounded-lg border border-border overflow-hidden mb-5 text-sm font-medium">
                 <button
                   type="button"
@@ -164,6 +215,7 @@ export default function ShopSignInPage() {
                         />
                       </div>
                     </div>
+
                     <div>
                       <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
                         Referral code <span className="text-destructive">*</span>
@@ -174,12 +226,22 @@ export default function ShopSignInPage() {
                           type="text"
                           placeholder="e.g. ABC123"
                           value={refInput}
-                          onChange={(e) => setRefInput(e.target.value.toUpperCase())}
-                          className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors font-mono tracking-widest"
+                          onChange={(e) => handleRefChange(e.target.value)}
+                          readOnly={refFromUrl}
+                          className={`w-full pl-9 pr-10 py-2.5 rounded-lg border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 transition-colors font-mono tracking-widest ${refBorderClass()} ${refFromUrl ? "opacity-75 cursor-not-allowed select-none" : ""}`}
                           autoComplete="off"
                           disabled={submitting}
                         />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                          {refStatusIcon()}
+                        </span>
                       </div>
+                      {refStatus === "valid" && (
+                        <p className="text-[11px] text-green-600 mt-1">✓ Valid referral code</p>
+                      )}
+                      {refStatus === "invalid" && (
+                        <p className="text-[11px] text-destructive mt-1">✗ Referral code not found</p>
+                      )}
                     </div>
                   </>
                 )}
@@ -237,7 +299,7 @@ export default function ShopSignInPage() {
 
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || (mode === "register" && (refStatus === "invalid" || refStatus === "checking"))}
                   className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-1"
                 >
                   {submitting ? (

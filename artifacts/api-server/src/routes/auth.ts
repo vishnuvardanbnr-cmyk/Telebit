@@ -7,6 +7,21 @@ import { setAuthCookie, clearAuthCookie } from "../lib/auth";
 
 const router = Router();
 
+// ─── Check referral code validity ───────────────────────────────────────────
+
+router.get("/auth/check-referral", async (req, res): Promise<void> => {
+  const code = (req.query.code as string | undefined)?.trim().toUpperCase();
+  if (!code) { res.status(400).json({ valid: false }); return; }
+
+  const [user] = await db
+    .select({ id: usersTable.id })
+    .from(usersTable)
+    .where(eq(usersTable.referralCode, code))
+    .limit(1);
+
+  res.json({ valid: !!user });
+});
+
 // ─── Email + Password Registration ─────────────────────────────────────────
 
 router.post("/auth/register", async (req, res): Promise<void> => {
