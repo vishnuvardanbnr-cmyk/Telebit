@@ -15,7 +15,7 @@ export default function ShopSignInPage() {
   const params = new URLSearchParams(search);
   const referralCode = params.get("ref") ?? undefined;
 
-  const [mode, setMode] = useState<"login" | "register">("login");
+  const [mode, setMode] = useState<"login" | "register">(referralCode ? "register" : "login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -35,6 +35,10 @@ export default function ShopSignInPage() {
     if (!password) { setError("Password is required."); return; }
     if (mode === "register" && password.length < 6) {
       setError("Password must be at least 6 characters.");
+      return;
+    }
+    if (mode === "register" && !refInput.trim()) {
+      setError("A referral code is required to register.");
       return;
     }
 
@@ -161,7 +165,7 @@ export default function ShopSignInPage() {
                     </div>
                     <div>
                       <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                        Referral code (optional)
+                        Referral code <span className="text-destructive">*</span>
                       </label>
                       <div className="relative">
                         <Gift className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
