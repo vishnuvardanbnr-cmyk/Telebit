@@ -11,8 +11,6 @@ import authRouter from "./auth";
 import utilityRouter from "./utility";
 import lotteryRouter from "./lottery";
 import shopP2pRouter from "./shopP2p";
-import nftRouter from "./nft";
-import subscriptionRouter from "./subscription";
 
 const router: IRouter = Router();
 
@@ -28,7 +26,5 @@ router.use(shopRouter);
 router.use(utilityRouter);
 router.use(lotteryRouter);
 router.use(shopP2pRouter);
-router.use(nftRouter);
-router.use(subscriptionRouter);
 
 export default router;
