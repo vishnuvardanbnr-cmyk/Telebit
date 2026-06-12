@@ -4,3 +4,4 @@
 - [Drizzle dynamic update](drizzle-dynamic-update.md) — `.set(obj)` with dynamically-built objects won't typecheck; cast as `.set(obj as any)`.
 - [Shop price formatting](shop-price-fmt.md) — DB stores USDT prices as numeric(18,8); use `fmtUsdt()` from `@/lib/utils` for all price displays.
 - [Custom JWT auth (no Clerk)](custom-jwt-auth.md) — auth replaced with HMAC-SHA256 cookie tokens; SESSION_SECRET serves dual purpose (wallet encryption + JWT signing).
+- [Package conflict prevention](pkg-conflicts.md) — always use catalog: in pnpm-workspace.yaml for shared deps; run pnpm install after any package change before building.
