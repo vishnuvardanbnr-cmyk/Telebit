@@ -2465,11 +2465,12 @@ components:
 
     IncomeSummary:
       type: object
-      required: [roi, referral, royalty, activePackages, packages]
+      required: [roi, referral, royalty, rankReward, activePackages, packages]
       properties:
         roi: { type: string }
         referral: { type: string }
         royalty: { type: string }
+        rankReward: { type: string }
         activePackages: { type: integer }
         packages:
           type: array

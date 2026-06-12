@@ -689,6 +689,7 @@ export interface IncomeSummary {
   roi: string;
   referral: string;
   royalty: string;
+  rankReward: string;
   activePackages: number;
   packages: UserPackage[];
 }

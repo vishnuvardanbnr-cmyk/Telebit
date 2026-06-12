@@ -40,6 +40,8 @@ router.get("/income/summary", requireAuth, async (req, res): Promise<void> => {
     .where(and(eq(incomeLogTable.userId, user.id), eq(incomeLogTable.type, "referral")));
   const [royalty] = await db.select({ total: sum(incomeLogTable.amount) }).from(incomeLogTable)
     .where(and(eq(incomeLogTable.userId, user.id), eq(incomeLogTable.type, "royalty")));
+  const [rankReward] = await db.select({ total: sum(incomeLogTable.amount) }).from(incomeLogTable)
+    .where(and(eq(incomeLogTable.userId, user.id), eq(incomeLogTable.type, "rank_reward")));
 
   const activePackages = await db.select().from(userPackagesTable)
     .where(and(eq(userPackagesTable.userId, user.id), eq(userPackagesTable.isActive, true)));
@@ -48,6 +50,7 @@ router.get("/income/summary", requireAuth, async (req, res): Promise<void> => {
     roi: roi?.total ?? "0",
     referral: referral?.total ?? "0",
     royalty: royalty?.total ?? "0",
+    rankReward: rankReward?.total ?? "0",
     activePackages: activePackages.length,
     packages: activePackages,
   });

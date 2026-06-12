@@ -130,7 +130,7 @@ export async function checkAndAwardRanks(userId: string): Promise<void> {
 
         await db.insert(incomeLogTable).values({
           userId,
-          type:   "royalty",
+          type:   "rank_reward",
           amount: String(reward),
           note:   `Rank achievement reward: ${rank.name}`,
         });

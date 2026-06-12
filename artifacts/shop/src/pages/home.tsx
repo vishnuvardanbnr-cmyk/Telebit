@@ -24,7 +24,7 @@ export default function Home() {
   const activePackages = myPackages?.filter((p) => p.isActive) ?? [];
   const totalInvested = activePackages.reduce((s, p) => s + parseFloat(p.principalUsdt), 0);
   const totalEarned = income
-    ? parseFloat(income.roi) + parseFloat(income.referral) + parseFloat(income.royalty)
+    ? parseFloat(income.roi) + parseFloat(income.referral) + parseFloat(income.royalty) + parseFloat(income.rankReward)
     : 0;
 
   const walletBal = parseFloat(user?.walletBalance ?? "0");
@@ -118,6 +118,7 @@ export default function Home() {
                 { label: "ROI Income", sub: "Daily returns from packages", value: income?.roi ?? "0", dot: "bg-blue-500" },
                 { label: "Spot Referral", sub: "10-level network commissions", value: income?.referral ?? "0", dot: "bg-violet-500" },
                 { label: "Royalty Income", sub: "15% on upline withdrawals", value: income?.royalty ?? "0", dot: "bg-amber-500" },
+                { label: "Rank Rewards", sub: "One-time rank achievement bonuses", value: income?.rankReward ?? "0", dot: "bg-emerald-500" },
               ].map(({ label, sub, value, dot }) => (
                 <div key={label} className="flex items-center justify-between px-5 py-5 border-t border-border/50">
                   <div className="flex items-center gap-3.5">

@@ -1891,6 +1891,7 @@ export const GetIncomeSummaryResponse = zod.object({
   "roi": zod.string(),
   "referral": zod.string(),
   "royalty": zod.string(),
+  "rankReward": zod.string(),
   "activePackages": zod.number(),
   "packages": zod.array(zod.object({
   "id": zod.string(),
