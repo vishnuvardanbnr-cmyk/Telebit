@@ -1,7 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db, usersTable } from "@workspace/db";
-import { eq, or } from "drizzle-orm";
+import { eq, or, count } from "drizzle-orm";
 import { generateWallet, generateReferralCode } from "../lib/wallet";
 import { setAuthCookie, clearAuthCookie } from "../lib/auth";
 import { getSettings } from "../lib/settings";
@@ -78,6 +78,13 @@ router.post("/auth/send-email-otp", async (req, res): Promise<void> => {
   res.json({ success: true });
 });
 
+// ─── First-user check ───────────────────────────────────────────────────────
+
+router.get("/auth/first-user", async (_req, res): Promise<void> => {
+  const [{ total }] = await db.select({ total: count() }).from(usersTable);
+  res.json({ isFirstUser: Number(total) === 0 });
+});
+
 // ─── Email + Password Registration ─────────────────────────────────────────
 
 router.post("/auth/register", async (req, res): Promise<void> => {
@@ -122,6 +129,10 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     }
   }
 
+  // Check if this is the very first user (will become admin, no referral needed)
+  const [{ total: userCount }] = await db.select({ total: count() }).from(usersTable);
+  const isFirstUser = Number(userCount) === 0;
+
   const [existing] = await db
     .select({ id: usersTable.id })
     .from(usersTable)
@@ -136,7 +147,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
   const passwordHash = await bcrypt.hash(password, 12);
 
   let uplineId: string | undefined;
-  if (referralCode && typeof referralCode === "string") {
+  if (!isFirstUser && referralCode && typeof referralCode === "string") {
     const ref = referralCode.trim().toUpperCase();
     const [upline] = await db
       .select({ id: usersTable.id })
@@ -158,6 +169,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
       depositAddress: address,
       depositPrivateKeyEncrypted: privateKeyEncrypted,
       referralCode: userReferralCode,
+      ...(isFirstUser ? { isAdmin: true } : {}),
       ...(uplineId ? { uplineId } : {}),
     })
     .returning();

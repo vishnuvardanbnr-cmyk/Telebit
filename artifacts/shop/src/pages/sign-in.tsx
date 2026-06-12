@@ -37,6 +37,7 @@ export default function ShopSignInPage() {
   // Settings from server
   const [emailVerifEnabled, setEmailVerifEnabled] = useState(false);
   const [loginOtpEnabled, setLoginOtpEnabled] = useState(false);
+  const [isFirstUser, setIsFirstUser] = useState(false);
 
   useEffect(() => {
     fetch(`${BASE}/api/settings`, { credentials: "include" })
@@ -44,6 +45,16 @@ export default function ShopSignInPage() {
       .then((s: any) => {
         setEmailVerifEnabled(!!s.emailVerificationEnabled);
         setLoginOtpEnabled(!!s.loginOtpEnabled);
+      })
+      .catch(() => {});
+
+    fetch(`${BASE}/api/auth/first-user`, { credentials: "include" })
+      .then((r) => r.json())
+      .then((d: any) => {
+        if (d.isFirstUser) {
+          setIsFirstUser(true);
+          setMode("register");
+        }
       })
       .catch(() => {});
   }, []);
@@ -115,15 +126,15 @@ export default function ShopSignInPage() {
       setError("Password must be at least 6 characters.");
       return;
     }
-    if (mode === "register" && !refInput.trim()) {
+    if (mode === "register" && !isFirstUser && !refInput.trim()) {
       setError("A referral code is required to register.");
       return;
     }
-    if (mode === "register" && refStatus === "invalid") {
+    if (mode === "register" && !isFirstUser && refStatus === "invalid") {
       setError("The referral code is invalid. Please check and try again.");
       return;
     }
-    if (mode === "register" && refStatus === "checking") {
+    if (mode === "register" && !isFirstUser && refStatus === "checking") {
       setError("Please wait while we verify your referral code.");
       return;
     }
@@ -230,7 +241,13 @@ export default function ShopSignInPage() {
                 </p>
               </div>
 
-              {refFromUrl && mode === "register" && !otpStep && (
+              {isFirstUser && mode === "register" && !otpStep && (
+                <div className="mb-4 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2.5 text-xs text-amber-700 dark:text-amber-400 text-center font-medium">
+                  🛡️ No accounts yet — this account will be set as <strong>admin</strong>.
+                </div>
+              )}
+
+              {refFromUrl && !isFirstUser && mode === "register" && !otpStep && (
                 <div className="mb-4 bg-primary/10 border border-primary/20 rounded-lg px-3 py-2 text-xs text-primary text-center font-medium">
                   🎁 You were invited! Referral code applied.
                 </div>
@@ -346,7 +363,7 @@ export default function ShopSignInPage() {
                         </div>
                       </div>
 
-                      <div>
+                      {!isFirstUser && <div>
                         <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
                           Referral code <span className="text-destructive">*</span>
                         </label>
@@ -372,7 +389,7 @@ export default function ShopSignInPage() {
                         {refStatus === "invalid" && (
                           <p className="text-[11px] text-destructive mt-1">✗ Referral code not found</p>
                         )}
-                      </div>
+                      </div>}
                     </>
                   )}
 
