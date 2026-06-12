@@ -10,7 +10,7 @@ import { fmtUsdt } from "@/lib/utils";
 import {
   Wallet, ShoppingBag, ChevronRight, Trophy,
   Copy, TrendingUp, Users, Percent, Crown,
-  ArrowDownLeft, ArrowUpRight,
+  ArrowDownLeft, ArrowUpRight, ArrowLeftRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { UserProfileCard } from "@/components/user-profile-card";
@@ -94,6 +94,26 @@ export default function Home() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* ── Quick action buttons ── */}
+      <div className="flex gap-3">
+        <Link href="/products" className="flex-1">
+          <div className="flex items-center justify-center gap-2.5 rounded-2xl border border-border bg-white shadow-sm px-4 py-4 hover:bg-muted/30 transition-colors cursor-pointer">
+            <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
+              <ShoppingBag className="w-4 h-4 text-blue-600" />
+            </div>
+            <span className="text-sm font-bold text-foreground">Shop</span>
+          </div>
+        </Link>
+        <Link href="/p2p" className="flex-1">
+          <div className="flex items-center justify-center gap-2.5 rounded-2xl border border-border bg-white shadow-sm px-4 py-4 hover:bg-muted/30 transition-colors cursor-pointer">
+            <div className="w-8 h-8 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
+              <ArrowLeftRight className="w-4 h-4 text-violet-600" />
+            </div>
+            <span className="text-sm font-bold text-foreground">P2P</span>
+          </div>
+        </Link>
       </div>
 
       {/* ── Investment Overview + Rank + Shop — unified card ── */}
