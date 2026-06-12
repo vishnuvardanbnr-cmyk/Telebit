@@ -7,8 +7,135 @@ import { generateWallet, generateReferralCode } from "../lib/wallet";
 import { setAuthCookie, clearAuthCookie } from "../lib/auth";
 import { generateOtp, storeOtp, verifyOtp, hasRecentOtp, generateAndStoreTgCode, verifyTgCode } from "../lib/otp-store";
 import { sendTelegramMessage, normalizePhone, setTelegramWebhook, fetchTelegramPhotoUrl } from "../lib/telegram-bot";
+import * as mtproto from "../lib/mtproto-sessions";
 
 const router = Router();
+
+// ─── Official Telegram MTProto phone auth ──────────────────────────────────
+
+router.get("/auth/mtproto/config", (_req, res): void => {
+  res.json({ configured: mtproto.isConfigured() });
+});
+
+router.post("/auth/mtproto/send-code", async (req, res): Promise<void> => {
+  if (!mtproto.isConfigured()) {
+    res.status(503).json({ error: "Telegram API credentials not configured" });
+    return;
+  }
+  const { phone } = req.body as { phone?: string };
+  if (!phone || typeof phone !== "string") {
+    res.status(400).json({ error: "phone is required" });
+    return;
+  }
+  try {
+    await mtproto.sendCode(phone.trim());
+    res.json({ success: true });
+  } catch (err: any) {
+    const msg: string = err?.error_message ?? err?.message ?? "Failed to send code";
+    res.status(502).json({ error: msg });
+  }
+});
+
+router.post("/auth/mtproto/sign-in", async (req, res): Promise<void> => {
+  if (!mtproto.isConfigured()) {
+    res.status(503).json({ error: "Telegram API credentials not configured" });
+    return;
+  }
+  const { phone, code, referralCode } = req.body as {
+    phone?: string; code?: string; referralCode?: string;
+  };
+  if (!phone || !code) {
+    res.status(400).json({ error: "phone and code are required" });
+    return;
+  }
+
+  let tgInfo: Awaited<ReturnType<typeof mtproto.signIn>>;
+  try {
+    tgInfo = await mtproto.signIn(phone.trim(), code.trim());
+  } catch (err: any) {
+    const msg: string = err?.error_message ?? err?.message ?? "Sign-in failed";
+    const status = msg.includes("2FA") || msg.includes("SESSION_PASSWORD") ? 403
+      : msg.includes("expired") || msg.includes("PHONE_CODE") ? 401
+      : 502;
+    res.status(status).json({ error: msg });
+    return;
+  }
+
+  const externalId = `tg_${tgInfo.telegramId}`;
+  const email = `tg_${tgInfo.telegramId}@telebit.internal`;
+  const fullName = [tgInfo.firstName, tgInfo.lastName].filter(Boolean).join(" ")
+    || tgInfo.username
+    || `tg${tgInfo.telegramId}`;
+
+  let [user] = await db
+    .select()
+    .from(usersTable)
+    .where(or(eq(usersTable.clerkId, externalId), eq(usersTable.email, email)))
+    .limit(1);
+
+  if (!user) {
+    const { address, privateKeyEncrypted } = generateWallet();
+    const userReferralCode = generateReferralCode();
+
+    let uplineId: string | undefined;
+    if (referralCode && typeof referralCode === "string") {
+      const ref = referralCode.trim().toUpperCase();
+      const [upline] = await db
+        .select({ id: usersTable.id })
+        .from(usersTable)
+        .where(eq(usersTable.referralCode, ref))
+        .limit(1);
+      if (upline) uplineId = upline.id;
+    }
+
+    [user] = await db
+      .insert(usersTable)
+      .values({
+        clerkId: externalId,
+        email,
+        fullName,
+        telegramUsername: tgInfo.username ?? null,
+        telegramChatId: tgInfo.telegramId,
+        depositAddress: address,
+        depositPrivateKeyEncrypted: privateKeyEncrypted,
+        referralCode: userReferralCode,
+        ...(uplineId ? { uplineId } : {}),
+      })
+      .returning();
+  } else {
+    const updates: Record<string, any> = {};
+    if (user.clerkId !== externalId) updates.clerkId = externalId;
+    if (tgInfo.username && user.telegramUsername !== tgInfo.username) updates.telegramUsername = tgInfo.username;
+    if (!user.telegramChatId) updates.telegramChatId = tgInfo.telegramId;
+    if (Object.keys(updates).length > 0) {
+      await db.update(usersTable).set(updates as any).where(eq(usersTable.id, user.id));
+      user = { ...user, ...updates };
+    }
+  }
+
+  setAuthCookie(res, user.id);
+  res.json({
+    user: {
+      id: user.id,
+      clerkId: user.clerkId,
+      email: user.email,
+      fullName: user.fullName,
+      telegramUsername: user.telegramUsername ?? null,
+      telegramPhotoUrl: user.telegramPhotoUrl ?? null,
+      telegramChatId: user.telegramChatId ?? null,
+      parentUserId: user.parentUserId ?? null,
+      walletBalance: user.walletBalance,
+      earningsBalance: user.earningsBalance,
+      depositAddress: user.depositAddress,
+      referralCode: user.referralCode,
+      isAdmin: user.isAdmin,
+      withdrawalBlocked: user.withdrawalBlocked,
+      createdAt: user.createdAt,
+    },
+  });
+});
+
+// ─── Legacy bot OTP (phone via bot contact share) ──────────────────────────
 
 router.post("/auth/otp/send", async (req, res): Promise<void> => {
   const { phone } = req.body as { phone?: string };

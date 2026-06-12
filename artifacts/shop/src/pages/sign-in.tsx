@@ -12,7 +12,7 @@ export default function ShopSignInPage() {
   const queryClient = useQueryClient();
   const { isSignedIn, isLoading } = useAuth();
 
-  const [botUsername, setBotUsername] = useState<string | null>(null);
+  const [mtprotoReady, setMtprotoReady] = useState<boolean | null>(null);
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"phone" | "code">("phone");
@@ -25,32 +25,29 @@ export default function ShopSignInPage() {
   const referralCode = params.get("ref") ?? undefined;
 
   useEffect(() => {
-    fetch(`${BASE}/api/auth/bot-info`, { credentials: "include" })
+    fetch(`${BASE}/api/auth/mtproto/config`, { credentials: "include" })
       .then((r) => r.json())
-      .then((d: any) => { if (d.botUsername) setBotUsername(d.botUsername); })
-      .catch(() => {});
+      .then((d: any) => setMtprotoReady(!!d.configured))
+      .catch(() => setMtprotoReady(false));
   }, []);
 
   if (!isLoading && isSignedIn) return <Redirect to="/" />;
 
-  const handleSendOtp = async (e: React.FormEvent) => {
+  const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = phone.trim();
     if (!trimmed) { setError("Please enter your phone number."); return; }
     setSending(true);
     setError(null);
     try {
-      const res = await fetch(`${BASE}/api/auth/otp/send`, {
+      const res = await fetch(`${BASE}/api/auth/mtproto/send-code`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ phone: trimmed }),
       });
-      const body = await res.json().catch(() => ({})) as { error?: string; hint?: string; botUsername?: string };
-      if (!res.ok) {
-        if (body.hint) throw new Error(`${body.error} — ${body.hint}`);
-        throw new Error(body.error || "Failed to send code");
-      }
+      const body = await res.json().catch(() => ({})) as { error?: string };
+      if (!res.ok) throw new Error(body.error || "Failed to send code");
       setStep("code");
       setCode("");
     } catch (e: any) {
@@ -60,18 +57,18 @@ export default function ShopSignInPage() {
     }
   };
 
-  const handleVerify = async (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = code.replace(/\s/g, "");
-    if (trimmed.length !== 6) { setError("Please enter the 6-digit code."); return; }
+    if (!trimmed) { setError("Please enter the code."); return; }
     setVerifying(true);
     setError(null);
     try {
-      const res = await fetch(`${BASE}/api/auth/otp/verify`, {
+      const res = await fetch(`${BASE}/api/auth/mtproto/sign-in`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ phone: phone.trim(), code: trimmed }),
+        body: JSON.stringify({ phone: phone.trim(), code: trimmed, referralCode }),
       });
       const body = await res.json().catch(() => ({})) as { error?: string; user?: any };
       if (!res.ok) throw new Error(body.error || "Verification failed");
@@ -117,6 +114,7 @@ export default function ShopSignInPage() {
           <div className="bg-card border border-border rounded-lg shadow-md overflow-hidden">
             <div className="h-1 bg-primary w-full" />
             <div className="p-6 sm:p-8">
+
               {/* Logo + title */}
               <div className="flex flex-col items-center mb-6">
                 <div className="w-14 h-14 rounded-2xl overflow-hidden mb-4 shadow-md">
@@ -124,7 +122,9 @@ export default function ShopSignInPage() {
                 </div>
                 <h1 className="text-xl font-bold text-foreground text-center">Sign In to Shop</h1>
                 <p className="text-sm text-muted-foreground text-center mt-1">
-                  Enter your Telegram phone number to receive a one-time code
+                  {step === "phone"
+                    ? "Enter your Telegram phone number"
+                    : "Check your Telegram app for the code"}
                 </p>
               </div>
 
@@ -134,8 +134,13 @@ export default function ShopSignInPage() {
                 </div>
               )}
 
-              {step === "phone" ? (
-                <form onSubmit={handleSendOtp} className="space-y-3">
+              {mtprotoReady === false ? (
+                <div className="text-center text-xs text-muted-foreground bg-muted/30 rounded-lg py-5 px-4 mb-4">
+                  <p className="font-medium mb-1">Telegram login not configured</p>
+                  <p>TELEGRAM_API_ID and TELEGRAM_API_HASH are required.</p>
+                </div>
+              ) : step === "phone" ? (
+                <form onSubmit={handleSendCode} className="space-y-3">
                   <div>
                     <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
                       Phone number (with country code)
@@ -153,47 +158,38 @@ export default function ShopSignInPage() {
                         autoFocus
                       />
                     </div>
-                    {botUsername && (
-                      <p className="text-[11px] text-muted-foreground mt-1.5">
-                        You must have started{" "}
-                        <a
-                          href={`https://t.me/${botUsername}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary underline underline-offset-2"
-                        >
-                          @{botUsername}
-                        </a>{" "}
-                        and shared your number with it first.
-                      </p>
-                    )}
+                    <p className="text-[11px] text-muted-foreground mt-1.5">
+                      Use the same number registered on your Telegram account.
+                    </p>
                   </div>
 
                   <button
                     type="submit"
-                    disabled={sending || !phone.trim()}
+                    disabled={sending || !phone.trim() || mtprotoReady === null}
                     className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {sending ? (
                       <>
                         <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-                        Sending code…
+                        Sending…
                       </>
                     ) : (
                       <>
                         <Send className="w-4 h-4" />
-                        Send Code via Telegram
+                        Send Code
                       </>
                     )}
                   </button>
                 </form>
               ) : (
-                <form onSubmit={handleVerify} className="space-y-3">
+                <form onSubmit={handleSignIn} className="space-y-3">
                   <div className="text-center mb-2">
                     <p className="text-sm text-muted-foreground">
                       Code sent to <span className="font-semibold text-foreground">{phone}</span>
                     </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Check your Telegram for the 6-digit code</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Open your Telegram app — the code arrived as a message.
+                    </p>
                   </div>
 
                   <div>
@@ -205,11 +201,10 @@ export default function ShopSignInPage() {
                       <input
                         type="text"
                         inputMode="numeric"
-                        pattern="\d{6}"
-                        maxLength={6}
-                        placeholder="123456"
+                        maxLength={8}
+                        placeholder="12345"
                         value={code}
-                        onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                        onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
                         className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm font-mono tracking-widest placeholder:tracking-normal placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
                         autoComplete="one-time-code"
                         disabled={verifying}
@@ -220,13 +215,13 @@ export default function ShopSignInPage() {
 
                   <button
                     type="submit"
-                    disabled={verifying || code.length !== 6}
+                    disabled={verifying || !code}
                     className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {verifying ? (
                       <>
                         <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-                        Verifying…
+                        Signing in…
                       </>
                     ) : (
                       "Verify & Sign In"
