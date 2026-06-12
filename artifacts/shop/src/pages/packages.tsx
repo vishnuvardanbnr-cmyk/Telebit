@@ -1,10 +1,10 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import {
   useListPackages,
   useListMyPackages,
   usePurchasePackage,
   useGetIncomeSummary,
-  useListIncome,
   useGetMe,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
@@ -15,23 +15,8 @@ import { fmtUsdt } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import {
   TrendingUp, Package, CheckCircle2, Clock, Star,
-  Loader2, ChevronRight, Activity, Users, Crown,
-  ArrowUpRight, Calendar,
+  Loader2, Activity, ChevronRight,
 } from "lucide-react";
-
-function IncomeTypeBadge({ type }: { type: string }) {
-  const map: Record<string, { label: string; cls: string }> = {
-    roi: { label: "ROI", cls: "bg-green-100 text-green-700 border-green-200" },
-    referral: { label: "Referral", cls: "bg-blue-100 text-blue-700 border-blue-200" },
-    royalty: { label: "Royalty", cls: "bg-purple-100 text-purple-700 border-purple-200" },
-  };
-  const meta = map[type] ?? { label: type, cls: "bg-muted text-muted-foreground border-border" };
-  return (
-    <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full border", meta.cls)}>
-      {meta.label}
-    </span>
-  );
-}
 
 function PackageProgressBar({ daysCredited, totalRoiDays }: { daysCredited: number; totalRoiDays: number }) {
   const pct = Math.min(100, (daysCredited / totalRoiDays) * 100);
@@ -52,8 +37,7 @@ export default function PackagesPage() {
   const { data: user } = useGetMe();
   const { data: packages, isLoading: loadPkgs } = useListPackages({});
   const { data: myPackages, isLoading: loadMyPkgs } = useListMyPackages({});
-  const { data: summary, isLoading: loadSummary } = useGetIncomeSummary({});
-  const { data: income, isLoading: loadIncome } = useListIncome({ limit: 30, offset: 0 });
+  const { data: summary } = useGetIncomeSummary({});
   const purchase = usePurchasePackage();
   const [buying, setBuying] = useState<string | null>(null);
 
@@ -82,59 +66,62 @@ export default function PackagesPage() {
 
   const activeCount = myPackages?.filter((p) => p.isActive).length ?? 0;
   const totalInvested = myPackages?.reduce((s, p) => s + parseFloat(p.principalUsdt), 0) ?? 0;
+  const totalEarned = parseFloat(summary?.roi ?? "0")
+    + parseFloat(summary?.referral ?? "0")
+    + parseFloat(summary?.royalty ?? "0")
+    + parseFloat(summary?.rankReward ?? "0");
 
   return (
     <div className="max-w-xl mx-auto px-4 py-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold tracking-tight">Packages & Income</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Buy packages to earn daily ROI, referral & royalty income</p>
-      </div>
 
-      {/* Income summary cards */}
-      <div className="grid grid-cols-3 gap-3">
-        {loadSummary ? (
-          <>
-            <Skeleton className="h-20 rounded-2xl" />
-            <Skeleton className="h-20 rounded-2xl" />
-            <Skeleton className="h-20 rounded-2xl" />
-          </>
-        ) : (
-          <>
-            <div className="rounded-2xl bg-green-50 border border-green-100 p-3 text-center">
-              <TrendingUp className="w-4 h-4 text-green-600 mx-auto mb-1" />
-              <p className="text-[10px] text-green-700 font-semibold uppercase tracking-wide">ROI</p>
-              <p className="text-sm font-bold text-green-800">{fmtUsdt(summary?.roi ?? "0")}</p>
-            </div>
-            <div className="rounded-2xl bg-blue-50 border border-blue-100 p-3 text-center">
-              <Users className="w-4 h-4 text-blue-600 mx-auto mb-1" />
-              <p className="text-[10px] text-blue-700 font-semibold uppercase tracking-wide">Referral</p>
-              <p className="text-sm font-bold text-blue-800">{fmtUsdt(summary?.referral ?? "0")}</p>
-            </div>
-            <div className="rounded-2xl bg-purple-50 border border-purple-100 p-3 text-center">
-              <Crown className="w-4 h-4 text-purple-600 mx-auto mb-1" />
-              <p className="text-[10px] text-purple-700 font-semibold uppercase tracking-wide">Royalty</p>
-              <p className="text-sm font-bold text-purple-800">{fmtUsdt(summary?.royalty ?? "0")}</p>
-            </div>
-          </>
-        )}
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight">Invest</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Purchase packages to earn daily ROI returns</p>
+        </div>
       </div>
 
       {/* Stats row */}
-      <div className="flex gap-3">
-        <div className="flex-1 rounded-2xl bg-card border border-border p-3 text-center">
-          <p className="text-[11px] text-muted-foreground">Active Packages</p>
-          <p className="text-lg font-black text-foreground">{activeCount}</p>
+      <div className="grid grid-cols-3 gap-3">
+        <div className="rounded-2xl bg-card border border-border p-3 text-center">
+          <p className="text-[11px] text-muted-foreground mb-0.5">Active</p>
+          <p className="text-xl font-black text-foreground">{activeCount}</p>
+          <p className="text-[10px] text-muted-foreground">Packages</p>
         </div>
-        <div className="flex-1 rounded-2xl bg-card border border-border p-3 text-center">
-          <p className="text-[11px] text-muted-foreground">Total Invested</p>
-          <p className="text-lg font-black text-foreground">{fmtUsdt(totalInvested)} <span className="text-xs font-normal">USDT</span></p>
+        <div className="rounded-2xl bg-card border border-border p-3 text-center">
+          <p className="text-[11px] text-muted-foreground mb-0.5">Invested</p>
+          <p className="text-lg font-black text-foreground tabular-nums">{fmtUsdt(totalInvested)}</p>
+          <p className="text-[10px] text-muted-foreground">USDT</p>
         </div>
-        <div className="flex-1 rounded-2xl bg-card border border-border p-3 text-center">
-          <p className="text-[11px] text-muted-foreground">Wallet</p>
-          <p className="text-lg font-black text-foreground">{fmtUsdt(walletBalance)} <span className="text-xs font-normal">USDT</span></p>
+        <div className="rounded-2xl bg-card border border-border p-3 text-center">
+          <p className="text-[11px] text-muted-foreground mb-0.5">Wallet</p>
+          <p className="text-lg font-black text-foreground tabular-nums">{fmtUsdt(walletBalance)}</p>
+          <p className="text-[10px] text-muted-foreground">USDT</p>
         </div>
       </div>
+
+      {/* Income summary CTA */}
+      <Link href="/income">
+        <div className="flex items-center justify-between rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 px-5 py-4 cursor-pointer hover:from-emerald-100 hover:to-teal-100 transition-colors">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-emerald-900">Total Income Earned</p>
+              <p className="text-xs text-emerald-700 mt-0.5">ROI · Referral · Royalty · Rewards</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="text-right">
+              <p className="text-lg font-black text-emerald-700 tabular-nums">{fmtUsdt(totalEarned)}</p>
+              <p className="text-[10px] text-emerald-600 font-medium">USDT</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-emerald-600 shrink-0" />
+          </div>
+        </div>
+      </Link>
 
       {/* Available packages */}
       <div>
@@ -149,7 +136,6 @@ export default function PackagesPage() {
 
           return (
             <div key={pkg.id} className="rounded-3xl border border-border bg-card p-5 space-y-4 mb-3">
-              {/* Package header */}
               <div className="flex items-start justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
@@ -164,7 +150,6 @@ export default function PackagesPage() {
                 </div>
               </div>
 
-              {/* Key stats */}
               <div className="grid grid-cols-3 gap-2">
                 {[
                   { label: "Daily ROI", value: `${pkg.roiPercent}%` },
@@ -178,7 +163,6 @@ export default function PackagesPage() {
                 ))}
               </div>
 
-              {/* Total return */}
               <div className="flex items-center justify-between rounded-xl bg-primary/5 border border-primary/10 px-4 py-3">
                 <div className="flex items-center gap-2">
                   <Activity className="w-4 h-4 text-primary" />
@@ -243,44 +227,6 @@ export default function PackagesPage() {
           </div>
         </div>
       )}
-
-      {/* Income history */}
-      <div>
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Income History</h2>
-        {loadIncome && <Skeleton className="h-16 rounded-2xl" />}
-        {!loadIncome && !income?.length && (
-          <div className="py-10 text-center">
-            <TrendingUp className="w-8 h-8 mx-auto mb-2 text-muted-foreground/25" />
-            <p className="text-sm text-muted-foreground">No income yet — buy a package to start earning</p>
-          </div>
-        )}
-        <div className="space-y-2">
-          {income?.map((entry) => (
-            <div key={entry.id} className="flex items-center gap-3 p-3.5 rounded-2xl border border-border bg-card">
-              <div className={cn("w-8 h-8 rounded-full flex items-center justify-center shrink-0",
-                entry.type === "roi" ? "bg-green-100" :
-                entry.type === "referral" ? "bg-blue-100" : "bg-purple-100"
-              )}>
-                {entry.type === "roi" && <TrendingUp className="w-3.5 h-3.5 text-green-600" />}
-                {entry.type === "referral" && <Users className="w-3.5 h-3.5 text-blue-600" />}
-                {entry.type === "royalty" && <Crown className="w-3.5 h-3.5 text-purple-600" />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <IncomeTypeBadge type={entry.type} />
-                  <span className="text-[11px] text-muted-foreground">
-                    {new Date(entry.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                  </span>
-                </div>
-                {entry.note && <p className="text-[11px] text-muted-foreground truncate">{entry.note}</p>}
-              </div>
-              <span className="text-sm font-bold text-green-600 tabular-nums shrink-0">
-                +{fmtUsdt(entry.amount)} USDT
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
