@@ -9,9 +9,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { fmtUsdt } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import {
-  Wallet, ShoppingBag, ChevronRight, Trophy, ArrowLeftRight,
-  Copy, TrendingUp, Award, Users, Percent, Crown, ArrowDownLeft,
-  ArrowUpRight, TrendingDown, Star,
+  Wallet, ShoppingBag, ChevronRight, Trophy,
+  Copy, TrendingUp, Users, Percent, Crown, ArrowDownLeft,
+  ArrowUpRight, Star,
 } from "lucide-react";
 import { toast } from "sonner";
 import { UserProfileCard } from "@/components/user-profile-card";
@@ -216,34 +216,6 @@ export default function Home() {
           </div>
         </Link>
       )}
-
-      {/* ── Quick Access ── */}
-      <div>
-        <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">Quick Access</h2>
-        <div className="grid grid-cols-4 gap-2">
-          {[
-            { href: "/packages", label: "Packages", sub: "Daily ROI", Icon: TrendingUp, grad: "from-green-400 to-emerald-500", hover: "hover:border-green-300" },
-            { href: "/ranks", label: "Ranks", sub: "Rewards", Icon: Award, grad: "from-purple-500 to-violet-600", hover: "hover:border-purple-300" },
-            { href: "/invite", label: "Invite", sub: "Network", Icon: Users, grad: "from-rose-400 to-pink-500", hover: "hover:border-rose-300" },
-            { href: "/p2p", label: "P2P", sub: "Transfer", Icon: ArrowLeftRight, grad: "from-blue-400 to-indigo-500", hover: "hover:border-blue-300" },
-          ].map(({ href, label, sub, Icon, grad, hover }) => (
-            <Link key={href} href={href}>
-              <div className={cn(
-                "group flex flex-col items-center justify-center gap-2 bg-white border border-border rounded-2xl p-3 transition-all cursor-pointer hover:shadow-md",
-                hover
-              )}>
-                <div className={cn("w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform", grad)}>
-                  <Icon className="h-4.5 w-4.5 text-white h-5 w-5" />
-                </div>
-                <div className="text-center">
-                  <p className="font-bold text-xs">{label}</p>
-                  <p className="text-[10px] text-muted-foreground">{sub}</p>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </div>
 
       {/* ── Go to Shop ── */}
       <Link href="/products">
