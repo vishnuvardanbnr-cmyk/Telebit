@@ -28,7 +28,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Package, DollarSign, ShoppingCart, Tag, Edit, Trash2, Users, Ticket, ArrowLeftRight, Star, Ban, CheckCircle, Play, AlertTriangle, Settings, Eye, EyeOff, PlusCircle } from "lucide-react";
+import { Package, DollarSign, ShoppingCart, Tag, Edit, Trash2, Users, Ticket, ArrowLeftRight, Star, Ban, CheckCircle, Play, AlertTriangle, Settings, Eye, EyeOff, PlusCircle, Layers } from "lucide-react";
 import { useEffect, useCallback } from "react";
 
 const BASE = import.meta.env.BASE_URL;
@@ -733,6 +733,264 @@ type AdminSettings = {
   depositFeePercent: string;
 };
 
+// ─── Pools Tab ────────────────────────────────────────────────────────────────
+
+function PoolsTab() {
+  const { toast } = useToast();
+  const [status, setStatus] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [seeding, setSeeding] = useState(false);
+  const [toggling, setToggling] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newPool, setNewPool] = useState({ level: "1", poolSize: "10000", dailyYield: "1.0" });
+  const [creating, setCreating] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await apiFetch("/admin/nft/status");
+      setStatus(data);
+    } catch {
+      setStatus(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const seed = async () => {
+    setSeeding(true);
+    try {
+      await apiFetch("/admin/nft/seed", { method: "POST" });
+      toast({ title: "System initialized!", description: "4 pools created (L1–L4)" });
+      load();
+    } catch (e: any) {
+      let msg = e.message ?? "Unknown error";
+      try { msg = JSON.parse(msg).error ?? msg; } catch {}
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    } finally {
+      setSeeding(false);
+    }
+  };
+
+  const toggleInvest = async (enabled: boolean) => {
+    setToggling(true);
+    try {
+      await apiFetch("/admin/nft/global", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ canInvest: enabled }),
+      });
+      toast({ title: `Token purchases ${enabled ? "enabled" : "disabled"}` });
+      load();
+    } catch (e: any) {
+      let msg = e.message ?? "Unknown error";
+      try { msg = JSON.parse(msg).error ?? msg; } catch {}
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    } finally {
+      setToggling(false);
+    }
+  };
+
+  const togglePool = async (poolId: string, newStatus: string) => {
+    try {
+      await apiFetch(`/admin/nft/pools/${poolId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      toast({ title: `Pool ${newStatus}` });
+      load();
+    } catch (e: any) {
+      let msg = e.message ?? "Unknown error";
+      try { msg = JSON.parse(msg).error ?? msg; } catch {}
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    }
+  };
+
+  const createPool = async () => {
+    const nftId = status?.nfts?.[0]?.id;
+    if (!nftId) { toast({ title: "Initialize system first", variant: "destructive" }); return; }
+    setCreating(true);
+    try {
+      await apiFetch("/admin/nft/pools", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nftId,
+          level: parseInt(newPool.level),
+          poolSize: newPool.poolSize,
+          dailyYield: newPool.dailyYield,
+        }),
+      });
+      toast({ title: "Pool created!" });
+      setCreateOpen(false);
+      setNewPool({ level: "1", poolSize: "10000", dailyYield: "1.0" });
+      load();
+    } catch (e: any) {
+      let msg = e.message ?? "Unknown error";
+      try { msg = JSON.parse(msg).error ?? msg; } catch {}
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-bold uppercase tracking-wider">Bidding Pools</h2>
+        {status?.global && (
+          <Button onClick={() => setCreateOpen(true)} className="rounded-none font-bold uppercase tracking-wider text-xs">
+            <PlusCircle className="h-3.5 w-3.5 mr-1.5" /> Add Pool
+          </Button>
+        )}
+      </div>
+
+      {/* System status */}
+      <Card className="rounded-none border-border bg-card">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">System Status</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : !status?.global ? (
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold">Not Initialized</p>
+                <p className="text-xs text-muted-foreground mt-0.5">One click to create the global token system, a default NFT, and 4 starter pools (L1–L4)</p>
+              </div>
+              <Button onClick={seed} disabled={seeding} className="rounded-none font-bold uppercase tracking-wider text-xs shrink-0">
+                {seeding ? "Initializing…" : "Initialize System"}
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { label: "Buy Price", val: `$${parseFloat(status.global.buyPrice).toFixed(6)}` },
+                { label: "Liquidity", val: `$${parseFloat(status.global.liquidity).toFixed(2)}` },
+                { label: "Total Volume", val: `$${parseFloat(status.global.totalPurchase).toFixed(2)}` },
+              ].map(s => (
+                <div key={s.label}>
+                  <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">{s.label}</p>
+                  <p className="font-mono font-bold mt-1">{s.val}</p>
+                </div>
+              ))}
+              <div>
+                <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">Token Purchases</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge variant="outline" className={`rounded-none text-[10px] uppercase tracking-widest ${status.global.canInvest ? "bg-green-500/10 text-green-600 border-green-500/20" : "bg-muted text-muted-foreground"}`}>
+                    {status.global.canInvest ? "On" : "Off"}
+                  </Badge>
+                  <Button size="sm" variant="outline" onClick={() => toggleInvest(!status.global.canInvest)} disabled={toggling} className="h-6 rounded-none text-[10px] font-bold uppercase tracking-wider">
+                    {status.global.canInvest ? "Disable" : "Enable"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Pools table */}
+      {status?.global && (
+        <div className="bg-card border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-border hover:bg-transparent">
+                <TableHead className="font-bold uppercase tracking-wider text-xs">Pool</TableHead>
+                <TableHead className="font-bold uppercase tracking-wider text-xs text-right">Size</TableHead>
+                <TableHead className="font-bold uppercase tracking-wider text-xs text-right">Filled</TableHead>
+                <TableHead className="font-bold uppercase tracking-wider text-xs text-right">Remaining</TableHead>
+                <TableHead className="font-bold uppercase tracking-wider text-xs text-right">Yield/day</TableHead>
+                <TableHead className="font-bold uppercase tracking-wider text-xs text-center">Status</TableHead>
+                <TableHead className="font-bold uppercase tracking-wider text-xs text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {!status?.pools?.length ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8 text-sm">
+                    No pools yet. Click "Add Pool" to create one.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                status.pools.map((pool: any) => {
+                  const pct = parseFloat(pool.poolSize) > 0
+                    ? Math.min(100, (parseFloat(pool.poolAmount) / parseFloat(pool.poolSize)) * 100)
+                    : 0;
+                  return (
+                    <TableRow key={pool.id} className="border-border">
+                      <TableCell>
+                        <p className="font-bold text-sm">{pool.nftTitle} — L{pool.level}</p>
+                        <p className="text-xs text-muted-foreground font-mono">{pool.id.split("-")[0].toUpperCase()}</p>
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-sm">${parseFloat(pool.poolSize).toLocaleString()}</TableCell>
+                      <TableCell className="text-right">
+                        <p className="font-mono text-sm">${parseFloat(pool.poolAmount).toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">{pct.toFixed(1)}%</p>
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-sm text-emerald-600">${parseFloat(pool.poolLimit).toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-mono text-sm text-primary">{parseFloat(pool.dailyYield)}%</TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="outline" className={`rounded-none text-[10px] uppercase tracking-widest ${
+                          pool.status === "active" ? "bg-green-500/10 text-green-600 border-green-500/20" :
+                          pool.status === "completed" ? "bg-blue-500/10 text-blue-600 border-blue-500/20" :
+                          "bg-muted text-muted-foreground"
+                        }`}>{pool.status}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {pool.status === "active" ? (
+                          <Button size="sm" variant="outline" onClick={() => togglePool(pool.id, "inactive")} className="h-7 rounded-none text-[10px] font-bold uppercase tracking-wider">Disable</Button>
+                        ) : pool.status === "inactive" ? (
+                          <Button size="sm" onClick={() => togglePool(pool.id, "active")} className="h-7 rounded-none text-[10px] font-bold uppercase tracking-wider">Enable</Button>
+                        ) : <span className="text-xs text-muted-foreground">—</span>}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      {/* Create pool dialog */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="sm:max-w-[400px] rounded-none border-border bg-background">
+          <DialogHeader>
+            <DialogTitle className="uppercase tracking-wider font-black">Create New Pool</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div>
+              <label className="text-xs font-bold uppercase tracking-wider">Level</label>
+              <Select value={newPool.level} onValueChange={v => setNewPool(p => ({ ...p, level: v }))}>
+                <SelectTrigger className="rounded-none bg-card mt-1.5"><SelectValue /></SelectTrigger>
+                <SelectContent className="rounded-none">
+                  {[1, 2, 3, 4, 5].map(l => <SelectItem key={l} value={String(l)}>Level {l}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs font-bold uppercase tracking-wider">Pool Size (USDT)</label>
+              <Input className="rounded-none bg-card mt-1.5 font-mono" type="number" value={newPool.poolSize} onChange={e => setNewPool(p => ({ ...p, poolSize: e.target.value }))} placeholder="e.g. 10000" />
+            </div>
+            <div>
+              <label className="text-xs font-bold uppercase tracking-wider">Daily Yield (%)</label>
+              <Input className="rounded-none bg-card mt-1.5 font-mono" type="number" step="0.1" value={newPool.dailyYield} onChange={e => setNewPool(p => ({ ...p, dailyYield: e.target.value }))} placeholder="e.g. 1.5" />
+            </div>
+            <Button onClick={createPool} disabled={creating} className="w-full rounded-none font-bold uppercase tracking-wider">
+              {creating ? "Creating…" : "Create Pool"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
 function SettingField({ label, hint, value, onChange, secret = false }: {
   label: string; hint?: string; value: string; onChange: (v: string) => void; secret?: boolean;
 }) {
@@ -1144,6 +1402,7 @@ export default function Admin() {
             { value: "products", label: "Products", icon: Package },
             { value: "categories", label: "Categories", icon: Tag },
             { value: "users", label: "Users", icon: Users },
+            { value: "pools", label: "Pools", icon: Layers },
             { value: "lottery", label: "Lottery", icon: Ticket },
             { value: "p2p", label: "P2P", icon: ArrowLeftRight },
             { value: "reviews", label: "Reviews", icon: Star },
@@ -1270,6 +1529,7 @@ export default function Admin() {
         <TabsContent value="p2p"><P2PTab /></TabsContent>
         <TabsContent value="reviews"><ReviewsTab /></TabsContent>
         <TabsContent value="settings"><SettingsTab /></TabsContent>
+        <TabsContent value="pools"><PoolsTab /></TabsContent>
       </Tabs>
 
       {/* Product Dialog */}

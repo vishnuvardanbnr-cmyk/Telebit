@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, usersTable, depositsTable, withdrawalsTable, p2pTransfersTable } from "@workspace/db";
+import { db, usersTable, depositsTable, withdrawalsTable, p2pTransfersTable, globalAmountsV2Table, nftsTable, nftPoolsTable } from "@workspace/db";
 import { eq, desc, like, or, sum, count } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../lib/auth";
 import { getSettings, updateSettings } from "../lib/settings";
@@ -95,8 +95,9 @@ router.post("/admin/users/:userId/add-balance", requireAuth, requireAdmin, async
   }
 
   const newBalance = (parseFloat(existing.walletBalance) + parsed).toFixed(8);
+  const newDeposited = (parseFloat((existing as any).userDepositedAmount ?? "0") + parsed).toFixed(8);
   const [user] = await db.update(usersTable)
-    .set({ walletBalance: newBalance })
+    .set({ walletBalance: newBalance, userDepositedAmount: newDeposited } as any)
     .where(eq(usersTable.id, userId))
     .returning();
 
@@ -286,6 +287,130 @@ router.get("/admin/stats", requireAuth, requireAdmin, async (_req, res): Promise
     recentDeposits,
     recentWithdrawals,
   });
+});
+
+// ─── NFT / Bidding Pool Management ────────────────────────────────────────────
+
+router.get("/admin/nft/status", requireAuth, requireAdmin, async (_req, res): Promise<void> => {
+  const [global] = await db.select().from(globalAmountsV2Table).limit(1);
+  const nfts = await db.select().from(nftsTable).orderBy(desc(nftsTable.createdAt));
+  const pools = await db
+    .select({
+      id: nftPoolsTable.id,
+      nftId: nftPoolsTable.nftId,
+      nftTitle: nftsTable.title,
+      level: nftPoolsTable.level,
+      poolSize: nftPoolsTable.poolSize,
+      poolLimit: nftPoolsTable.poolLimit,
+      poolAmount: nftPoolsTable.poolAmount,
+      dailyYield: nftPoolsTable.dailyYield,
+      status: nftPoolsTable.status,
+      createdAt: nftPoolsTable.createdAt,
+    })
+    .from(nftPoolsTable)
+    .innerJoin(nftsTable, eq(nftPoolsTable.nftId, nftsTable.id))
+    .orderBy(nftPoolsTable.level);
+  res.json({ global: global ?? null, nfts, pools });
+});
+
+router.post("/admin/nft/seed", requireAuth, requireAdmin, async (_req, res): Promise<void> => {
+  const [existing] = await db.select().from(globalAmountsV2Table).limit(1);
+  if (existing) {
+    res.status(400).json({ error: "System already initialized" });
+    return;
+  }
+
+  await db.insert(globalAmountsV2Table).values({
+    buyPrice: "1.00000000",
+    sellPrice: "0.90000000",
+    liquidity: "0",
+    expenses: "0",
+    nftPool: "0",
+    totalPurchase: "0",
+    reserveFund: "0",
+    userDistributionPercent: "0.88",
+    reserveFundDistributionPercent: "0.12",
+    canInvest: true,
+  });
+
+  const [nft] = await db.insert(nftsTable).values({
+    title: "Telebit V2 Pool",
+    image: "",
+    price: "100",
+    status: "active",
+  }).returning();
+
+  const poolDefs = [
+    { level: 1, poolSize: "10000",  dailyYield: "1.0" },
+    { level: 2, poolSize: "50000",  dailyYield: "1.5" },
+    { level: 3, poolSize: "100000", dailyYield: "2.0" },
+    { level: 4, poolSize: "500000", dailyYield: "3.0" },
+  ];
+  for (const def of poolDefs) {
+    await db.insert(nftPoolsTable).values({
+      nftId: nft.id,
+      level: def.level,
+      poolSize: def.poolSize,
+      poolLimit: def.poolSize,
+      poolAmount: "0",
+      dailyYield: def.dailyYield,
+      status: "active",
+    });
+  }
+
+  res.json({ success: true, message: "System initialized with 4 pools (L1–L4)" });
+});
+
+router.patch("/admin/nft/global", requireAuth, requireAdmin, async (req, res): Promise<void> => {
+  const [global] = await db.select().from(globalAmountsV2Table).limit(1);
+  if (!global) { res.status(404).json({ error: "System not initialized" }); return; }
+
+  const updates: Record<string, any> = {};
+  if (req.body.canInvest !== undefined) updates.canInvest = Boolean(req.body.canInvest);
+  if (req.body.buyPrice) updates.buyPrice = String(req.body.buyPrice);
+  if (req.body.sellPrice) updates.sellPrice = String(req.body.sellPrice);
+
+  await db.update(globalAmountsV2Table).set(updates as any).where(eq(globalAmountsV2Table.id, global.id));
+  const [updated] = await db.select().from(globalAmountsV2Table).limit(1);
+  res.json(updated);
+});
+
+router.post("/admin/nft/pools", requireAuth, requireAdmin, async (req, res): Promise<void> => {
+  const { nftId, level, poolSize, dailyYield } = req.body as {
+    nftId?: string; level?: number; poolSize?: string; dailyYield?: string;
+  };
+  if (!nftId || !level || !poolSize) {
+    res.status(400).json({ error: "nftId, level, and poolSize are required" });
+    return;
+  }
+  const [nft] = await db.select().from(nftsTable).where(eq(nftsTable.id, nftId));
+  if (!nft) { res.status(404).json({ error: "NFT not found" }); return; }
+
+  const [pool] = await db.insert(nftPoolsTable).values({
+    nftId,
+    level: Number(level),
+    poolSize: String(poolSize),
+    poolLimit: String(poolSize),
+    poolAmount: "0",
+    dailyYield: String(dailyYield ?? "0"),
+    status: "active",
+  }).returning();
+  res.json(pool);
+});
+
+router.patch("/admin/nft/pools/:id", requireAuth, requireAdmin, async (req, res): Promise<void> => {
+  const poolId = req.params.id as string;
+  const { status } = req.body as { status?: string };
+  if (!status || !["active", "inactive", "completed"].includes(status)) {
+    res.status(400).json({ error: "status must be active, inactive, or completed" });
+    return;
+  }
+  const [pool] = await db.update(nftPoolsTable)
+    .set({ status } as any)
+    .where(eq(nftPoolsTable.id, poolId))
+    .returning();
+  if (!pool) { res.status(404).json({ error: "Pool not found" }); return; }
+  res.json(pool);
 });
 
 export default router;

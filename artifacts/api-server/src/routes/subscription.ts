@@ -27,8 +27,13 @@ router.post("/subscription", requireAuth, async (req, res): Promise<void> => {
   }
 
   const newWallet = parseFloat(user.walletBalance) - SUBSCRIPTION_AMOUNT;
+  const newInvested = parseFloat((user as any).investedUsdt ?? "0") + SUBSCRIPTION_AMOUNT;
   await db.update(usersTable)
-    .set({ walletBalance: String(newWallet), subscriptionActive: true } as any)
+    .set({
+      walletBalance: String(newWallet),
+      subscriptionActive: true,
+      investedUsdt: String(newInvested),
+    } as any)
     .where(eq(usersTable.id, user.id));
 
   let bonusPaid = 0;

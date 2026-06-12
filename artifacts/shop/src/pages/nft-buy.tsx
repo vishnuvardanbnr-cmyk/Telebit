@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   useGetNftGlobal,
   useGetNftHoldings,
@@ -6,6 +6,7 @@ import {
   useGetMe,
   useListNftPurchases,
 } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,6 +18,7 @@ import {
   ChevronRight, Shield, Lock, Coins, Clock,
 } from "lucide-react";
 
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 const QUICK = [10, 50, 100, 500];
 
 export default function NftBuyPage() {
@@ -25,7 +27,24 @@ export default function NftBuyPage() {
   const { data: user } = useGetMe();
   const { data: purchases, isLoading: purchasesLoading } = useListNftPurchases();
   const buyMutation = useBuyNftTokens();
+  const queryClient = useQueryClient();
   const [amount, setAmount] = useState("");
+  const [activating, setActivating] = useState(false);
+
+  const handleActivate = useCallback(async () => {
+    setActivating(true);
+    try {
+      const res = await fetch(`${BASE}/api/subscription`, { method: "POST", credentials: "include" });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error ?? "Activation failed");
+      toast.success("Account activated! You can now buy V2 tokens.");
+      queryClient.invalidateQueries({ queryKey: ["/api/me"] });
+    } catch (e: any) {
+      toast.error(e.message ?? "Activation failed");
+    } finally {
+      setActivating(false);
+    }
+  }, [queryClient]);
 
   const parsedAmount = parseFloat(amount) || 0;
   const buyPrice = parseFloat(global?.buyPrice ?? "0.001");
@@ -104,11 +123,28 @@ export default function NftBuyPage() {
           </div>
         )}
         {!notInitialized && canInvest && investedUsdt <= 0 && !isLoading && (
-          <div className="flex items-start gap-3 bg-sky-50 border border-sky-200 rounded-2xl p-4">
-            <AlertCircle className="h-4 w-4 text-sky-500 mt-0.5 shrink-0" />
-            <div>
-              <p className="text-sm font-semibold text-sky-800">Deposit Required</p>
-              <p className="text-xs text-sky-700 mt-0.5">Make a USDT deposit first to activate your investment account.</p>
+          <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-2xl p-5">
+            <div className="flex items-start gap-3 mb-4">
+              <Zap className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm font-bold text-foreground">Activate Your Investment Account</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  A one-time $35 USDT activation fee unlocks V2 token purchases and pool bidding.
+                  Your balance must be ≥ $35 USDT.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-xs text-muted-foreground">
+                Balance: <span className="font-mono font-bold text-foreground">{fmtUsdt(user?.walletBalance ?? "0")} USDT</span>
+              </div>
+              <Button
+                onClick={handleActivate}
+                disabled={activating || walletBalance < 35}
+                className="rounded-full font-bold text-xs px-5"
+              >
+                {activating ? "Activating…" : walletBalance < 35 ? "Insufficient Balance" : "Activate — $35 USDT"}
+              </Button>
             </div>
           </div>
         )}
