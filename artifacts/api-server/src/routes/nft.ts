@@ -359,9 +359,8 @@ router.get("/nft/pools", requireAuth, async (req, res): Promise<void> => {
     })
     .from(nftPoolsTable)
     .innerJoin(nftsTable, eq(nftPoolsTable.nftId, nftsTable.id))
-    .where(
-      and(eq(nftPoolsTable.status, "active"), eq(nftsTable.status, "active"))
-    );
+    .where(eq(nftsTable.status, "active"))
+    .orderBy(nftPoolsTable.level);
 
   const poolIds = pools.map((r) => r.pool.id);
   const userBids =
@@ -526,6 +525,20 @@ router.post("/nft/pools/:poolId/bid", requireAuth, async (req, res): Promise<voi
       ...(newPoolLimit <= 0 ? { status: "completed" } : {}),
     } as any)
     .where(eq(nftPoolsTable.id, poolId));
+
+  // Auto-unlock the next level pool when this one fills
+  if (isPoolFull) {
+    await db
+      .update(nftPoolsTable)
+      .set({ status: "active" } as any)
+      .where(
+        and(
+          eq(nftPoolsTable.nftId, pool.pool.nftId),
+          eq(nftPoolsTable.level, pool.pool.level + 1),
+          eq(nftPoolsTable.status, "inactive")
+        )
+      );
+  }
 
   await db.insert(nftPoolContributedUsersTable).values({
     poolId,

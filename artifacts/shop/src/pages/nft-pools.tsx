@@ -68,34 +68,48 @@ function PoolCard({ pool, onBid }: { pool: NftPoolWithNft; onBid: (p: NftPoolWit
   const poolAmount = parseFloat(pool.poolAmount);
   const poolLimit = parseFloat(pool.poolLimit);
   const pct = poolSize > 0 ? Math.min(100, (poolAmount / poolSize) * 100) : 0;
-  const isFull = poolLimit <= 0;
+  const isLocked = pool.status === "inactive";
+  const isFull = !isLocked && (pool.status === "completed" || poolLimit <= 0);
   const t = getTheme(pool.level);
 
   return (
     <div className={`rounded-2xl border bg-white overflow-hidden transition-all duration-200 ${
-      isFull
-        ? "border-border opacity-60"
-        : `border-border hover:border-primary/30 shadow-sm hover:shadow-md`
+      isLocked
+        ? "border-dashed border-border/60 opacity-50"
+        : isFull
+          ? "border-border opacity-60"
+          : `border-border hover:border-primary/30 shadow-sm hover:shadow-md`
     }`}>
-      {!isFull && <div className={`h-1 w-full bg-gradient-to-r ${t.bar}`} />}
+      {!isFull && !isLocked && <div className={`h-1 w-full bg-gradient-to-r ${t.bar}`} />}
       <div className="p-5">
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${t.bar} flex items-center justify-center shadow-sm`}>
-              <span className="text-white font-black text-sm">L{pool.level}</span>
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm ${
+              isLocked ? "bg-muted" : `bg-gradient-to-br ${t.bar}`
+            }`}>
+              {isLocked
+                ? <Lock className="h-4 w-4 text-muted-foreground" />
+                : <span className="text-white font-black text-sm">L{pool.level}</span>
+              }
             </div>
             <div>
-              <p className={`font-bold text-base leading-tight ${isFull ? "text-muted-foreground" : ""}`}>
-                {pool.nft.title}
+              <p className={`font-bold text-base leading-tight ${isLocked || isFull ? "text-muted-foreground" : ""}`}>
+                {isLocked ? `Level ${pool.level} Pool` : pool.nft.title}
               </p>
-              <p className="text-xs text-muted-foreground mt-0.5">Level {pool.level} Pool</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {isLocked ? "Unlocks when previous pool fills" : `Level ${pool.level} Pool`}
+              </p>
             </div>
           </div>
           <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border ${
-            isFull ? "bg-muted text-muted-foreground border-border" : t.badge
+            isLocked
+              ? "bg-muted/60 text-muted-foreground border-border"
+              : isFull
+                ? "bg-muted text-muted-foreground border-border"
+                : t.badge
           }`}>
-            {isFull ? "● Closed" : "● Open"}
+            {isLocked ? "🔒 Locked" : isFull ? "● Closed" : "● Open"}
           </span>
         </div>
 
@@ -103,12 +117,14 @@ function PoolCard({ pool, onBid }: { pool: NftPoolWithNft; onBid: (p: NftPoolWit
         <div className="mb-4">
           <div className="flex justify-between items-center mb-2">
             <span className="text-[11px] text-muted-foreground font-medium">Pool filled</span>
-            <span className="text-[11px] font-bold tabular-nums">{pct.toFixed(1)}%</span>
+            <span className="text-[11px] font-bold tabular-nums">{isLocked ? "—" : `${pct.toFixed(1)}%`}</span>
           </div>
           <div className="h-2 bg-muted/60 rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full bg-gradient-to-r transition-all duration-700 ${isFull ? "from-muted-foreground to-muted-foreground" : t.bar}`}
-              style={{ width: `${pct}%` }}
+              className={`h-full rounded-full bg-gradient-to-r transition-all duration-700 ${
+                isLocked ? "" : isFull ? "from-muted-foreground to-muted-foreground" : t.bar
+              }`}
+              style={{ width: isLocked ? "0%" : `${pct}%` }}
             />
           </div>
         </div>
@@ -125,15 +141,19 @@ function PoolCard({ pool, onBid }: { pool: NftPoolWithNft; onBid: (p: NftPoolWit
               {parseFloat(pool.dailyYield) > 0 ? `${parseFloat(pool.dailyYield)}%` : "—"}
             </p>
           </div>
-          <div className={`rounded-xl p-2.5 text-center ${isFull ? "bg-muted/40" : "bg-emerald-50 border border-emerald-100"}`}>
+          <div className={`rounded-xl p-2.5 text-center ${isLocked || isFull ? "bg-muted/40" : "bg-emerald-50 border border-emerald-100"}`}>
             <p className="text-[9px] text-muted-foreground uppercase font-semibold tracking-wide">Left</p>
-            <p className={`font-bold text-sm mt-0.5 ${isFull ? "text-muted-foreground" : "text-emerald-600"}`}>
-              ${fmtUsdt(pool.poolLimit)}
+            <p className={`font-bold text-sm mt-0.5 ${isLocked || isFull ? "text-muted-foreground" : "text-emerald-600"}`}>
+              {isLocked ? "—" : `$${fmtUsdt(pool.poolLimit)}`}
             </p>
           </div>
         </div>
 
-        {isFull ? (
+        {isLocked ? (
+          <div className="h-11 rounded-xl flex items-center justify-center gap-2 bg-muted/40 text-muted-foreground text-sm font-medium border border-dashed border-border/60">
+            <Lock className="h-4 w-4" />Unlocks Next
+          </div>
+        ) : isFull ? (
           <div className="h-11 rounded-xl flex items-center justify-center gap-2 bg-muted/40 text-muted-foreground text-sm font-medium">
             <Lock className="h-4 w-4" />Pool Closed
           </div>
@@ -285,7 +305,8 @@ export default function NftPoolsPage() {
 
   const allPools = (pools as NftPoolWithNft[] | undefined) ?? [];
   const activePools = allPools.filter(p => p.status === "active");
-  const closedPools = allPools.filter(p => p.status !== "active");
+  const closedPools = allPools.filter(p => p.status === "completed");
+  const lockedPools = allPools.filter(p => p.status === "inactive");
   const hasAnyReal = allPools.length > 0;
 
   return (
@@ -335,9 +356,17 @@ export default function NftPoolsPage() {
                 ))}
               </div>
             )}
+            {lockedPools.length > 0 && (
+              <div className="space-y-4">
+                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Coming Soon</p>
+                {lockedPools.map(pool => (
+                  <PoolCard key={pool.id} pool={pool} onBid={() => {}} />
+                ))}
+              </div>
+            )}
             {closedPools.length > 0 && (
               <div className="space-y-4">
-                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Closed Pools</p>
+                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Completed Pools</p>
                 {closedPools.map(pool => (
                   <PoolCard key={pool.id} pool={pool} onBid={() => {}} />
                 ))}
