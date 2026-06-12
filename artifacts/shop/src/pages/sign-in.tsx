@@ -6,6 +6,25 @@ import { FlaskConical, Phone, Key, Send } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
+declare global {
+  interface Window {
+    Telegram?: {
+      WebApp?: {
+        initData: string;
+        initDataUnsafe: { user?: { id: number; first_name: string; last_name?: string; username?: string }; start_param?: string };
+        ready: () => void;
+        expand: () => void;
+        close: () => void;
+        platform: string;
+      };
+    };
+  }
+}
+
+function isTelegramWebApp(): boolean {
+  return !!(window.Telegram?.WebApp?.initData);
+}
+
 export default function ShopSignInPage() {
   const [, setLocation] = useLocation();
   const search = useSearch();
@@ -20,9 +39,42 @@ export default function ShopSignInPage() {
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
+  const [webAppLoading, setWebAppLoading] = useState(false);
 
   const params = new URLSearchParams(search);
   const referralCode = params.get("ref") ?? undefined;
+
+  // ── Try Telegram WebApp auto-login on mount ──
+  useEffect(() => {
+    const twa = window.Telegram?.WebApp;
+    if (!twa?.initData) return;
+
+    // Tell Telegram the app is ready and expand to full screen
+    twa.ready();
+    twa.expand();
+
+    setWebAppLoading(true);
+    setError(null);
+
+    const startParam = twa.initDataUnsafe?.start_param ?? referralCode;
+
+    fetch(`${BASE}/api/auth/webapp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ initData: twa.initData, referralCode: startParam }),
+    })
+      .then((r) => r.json())
+      .then((body: { error?: string; user?: any }) => {
+        if (body.error) throw new Error(body.error);
+        if (body.user) queryClient.setQueryData(["getMe"], body.user);
+        setLocation("/");
+      })
+      .catch((e: any) => {
+        setError(e.message ?? "Telegram login failed");
+        setWebAppLoading(false);
+      });
+  }, []);
 
   useEffect(() => {
     fetch(`${BASE}/api/auth/mtproto/config`, { credentials: "include" })
@@ -99,6 +151,25 @@ export default function ShopSignInPage() {
       setDemoLoading(false);
     }
   };
+
+  // ── Full-screen loader shown while WebApp auto-login is in progress ──
+  if (webAppLoading) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
+        <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-md">
+          <img src="/logo.png" alt="Telebit" className="w-full h-full object-cover" />
+        </div>
+        <p className="font-bold text-lg text-foreground">Telebit Shop</p>
+        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm text-muted-foreground">Signing you in via Telegram…</p>
+        {error && (
+          <div className="mt-2 bg-destructive/10 border border-destructive/20 rounded-lg px-4 py-2 text-xs text-destructive text-center max-w-xs">
+            {error}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

@@ -688,4 +688,139 @@ router.post("/auth/admin-setup", async (req, res): Promise<void> => {
   res.json({ success: true, message: `${email} is now an admin` });
 });
 
+// ─── Telegram Mini App (WebApp) initData auth ─────────────────────────────
+// Called from inside Telegram — validates initData HMAC, signs in automatically
+
+router.post("/auth/webapp", async (req, res): Promise<void> => {
+  const { initData, referralCode } = req.body as { initData?: string; referralCode?: string };
+  if (!initData || typeof initData !== "string") {
+    res.status(400).json({ error: "initData is required" });
+    return;
+  }
+
+  const settings = await getSettings();
+  if (!settings.telegramBotToken) {
+    res.status(503).json({ error: "Bot token not configured — cannot validate WebApp login" });
+    return;
+  }
+
+  // Validate initData signature per Telegram docs
+  const params = new URLSearchParams(initData);
+  const hash = params.get("hash");
+  if (!hash) { res.status(400).json({ error: "hash missing from initData" }); return; }
+  params.delete("hash");
+
+  const dataCheckString = Array.from(params.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => `${k}=${v}`)
+    .join("\n");
+
+  const secretKey = crypto
+    .createHmac("sha256", "WebAppData")
+    .update(settings.telegramBotToken)
+    .digest();
+
+  const expectedHash = crypto
+    .createHmac("sha256", secretKey)
+    .update(dataCheckString)
+    .digest("hex");
+
+  if (expectedHash !== hash) {
+    res.status(401).json({ error: "Invalid initData signature" });
+    return;
+  }
+
+  // Check auth_date not too old (1 hour)
+  const authDate = parseInt(params.get("auth_date") ?? "0", 10);
+  if (Date.now() / 1000 - authDate > 3600) {
+    res.status(401).json({ error: "initData expired — please reopen the app" });
+    return;
+  }
+
+  const userJson = params.get("user");
+  if (!userJson) { res.status(400).json({ error: "user field missing from initData" }); return; }
+
+  let tgUser: { id: number; first_name: string; last_name?: string; username?: string; photo_url?: string };
+  try {
+    tgUser = JSON.parse(userJson);
+  } catch {
+    res.status(400).json({ error: "Invalid user JSON in initData" }); return;
+  }
+
+  const telegramId = String(tgUser.id);
+  const externalId = `tg_${telegramId}`;
+  const email = `tg_${telegramId}@telebit.internal`;
+  const fullName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(" ") || tgUser.username || `tg${telegramId}`;
+
+  let [user] = await db
+    .select()
+    .from(usersTable)
+    .where(or(eq(usersTable.clerkId, externalId), eq(usersTable.email, email)))
+    .limit(1);
+
+  // Fetch photo via Bot API if available
+  const photoUrl = tgUser.photo_url
+    ? tgUser.photo_url
+    : await fetchTelegramPhotoUrl(settings.telegramBotToken, BigInt(tgUser.id)).catch(() => null);
+
+  if (!user) {
+    const { address, privateKeyEncrypted } = generateWallet();
+    const userReferralCode = generateReferralCode();
+
+    let uplineId: string | undefined;
+    if (referralCode && typeof referralCode === "string") {
+      const ref = referralCode.trim().toUpperCase();
+      const [upline] = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.referralCode, ref)).limit(1);
+      if (upline) uplineId = upline.id;
+    }
+
+    [user] = await db
+      .insert(usersTable)
+      .values({
+        clerkId: externalId,
+        email,
+        fullName,
+        telegramUsername: tgUser.username ?? null,
+        telegramPhotoUrl: photoUrl ?? null,
+        telegramChatId: telegramId,
+        depositAddress: address,
+        depositPrivateKeyEncrypted: privateKeyEncrypted,
+        referralCode: userReferralCode,
+        ...(uplineId ? { uplineId } : {}),
+      })
+      .returning();
+  } else {
+    const updates: Record<string, any> = {};
+    if (user.clerkId !== externalId) updates.clerkId = externalId;
+    if (tgUser.username && user.telegramUsername !== tgUser.username) updates.telegramUsername = tgUser.username;
+    if (!user.telegramChatId) updates.telegramChatId = telegramId;
+    if (photoUrl && user.telegramPhotoUrl !== photoUrl) updates.telegramPhotoUrl = photoUrl;
+    if (Object.keys(updates).length > 0) {
+      await db.update(usersTable).set(updates as any).where(eq(usersTable.id, user.id));
+      user = { ...user, ...updates };
+    }
+  }
+
+  setAuthCookie(res, user.id);
+  res.json({
+    user: {
+      id: user.id,
+      clerkId: user.clerkId,
+      email: user.email,
+      fullName: user.fullName,
+      telegramUsername: user.telegramUsername ?? null,
+      telegramPhotoUrl: user.telegramPhotoUrl ?? null,
+      telegramChatId: user.telegramChatId ?? null,
+      parentUserId: user.parentUserId ?? null,
+      walletBalance: user.walletBalance,
+      earningsBalance: user.earningsBalance,
+      depositAddress: user.depositAddress,
+      referralCode: user.referralCode,
+      isAdmin: user.isAdmin,
+      withdrawalBlocked: user.withdrawalBlocked,
+      createdAt: user.createdAt,
+    },
+  });
+});
+
 export default router;
