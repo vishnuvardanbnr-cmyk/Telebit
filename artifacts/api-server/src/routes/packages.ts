@@ -153,10 +153,28 @@ router.post("/packages/purchase", requireAuth, async (req, res): Promise<void> =
     isActive: true,
   }).returning();
 
-  // Pay referral commissions (fire-and-forget)
+  // Pay referral commissions and check rank progression (fire-and-forget)
   payReferralCommissions(user.id, userPkg.id, price).catch((err) =>
     logger.error({ err, userId: user.id }, "Referral commission error")
   );
+
+  // Check rank advancement for purchaser and all uplines (up to 10 levels)
+  (async () => {
+    try {
+      const { checkAndAwardRanks } = await import("../lib/ranks");
+      await checkAndAwardRanks(user.id);
+      // Also check uplines since their leg volume just grew
+      let cur = user.id;
+      for (let i = 0; i < 10; i++) {
+        const [u] = await db.select({ uplineId: usersTable.uplineId }).from(usersTable).where(eq(usersTable.id, cur));
+        if (!u?.uplineId) break;
+        await checkAndAwardRanks(u.uplineId);
+        cur = u.uplineId;
+      }
+    } catch (err) {
+      logger.error({ err, userId: user.id }, "Rank check error");
+    }
+  })();
 
   logger.info({ userId: user.id, packageId, price }, "Package purchased");
   res.status(201).json(userPkg);

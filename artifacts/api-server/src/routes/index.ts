@@ -13,6 +13,7 @@ import lotteryRouter from "./lottery";
 import shopP2pRouter from "./shopP2p";
 import packagesRouter from "./packages";
 import incomeRouter from "./income";
+import ranksRouter from "./ranks";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(lotteryRouter);
 router.use(shopP2pRouter);
 router.use(packagesRouter);
 router.use(incomeRouter);
+router.use(ranksRouter);
 
 export default router;

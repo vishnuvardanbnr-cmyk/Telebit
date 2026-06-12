@@ -19,6 +19,9 @@ import {
   useAdminUpdateReferralLevels,
   useAdminListIncome,
   useAdminGetExcessWallet,
+  useAdminListRankAchievements,
+  useAdminCheckUserRank,
+  useListRanks,
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -1419,6 +1422,137 @@ function IncomeAdminTab() {
   );
 }
 
+// ─── Ranks Admin Tab ──────────────────────────────────────────────────────────
+
+function RanksAdminTab() {
+  const { toast } = useToast();
+  const { data: ranks } = useListRanks({});
+  const { data: achievements, isLoading } = useAdminListRankAchievements({});
+  const checkRank = useAdminCheckUserRank();
+  const qc = useQueryClient();
+  const [checkingUserId, setCheckingUserId] = useState<string | null>(null);
+  const [manualUserId, setManualUserId] = useState("");
+
+  const handleCheck = () => {
+    if (!manualUserId.trim()) return;
+    setCheckingUserId(manualUserId.trim());
+    checkRank.mutate({ userId: manualUserId.trim() }, {
+      onSuccess: (data) => {
+        const rank = (data as any).currentRank;
+        toast({ title: rank ? `Rank: ${rank.name}` : "No rank yet — check complete" });
+        setCheckingUserId(null);
+        qc.invalidateQueries({ queryKey: ["/api/admin/ranks/achievements"] });
+      },
+      onError: (e: any) => {
+        toast({ title: "Error", description: e.message, variant: "destructive" });
+        setCheckingUserId(null);
+      },
+    });
+  };
+
+  const rankMap = new Map(ranks?.map((r: any) => [r.id, r]) ?? []);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold uppercase tracking-wider">Ranks & Achievements</h2>
+      </div>
+
+      {/* Rank reference table */}
+      <div>
+        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Rank Reference</p>
+        <div className="bg-card border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-border hover:bg-transparent">
+                <TableHead className="font-bold uppercase tracking-wider text-xs">#</TableHead>
+                <TableHead className="font-bold uppercase tracking-wider text-xs">Rank</TableHead>
+                <TableHead className="font-bold uppercase tracking-wider text-xs text-right">Target (USDT)</TableHead>
+                <TableHead className="font-bold uppercase tracking-wider text-xs text-right">Reward (USDT)</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {ranks?.map((r: any) => (
+                <TableRow key={r.id} className="border-border">
+                  <TableCell className="font-mono font-bold text-xs text-muted-foreground">{r.position}</TableCell>
+                  <TableCell className="font-semibold text-sm">{r.name}</TableCell>
+                  <TableCell className="text-right font-mono font-bold text-primary">{parseFloat(r.targetUsdt).toLocaleString()}</TableCell>
+                  <TableCell className="text-right font-mono font-bold text-green-600">+{parseFloat(r.rewardUsdt).toLocaleString()}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      {/* Manual rank check */}
+      <div className="space-y-2">
+        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Manual Rank Check</p>
+        <div className="flex gap-2">
+          <Input
+            value={manualUserId}
+            onChange={(e) => setManualUserId(e.target.value)}
+            placeholder="Enter user ID…"
+            className="rounded-none bg-card font-mono text-xs h-9"
+          />
+          <Button
+            onClick={handleCheck}
+            disabled={checkRank.isPending || !manualUserId.trim()}
+            className="rounded-none font-bold uppercase tracking-wider text-xs whitespace-nowrap"
+          >
+            {checkRank.isPending && checkingUserId === manualUserId.trim()
+              ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Checking…</>
+              : "Check Rank"}
+          </Button>
+        </div>
+        <p className="text-[11px] text-muted-foreground">Triggers rank evaluation for a user and awards any newly achieved rank rewards.</p>
+      </div>
+
+      {/* Achievements log */}
+      <div>
+        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Achievement Log</p>
+        <div className="bg-card border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-border hover:bg-transparent">
+                <TableHead className="font-bold uppercase tracking-wider text-xs">Date</TableHead>
+                <TableHead className="font-bold uppercase tracking-wider text-xs">User</TableHead>
+                <TableHead className="font-bold uppercase tracking-wider text-xs">Rank</TableHead>
+                <TableHead className="font-bold uppercase tracking-wider text-xs text-right">Reward Paid</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading && (
+                <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
+              )}
+              {!isLoading && !achievements?.length && (
+                <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">No rank achievements yet</TableCell></TableRow>
+              )}
+              {achievements?.map((a: any) => (
+                <TableRow key={a.id} className="border-border">
+                  <TableCell className="text-xs text-muted-foreground">{new Date(a.achievedAt).toLocaleDateString()}</TableCell>
+                  <TableCell className="text-xs">
+                    <div className="font-semibold">{a.userName ?? "—"}</div>
+                    <div className="text-muted-foreground font-mono">{a.userEmail ?? a.userId.split("-")[0]}</div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-xs font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                      {a.rankName ?? (rankMap.get(a.rankId) as any)?.name ?? "—"}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right font-mono font-bold text-green-600">
+                    +{parseFloat(a.rewardPaid).toLocaleString()} USDT
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Admin Page ──────────────────────────────────────────────────────────
 
 export default function Admin() {
@@ -1572,6 +1706,7 @@ export default function Admin() {
             { value: "pkg-admin", label: "Packages", icon: TrendingUp },
             { value: "referral-levels", label: "Referral Levels", icon: Share2 },
             { value: "income-admin", label: "Income", icon: BarChart2 },
+            { value: "ranks-admin", label: "Ranks", icon: Crown },
             { value: "settings", label: "Settings", icon: Settings },
           ].map(({ value, label, icon: Icon }) => (
             <TabsTrigger key={value} value={value} className="rounded-none h-full px-4 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary uppercase tracking-wider font-bold text-xs whitespace-nowrap flex items-center gap-1.5">
@@ -1697,6 +1832,7 @@ export default function Admin() {
         <TabsContent value="pkg-admin"><PackagesTab /></TabsContent>
         <TabsContent value="referral-levels"><ReferralLevelsTab /></TabsContent>
         <TabsContent value="income-admin"><IncomeAdminTab /></TabsContent>
+        <TabsContent value="ranks-admin"><RanksAdminTab /></TabsContent>
         <TabsContent value="settings"><SettingsTab /></TabsContent>
       </Tabs>
 

@@ -86,6 +86,9 @@ import type {
   ProductListResponse,
   ProductUpdate,
   PublicSettings,
+  Rank,
+  RankAchievementEntry,
+  RankProgressResponse,
   ReferralLevel,
   ReferralLevelsBulkUpdate,
   RequestPhoneOtp200,
@@ -6276,4 +6279,305 @@ export function useAdminGetExcessWallet<TData = Awaited<ReturnType<typeof adminG
 
 
 
+
+export const getListRanksUrl = () => {
+
+
+
+
+  return `/api/ranks`
+}
+
+/**
+ * @summary List all ranks
+ */
+export const listRanks = async ( options?: RequestInit): Promise<Rank[]> => {
+
+  return customFetch<Rank[]>(getListRanksUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListRanksQueryKey = () => {
+    return [
+    `/api/ranks`
+    ] as const;
+    }
+
+
+export const getListRanksQueryOptions = <TData = Awaited<ReturnType<typeof listRanks>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRanks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListRanksQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRanks>>> = ({ signal }) => listRanks({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRanks>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListRanksQueryResult = NonNullable<Awaited<ReturnType<typeof listRanks>>>
+export type ListRanksQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all ranks
+ */
+
+export function useListRanks<TData = Awaited<ReturnType<typeof listRanks>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRanks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListRanksQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetMyRankProgressUrl = () => {
+
+
+
+
+  return `/api/ranks/my-progress`
+}
+
+/**
+ * @summary Get current user rank progress
+ */
+export const getMyRankProgress = async ( options?: RequestInit): Promise<RankProgressResponse> => {
+
+  return customFetch<RankProgressResponse>(getGetMyRankProgressUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyRankProgressQueryKey = () => {
+    return [
+    `/api/ranks/my-progress`
+    ] as const;
+    }
+
+
+export const getGetMyRankProgressQueryOptions = <TData = Awaited<ReturnType<typeof getMyRankProgress>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyRankProgress>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyRankProgressQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyRankProgress>>> = ({ signal }) => getMyRankProgress({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyRankProgress>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyRankProgressQueryResult = NonNullable<Awaited<ReturnType<typeof getMyRankProgress>>>
+export type GetMyRankProgressQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get current user rank progress
+ */
+
+export function useGetMyRankProgress<TData = Awaited<ReturnType<typeof getMyRankProgress>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyRankProgress>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyRankProgressQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAdminListRankAchievementsUrl = () => {
+
+
+
+
+  return `/api/admin/ranks/achievements`
+}
+
+/**
+ * @summary Admin list all rank achievements
+ */
+export const adminListRankAchievements = async ( options?: RequestInit): Promise<RankAchievementEntry[]> => {
+
+  return customFetch<RankAchievementEntry[]>(getAdminListRankAchievementsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListRankAchievementsQueryKey = () => {
+    return [
+    `/api/admin/ranks/achievements`
+    ] as const;
+    }
+
+
+export const getAdminListRankAchievementsQueryOptions = <TData = Awaited<ReturnType<typeof adminListRankAchievements>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListRankAchievements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListRankAchievementsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListRankAchievements>>> = ({ signal }) => adminListRankAchievements({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListRankAchievements>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListRankAchievementsQueryResult = NonNullable<Awaited<ReturnType<typeof adminListRankAchievements>>>
+export type AdminListRankAchievementsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Admin list all rank achievements
+ */
+
+export function useAdminListRankAchievements<TData = Awaited<ReturnType<typeof adminListRankAchievements>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListRankAchievements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListRankAchievementsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAdminCheckUserRankUrl = (userId: string,) => {
+
+
+
+
+  return `/api/admin/ranks/check/${userId}`
+}
+
+/**
+ * @summary Admin trigger rank check for a user
+ */
+export const adminCheckUserRank = async (userId: string, options?: RequestInit): Promise<RankProgressResponse> => {
+
+  return customFetch<RankProgressResponse>(getAdminCheckUserRankUrl(userId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAdminCheckUserRankMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCheckUserRank>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminCheckUserRank>>, TError,{userId: string}, TContext> => {
+
+const mutationKey = ['adminCheckUserRank'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminCheckUserRank>>, {userId: string}> = (props) => {
+          const {userId} = props ?? {};
+
+          return  adminCheckUserRank(userId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminCheckUserRankMutationResult = NonNullable<Awaited<ReturnType<typeof adminCheckUserRank>>>
+
+    export type AdminCheckUserRankMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Admin trigger rank check for a user
+ */
+export const useAdminCheckUserRank = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCheckUserRank>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminCheckUserRank>>,
+        TError,
+        {userId: string},
+        TContext
+      > => {
+      return useMutation(getAdminCheckUserRankMutationOptions(options));
+    }
 

@@ -1670,6 +1670,75 @@ paths:
               schema:
                 $ref: "#/components/schemas/ExcessWalletInfo"
 
+  /ranks:
+    get:
+      operationId: listRanks
+      tags: [ranks]
+      summary: List all ranks
+      responses:
+        "200":
+          description: All ranks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Rank"
+
+  /ranks/my-progress:
+    get:
+      operationId: getMyRankProgress
+      tags: [ranks]
+      summary: Get current user rank progress
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Rank progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RankProgressResponse"
+        "401":
+          description: Unauthorized
+
+  /admin/ranks/achievements:
+    get:
+      operationId: adminListRankAchievements
+      tags: [ranks]
+      summary: Admin list all rank achievements
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: All achievements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RankAchievementEntry"
+
+  /admin/ranks/check/{userId}:
+    post:
+      operationId: adminCheckUserRank
+      tags: [ranks]
+      summary: Admin trigger rank check for a user
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Updated rank progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RankProgressResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -2245,6 +2314,71 @@ components:
         topProducts:
           type: array
           items: { $ref: "#/components/schemas/Product" }
+
+    # ─── Rank Schemas ────────────────────────────────────────────────────────────
+
+    Rank:
+      type: object
+      required: [id, name, targetUsdt, rewardUsdt, position, createdAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        targetUsdt: { type: string }
+        rewardUsdt: { type: string }
+        position: { type: integer }
+        createdAt: { type: string, format: date-time }
+
+    LegBreakdown:
+      type: object
+      required: [totalLegs, p1, p2, others, qualifyingVolume]
+      properties:
+        totalLegs: { type: integer }
+        p1: { type: number }
+        p2: { type: number }
+        others: { type: number }
+        qualifyingVolume: { type: number }
+
+    RankProgressEntry:
+      type: object
+      required: [rank, achieved, qualifyingVolume, breakdown, progressPct]
+      properties:
+        rank:
+          $ref: "#/components/schemas/Rank"
+        achieved: { type: boolean }
+        achievedAt: { type: ["string", "null"], format: date-time }
+        rewardPaid: { type: ["string", "null"] }
+        qualifyingVolume: { type: number }
+        breakdown:
+          $ref: "#/components/schemas/LegBreakdown"
+        progressPct: { type: number }
+
+    RankProgressResponse:
+      type: object
+      required: [progress]
+      properties:
+        currentRank:
+          nullable: true
+          $ref: "#/components/schemas/Rank"
+        nextRank:
+          nullable: true
+          $ref: "#/components/schemas/Rank"
+        progress:
+          type: array
+          items:
+            $ref: "#/components/schemas/RankProgressEntry"
+
+    RankAchievementEntry:
+      type: object
+      required: [id, userId, rankId, achievedAt, rewardPaid]
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        rankId: { type: string }
+        achievedAt: { type: string, format: date-time }
+        rewardPaid: { type: string }
+        rankName: { type: ["string", "null"] }
+        userEmail: { type: ["string", "null"] }
+        userName: { type: ["string", "null"] }
 
     # ─── Package & Income Schemas ───────────────────────────────────────────────
 

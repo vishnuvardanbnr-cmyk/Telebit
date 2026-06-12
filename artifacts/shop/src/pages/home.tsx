@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { fmtUsdt } from "@/lib/utils";
 import {
   Wallet, ShoppingBag, ChevronRight,
-  Trophy, ArrowLeftRight, Copy, TrendingUp,
+  Trophy, ArrowLeftRight, Copy, TrendingUp, Award,
 } from "lucide-react";
 import { toast } from "sonner";
 import { UserProfileCard } from "@/components/user-profile-card";
@@ -78,6 +78,17 @@ export default function Home() {
             <div className="text-center">
               <p className="font-bold text-sm">Lottery</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">Win big prizes</p>
+            </div>
+          </div>
+        </Link>
+        <Link href="/ranks">
+          <div className="group flex flex-col items-center justify-center gap-2.5 bg-white border border-border hover:border-purple-300 hover:shadow-md rounded-2xl p-4 transition-all cursor-pointer h-full">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
+              <Award className="h-5 w-5 text-white" />
+            </div>
+            <div className="text-center">
+              <p className="font-bold text-sm">Ranks</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Earn rank rewards</p>
             </div>
           </div>
         </Link>

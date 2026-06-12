@@ -559,6 +559,55 @@ export interface ShopStats {
   topProducts?: Product[];
 }
 
+export interface Rank {
+  id: string;
+  name: string;
+  targetUsdt: string;
+  rewardUsdt: string;
+  position: number;
+  createdAt: string;
+}
+
+export interface LegBreakdown {
+  totalLegs: number;
+  p1: number;
+  p2: number;
+  others: number;
+  qualifyingVolume: number;
+}
+
+export interface RankProgressEntry {
+  rank: Rank;
+  achieved: boolean;
+  /** @nullable */
+  achievedAt?: string | null;
+  /** @nullable */
+  rewardPaid?: string | null;
+  qualifyingVolume: number;
+  breakdown: LegBreakdown;
+  progressPct: number;
+}
+
+export interface RankProgressResponse {
+  currentRank?: Rank | null;
+  nextRank?: Rank | null;
+  progress: RankProgressEntry[];
+}
+
+export interface RankAchievementEntry {
+  id: string;
+  userId: string;
+  rankId: string;
+  achievedAt: string;
+  rewardPaid: string;
+  /** @nullable */
+  rankName?: string | null;
+  /** @nullable */
+  userEmail?: string | null;
+  /** @nullable */
+  userName?: string | null;
+}
+
 export interface Package {
   id: string;
   name: string;

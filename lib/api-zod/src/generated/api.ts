@@ -2022,3 +2022,127 @@ export const AdminGetExcessWalletResponse = zod.object({
 })
 
 
+/**
+ * @summary List all ranks
+ */
+export const ListRanksResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "targetUsdt": zod.string(),
+  "rewardUsdt": zod.string(),
+  "position": zod.number(),
+  "createdAt": zod.coerce.date()
+})
+export const ListRanksResponse = zod.array(ListRanksResponseItem)
+
+
+/**
+ * @summary Get current user rank progress
+ */
+export const GetMyRankProgressResponse = zod.object({
+  "currentRank": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "targetUsdt": zod.string(),
+  "rewardUsdt": zod.string(),
+  "position": zod.number(),
+  "createdAt": zod.coerce.date()
+}).nullish(),
+  "nextRank": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "targetUsdt": zod.string(),
+  "rewardUsdt": zod.string(),
+  "position": zod.number(),
+  "createdAt": zod.coerce.date()
+}).nullish(),
+  "progress": zod.array(zod.object({
+  "rank": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "targetUsdt": zod.string(),
+  "rewardUsdt": zod.string(),
+  "position": zod.number(),
+  "createdAt": zod.coerce.date()
+}),
+  "achieved": zod.boolean(),
+  "achievedAt": zod.coerce.date().nullish(),
+  "rewardPaid": zod.string().nullish(),
+  "qualifyingVolume": zod.number(),
+  "breakdown": zod.object({
+  "totalLegs": zod.number(),
+  "p1": zod.number(),
+  "p2": zod.number(),
+  "others": zod.number(),
+  "qualifyingVolume": zod.number()
+}),
+  "progressPct": zod.number()
+}))
+})
+
+
+/**
+ * @summary Admin list all rank achievements
+ */
+export const AdminListRankAchievementsResponseItem = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "rankId": zod.string(),
+  "achievedAt": zod.coerce.date(),
+  "rewardPaid": zod.string(),
+  "rankName": zod.string().nullish(),
+  "userEmail": zod.string().nullish(),
+  "userName": zod.string().nullish()
+})
+export const AdminListRankAchievementsResponse = zod.array(AdminListRankAchievementsResponseItem)
+
+
+/**
+ * @summary Admin trigger rank check for a user
+ */
+export const AdminCheckUserRankParams = zod.object({
+  "userId": zod.coerce.string()
+})
+
+export const AdminCheckUserRankResponse = zod.object({
+  "currentRank": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "targetUsdt": zod.string(),
+  "rewardUsdt": zod.string(),
+  "position": zod.number(),
+  "createdAt": zod.coerce.date()
+}).nullish(),
+  "nextRank": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "targetUsdt": zod.string(),
+  "rewardUsdt": zod.string(),
+  "position": zod.number(),
+  "createdAt": zod.coerce.date()
+}).nullish(),
+  "progress": zod.array(zod.object({
+  "rank": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "targetUsdt": zod.string(),
+  "rewardUsdt": zod.string(),
+  "position": zod.number(),
+  "createdAt": zod.coerce.date()
+}),
+  "achieved": zod.boolean(),
+  "achievedAt": zod.coerce.date().nullish(),
+  "rewardPaid": zod.string().nullish(),
+  "qualifyingVolume": zod.number(),
+  "breakdown": zod.object({
+  "totalLegs": zod.number(),
+  "p1": zod.number(),
+  "p2": zod.number(),
+  "others": zod.number(),
+  "qualifyingVolume": zod.number()
+}),
+  "progressPct": zod.number()
+}))
+})
+
+
