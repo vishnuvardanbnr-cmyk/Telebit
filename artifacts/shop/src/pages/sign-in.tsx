@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLocation, Redirect, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
-import { FlaskConical, Mail, Lock, User, Eye, EyeOff } from "lucide-react";
+import { FlaskConical, Mail, Lock, User, Eye, EyeOff, Gift } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -12,17 +12,18 @@ export default function ShopSignInPage() {
   const queryClient = useQueryClient();
   const { isSignedIn, isLoading } = useAuth();
 
+  const params = new URLSearchParams(search);
+  const referralCode = params.get("ref") ?? undefined;
+
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [refInput, setRefInput] = useState(referralCode ?? "");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
-
-  const params = new URLSearchParams(search);
-  const referralCode = params.get("ref") ?? undefined;
 
   if (!isLoading && isSignedIn) return <Redirect to="/" />;
 
@@ -43,7 +44,8 @@ export default function ShopSignInPage() {
       const body: Record<string, string> = { email: email.trim(), password };
       if (mode === "register") {
         if (fullName.trim()) body.fullName = fullName.trim();
-        if (referralCode) body.referralCode = referralCode;
+        const ref = refInput.trim().toUpperCase();
+        if (ref) body.referralCode = ref;
       }
 
       const res = await fetch(`${BASE}${endpoint}`, {
@@ -139,23 +141,42 @@ export default function ShopSignInPage() {
 
               <form onSubmit={handleSubmit} className="space-y-3">
                 {mode === "register" && (
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                      Full name (optional)
-                    </label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <input
-                        type="text"
-                        placeholder="Your name"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                        autoComplete="name"
-                        disabled={submitting}
-                      />
+                  <>
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                        Full name (optional)
+                      </label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <input
+                          type="text"
+                          placeholder="Your name"
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                          autoComplete="name"
+                          disabled={submitting}
+                        />
+                      </div>
                     </div>
-                  </div>
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                        Referral code (optional)
+                      </label>
+                      <div className="relative">
+                        <Gift className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <input
+                          type="text"
+                          placeholder="e.g. ABC123"
+                          value={refInput}
+                          onChange={(e) => setRefInput(e.target.value.toUpperCase())}
+                          className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors font-mono tracking-widest"
+                          autoComplete="off"
+                          disabled={submitting}
+                        />
+                      </div>
+                    </div>
+                  </>
                 )}
 
                 <div>
