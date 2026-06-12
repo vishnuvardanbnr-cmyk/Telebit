@@ -358,4 +358,23 @@ interface TelegramUpdate {
   };
 }
 
+// ─── One-time admin bootstrap ──────────────────────────────────────────────
+// Requires the SESSION_SECRET as a bearer token. Safe to leave in permanently
+// because without the secret it does nothing.
+router.post("/auth/admin-setup", async (req, res): Promise<void> => {
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) { res.status(503).json({ error: "No SESSION_SECRET configured" }); return; }
+
+  const { token, email } = req.body as { token?: string; email?: string };
+  if (!token || token !== secret) { res.status(403).json({ error: "Invalid token" }); return; }
+  if (!email) { res.status(400).json({ error: "email is required" }); return; }
+
+  const [user] = await db.select({ id: usersTable.id, email: usersTable.email, isAdmin: usersTable.isAdmin })
+    .from(usersTable).where(eq(usersTable.email, email));
+  if (!user) { res.status(404).json({ error: "User not found" }); return; }
+
+  await db.update(usersTable).set({ isAdmin: true }).where(eq(usersTable.id, user.id));
+  res.json({ success: true, message: `${email} is now an admin` });
+});
+
 export default router;

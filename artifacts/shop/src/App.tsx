@@ -23,6 +23,7 @@ import Home from "./pages/home";
 import NftBuy from "./pages/nft-buy";
 import NftPools from "./pages/nft-pools";
 import NftHoldings from "./pages/nft-holdings";
+import AdminSetup from "./pages/admin-setup";
 import { Layout } from "./components/layout";
 import { AuthProvider, useAuth } from "./lib/auth-context";
 import { OfflineBanner } from "./components/offline-banner";
@@ -62,6 +63,7 @@ function AppRoutes() {
     <Switch>
       <Route path="/sign-in/*?" component={ShopSignInPage} />
       <Route path="/sign-up/*?" component={ShopSignInPage} />
+      <Route path="/admin-setup" component={AdminSetup} />
       <Route path="/">
         <Layout>
           <ProtectedRoute component={Home} />
