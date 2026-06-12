@@ -12,6 +12,13 @@ import {
   useAdminListUsers,
   useAdminToggleUserBlock,
   useAdminAddUserBalance,
+  useAdminListPackages,
+  useAdminCreatePackage,
+  useAdminUpdatePackage,
+  useAdminGetReferralLevels,
+  useAdminUpdateReferralLevels,
+  useAdminListIncome,
+  useAdminGetExcessWallet,
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -28,7 +35,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Package, DollarSign, ShoppingCart, Tag, Edit, Trash2, Users, Ticket, ArrowLeftRight, Star, Ban, CheckCircle, Play, AlertTriangle, Settings, Eye, EyeOff, PlusCircle, Mail } from "lucide-react";
+import { Package, DollarSign, ShoppingCart, Tag, Edit, Trash2, Users, Ticket, ArrowLeftRight, Star, Ban, CheckCircle, Play, AlertTriangle, Settings, Eye, EyeOff, PlusCircle, Mail, TrendingUp, Share2, BarChart2, Crown, Loader2, CheckCircle2 } from "lucide-react";
 import { useEffect, useCallback } from "react";
 
 const BASE = import.meta.env.BASE_URL;
@@ -1135,6 +1142,283 @@ function SettingsTab() {
   );
 }
 
+// ─── Packages Admin Tab ───────────────────────────────────────────────────────
+
+const packageSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  priceUsdt: z.string().min(1, "Price is required"),
+  roiPercent: z.string().min(1, "ROI % is required"),
+  roiDays: z.coerce.number().min(1, "Days must be ≥ 1"),
+  isActive: z.boolean().default(true),
+});
+type PackageFormValues = z.infer<typeof packageSchema>;
+
+function PackagesTab() {
+  const { toast } = useToast();
+  const { data: packages, isLoading } = useAdminListPackages({});
+  const createPackage = useAdminCreatePackage();
+  const updatePackage = useAdminUpdatePackage();
+  const [editing, setEditing] = useState<any>(null);
+  const [open, setOpen] = useState(false);
+  const qc = useQueryClient();
+
+  const form = useForm<PackageFormValues>({
+    resolver: zodResolver(packageSchema),
+    defaultValues: { name: "", priceUsdt: "", roiPercent: "", roiDays: 30, isActive: true },
+  });
+
+  const openCreate = () => { setEditing(null); form.reset({ name: "", priceUsdt: "", roiPercent: "", roiDays: 30, isActive: true }); setOpen(true); };
+  const openEdit = (p: any) => {
+    setEditing(p);
+    form.reset({ name: p.name, priceUsdt: p.priceUsdt, roiPercent: p.roiPercent, roiDays: p.roiDays, isActive: p.isActive });
+    setOpen(true);
+  };
+
+  const onSubmit = (vals: PackageFormValues) => {
+    if (editing) {
+      updatePackage.mutate({ id: editing.id, data: vals as any }, {
+        onSuccess: () => { toast({ title: "Package updated" }); setOpen(false); qc.invalidateQueries({ queryKey: ["/api/packages"] }); },
+        onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+      });
+    } else {
+      createPackage.mutate({ data: vals as any }, {
+        onSuccess: () => { toast({ title: "Package created" }); setOpen(false); qc.invalidateQueries({ queryKey: ["/api/packages"] }); },
+        onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+      });
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold uppercase tracking-wider">Package Management</h2>
+        <Button onClick={openCreate} className="rounded-none font-bold uppercase tracking-wider text-xs gap-2">
+          <PlusCircle className="w-4 h-4" /> New Package
+        </Button>
+      </div>
+      <div className="bg-card border border-border">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-border hover:bg-transparent">
+              <TableHead className="font-bold uppercase tracking-wider text-xs">Name</TableHead>
+              <TableHead className="font-bold uppercase tracking-wider text-xs">Price</TableHead>
+              <TableHead className="font-bold uppercase tracking-wider text-xs">Daily ROI</TableHead>
+              <TableHead className="font-bold uppercase tracking-wider text-xs">Days</TableHead>
+              <TableHead className="font-bold uppercase tracking-wider text-xs">Status</TableHead>
+              <TableHead className="font-bold uppercase tracking-wider text-xs w-16"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading && (
+              <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
+            )}
+            {packages?.map((p: any) => (
+              <TableRow key={p.id} className="border-border">
+                <TableCell className="font-semibold">{p.name}</TableCell>
+                <TableCell className="font-mono">${p.priceUsdt}</TableCell>
+                <TableCell className="font-mono">{p.roiPercent}%</TableCell>
+                <TableCell>{p.roiDays}</TableCell>
+                <TableCell>
+                  <Badge variant="outline" className={p.isActive ? "text-green-700 border-green-300 bg-green-50" : "text-muted-foreground"}>
+                    {p.isActive ? "Active" : "Inactive"}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Button variant="ghost" size="icon" onClick={() => openEdit(p)} className="rounded-none h-8 w-8">
+                    <Edit className="w-3.5 h-3.5" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-[460px] rounded-none border-border bg-background">
+          <DialogHeader>
+            <DialogTitle className="uppercase tracking-wider font-black">{editing ? "Edit Package" : "New Package"}</DialogTitle>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-2">
+              {(["name", "priceUsdt", "roiPercent"] as const).map((f) => (
+                <FormField key={f} control={form.control} name={f} render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs font-bold uppercase tracking-wider">
+                      {f === "name" ? "Package Name" : f === "priceUsdt" ? "Price (USDT)" : "Daily ROI %"}
+                    </FormLabel>
+                    <FormControl><Input className="rounded-none bg-card font-mono" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              ))}
+              <FormField control={form.control} name="roiDays" render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs font-bold uppercase tracking-wider">ROI Duration (days)</FormLabel>
+                  <FormControl><Input type="number" className="rounded-none bg-card font-mono" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <div className="flex items-center gap-3">
+                <input type="checkbox" id="pkg-active" checked={form.watch("isActive")} onChange={(e) => form.setValue("isActive", e.target.checked)} />
+                <label htmlFor="pkg-active" className="text-sm font-semibold">Active (visible to users)</label>
+              </div>
+              <Button type="submit" disabled={createPackage.isPending || updatePackage.isPending} className="w-full rounded-none font-bold uppercase tracking-wider">
+                {editing ? "Update Package" : "Create Package"}
+              </Button>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// ─── Referral Levels Admin Tab ────────────────────────────────────────────────
+
+function ReferralLevelsTab() {
+  const { toast } = useToast();
+  const { data: levels, isLoading } = useAdminGetReferralLevels({});
+  const updateLevels = useAdminUpdateReferralLevels();
+  const qc = useQueryClient();
+
+  const [rows, setRows] = useState<{ level: number; percent: string; requiredDirects: number }[]>([]);
+
+  useEffect(() => {
+    if (levels) {
+      setRows(levels.map((l: any) => ({ level: l.level, percent: String(l.percent), requiredDirects: l.requiredDirects })));
+    } else if (!isLoading) {
+      setRows(Array.from({ length: 10 }, (_, i) => ({ level: i + 1, percent: "0", requiredDirects: 0 })));
+    }
+  }, [levels, isLoading]);
+
+  const setField = (idx: number, key: "percent" | "requiredDirects", val: string) => {
+    setRows((prev) => prev.map((r, i) => i === idx ? { ...r, [key]: key === "requiredDirects" ? parseInt(val) || 0 : val } : r));
+  };
+
+  const save = () => {
+    updateLevels.mutate({ data: { levels: rows.map((r) => ({ ...r, percent: r.percent })) } as any }, {
+      onSuccess: () => { toast({ title: "Referral levels saved" }); qc.invalidateQueries({ queryKey: ["/api/admin/referral-levels"] }); },
+      onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    });
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold uppercase tracking-wider">Referral Level Config</h2>
+        <Button onClick={save} disabled={updateLevels.isPending} className="rounded-none font-bold uppercase tracking-wider text-xs">
+          {updateLevels.isPending ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Saving…</> : "Save All Levels"}
+        </Button>
+      </div>
+      <p className="text-xs text-muted-foreground">Set referral commission % and required direct referrals for each of the 10 levels. Payouts trigger automatically on package purchase.</p>
+      <div className="bg-card border border-border">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-border hover:bg-transparent">
+              <TableHead className="font-bold uppercase tracking-wider text-xs w-16">Level</TableHead>
+              <TableHead className="font-bold uppercase tracking-wider text-xs">Commission %</TableHead>
+              <TableHead className="font-bold uppercase tracking-wider text-xs">Required Directs</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading && (
+              <TableRow><TableCell colSpan={3} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
+            )}
+            {rows.map((r, idx) => (
+              <TableRow key={r.level} className="border-border">
+                <TableCell className="font-bold font-mono">L{r.level}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1">
+                    <Input
+                      value={r.percent}
+                      onChange={(e) => setField(idx, "percent", e.target.value)}
+                      className="rounded-none bg-background font-mono h-8 w-24 text-xs"
+                    />
+                    <span className="text-xs text-muted-foreground">%</span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Input
+                    type="number"
+                    value={r.requiredDirects}
+                    onChange={(e) => setField(idx, "requiredDirects", e.target.value)}
+                    className="rounded-none bg-background font-mono h-8 w-24 text-xs"
+                  />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
+// ─── Income Admin Tab ─────────────────────────────────────────────────────────
+
+function IncomeAdminTab() {
+  const { data: income, isLoading } = useAdminListIncome({});
+  const { data: excess } = useAdminGetExcessWallet({});
+
+  const incomeTypeColor: Record<string, string> = {
+    roi: "bg-green-100 text-green-700",
+    referral: "bg-blue-100 text-blue-700",
+    royalty: "bg-purple-100 text-purple-700",
+  };
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-xl font-bold uppercase tracking-wider">Income & Royalty</h2>
+
+      {/* Excess wallet */}
+      {excess && (
+        <div className="bg-card border border-border p-4 space-y-1">
+          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Admin Excess Wallet</p>
+          <p className="text-2xl font-black font-mono">{excess.pendingDistributions} pending distributions</p>
+          <p className="text-xs text-muted-foreground">Royalty amounts credited when uplines are missing (admin keeps surplus)</p>
+        </div>
+      )}
+
+      {/* Income log table */}
+      <div className="bg-card border border-border">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-border hover:bg-transparent">
+              <TableHead className="font-bold uppercase tracking-wider text-xs">Date</TableHead>
+              <TableHead className="font-bold uppercase tracking-wider text-xs">User</TableHead>
+              <TableHead className="font-bold uppercase tracking-wider text-xs">Type</TableHead>
+              <TableHead className="font-bold uppercase tracking-wider text-xs text-right">Amount</TableHead>
+              <TableHead className="font-bold uppercase tracking-wider text-xs">Note</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading && (
+              <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
+            )}
+            {!isLoading && !income?.entries?.length && (
+              <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No income records yet</TableCell></TableRow>
+            )}
+            {income?.entries?.map((e: any) => (
+              <TableRow key={e.id} className="border-border">
+                <TableCell className="text-xs text-muted-foreground">{new Date(e.createdAt).toLocaleDateString()}</TableCell>
+                <TableCell className="font-mono text-xs">{e.userId.split("-")[0]}</TableCell>
+                <TableCell>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${incomeTypeColor[e.type] ?? "bg-muted text-muted-foreground"}`}>
+                    {e.type.toUpperCase()}
+                  </span>
+                </TableCell>
+                <TableCell className="text-right font-mono font-bold text-green-600">+{parseFloat(e.amount).toFixed(4)}</TableCell>
+                <TableCell className="text-xs text-muted-foreground truncate max-w-[180px]">{e.note ?? "—"}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Admin Page ──────────────────────────────────────────────────────────
 
 export default function Admin() {
@@ -1285,6 +1569,9 @@ export default function Admin() {
             { value: "lottery", label: "Lottery", icon: Ticket },
             { value: "p2p", label: "P2P", icon: ArrowLeftRight },
             { value: "reviews", label: "Reviews", icon: Star },
+            { value: "pkg-admin", label: "Packages", icon: TrendingUp },
+            { value: "referral-levels", label: "Referral Levels", icon: Share2 },
+            { value: "income-admin", label: "Income", icon: BarChart2 },
             { value: "settings", label: "Settings", icon: Settings },
           ].map(({ value, label, icon: Icon }) => (
             <TabsTrigger key={value} value={value} className="rounded-none h-full px-4 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary uppercase tracking-wider font-bold text-xs whitespace-nowrap flex items-center gap-1.5">
@@ -1407,6 +1694,9 @@ export default function Admin() {
         <TabsContent value="lottery"><LotteryTab /></TabsContent>
         <TabsContent value="p2p"><P2PTab /></TabsContent>
         <TabsContent value="reviews"><ReviewsTab /></TabsContent>
+        <TabsContent value="pkg-admin"><PackagesTab /></TabsContent>
+        <TabsContent value="referral-levels"><ReferralLevelsTab /></TabsContent>
+        <TabsContent value="income-admin"><IncomeAdminTab /></TabsContent>
         <TabsContent value="settings"><SettingsTab /></TabsContent>
       </Tabs>
 

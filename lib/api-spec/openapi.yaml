@@ -1455,6 +1455,221 @@ paths:
               schema:
                 $ref: "#/components/schemas/UserNftActivationResult"
 
+  # ─── Packages ─────────────────────────────────────────────────────────────
+
+  /packages:
+    get:
+      operationId: listPackages
+      tags: [packages]
+      summary: List available packages
+      responses:
+        "200":
+          description: Package list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Package"
+
+  /packages/my:
+    get:
+      operationId: listMyPackages
+      tags: [packages]
+      summary: List current user's purchased packages
+      responses:
+        "200":
+          description: User package list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserPackage"
+        "401":
+          description: Unauthorized
+
+  /packages/purchase:
+    post:
+      operationId: purchasePackage
+      tags: [packages]
+      summary: Purchase a package
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PackagePurchaseRequest"
+      responses:
+        "201":
+          description: Package purchased
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserPackage"
+        "400":
+          description: Insufficient balance or invalid package
+        "401":
+          description: Unauthorized
+
+  /income:
+    get:
+      operationId: listIncome
+      tags: [income]
+      summary: List income history for current user
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: type
+          in: query
+          schema: { type: string, enum: [roi, referral, royalty] }
+      responses:
+        "200":
+          description: Income entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/IncomeEntry"
+        "401":
+          description: Unauthorized
+
+  /income/summary:
+    get:
+      operationId: getIncomeSummary
+      tags: [income]
+      summary: Get income summary for current user
+      responses:
+        "200":
+          description: Income summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IncomeSummary"
+        "401":
+          description: Unauthorized
+
+  /admin/packages:
+    get:
+      operationId: adminListPackages
+      tags: [packages]
+      summary: Admin list all packages
+      responses:
+        "200":
+          description: Package list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Package"
+    post:
+      operationId: adminCreatePackage
+      tags: [packages]
+      summary: Admin create a package
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminPackageInput"
+      responses:
+        "201":
+          description: Package created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Package"
+
+  /admin/packages/{id}:
+    put:
+      operationId: adminUpdatePackage
+      tags: [packages]
+      summary: Admin update package config
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminPackageInput"
+      responses:
+        "200":
+          description: Updated package
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Package"
+
+  /admin/referral-levels:
+    get:
+      operationId: adminGetReferralLevels
+      tags: [packages]
+      summary: Admin get all 10 referral level configs
+      responses:
+        "200":
+          description: Referral levels
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ReferralLevel"
+    put:
+      operationId: adminUpdateReferralLevels
+      tags: [packages]
+      summary: Admin bulk update referral levels
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReferralLevelsBulkUpdate"
+      responses:
+        "200":
+          description: Updated levels
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ReferralLevel"
+
+  /admin/income:
+    get:
+      operationId: adminListIncome
+      tags: [income]
+      summary: Admin list all income entries
+      responses:
+        "200":
+          description: Income entries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminIncomeResponse"
+
+  /admin/excess-wallet:
+    get:
+      operationId: adminGetExcessWallet
+      tags: [income]
+      summary: Admin get royalty excess wallet info
+      responses:
+        "200":
+          description: Excess wallet info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExcessWalletInfo"
+
 components:
   schemas:
     HealthStatus:
@@ -2030,6 +2245,121 @@ components:
         topProducts:
           type: array
           items: { $ref: "#/components/schemas/Product" }
+
+    # ─── Package & Income Schemas ───────────────────────────────────────────────
+
+    Package:
+      type: object
+      required: [id, name, priceUsdt, roiPercent, roiDays, isActive, createdAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        priceUsdt: { type: string }
+        roiPercent: { type: string }
+        roiDays: { type: integer }
+        isActive: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    UserPackage:
+      type: object
+      required: [id, userId, packageId, purchasedAt, daysCredited, totalRoiDays, roiPercent, principalUsdt, totalRoiCredited, isActive]
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        packageId: { type: string }
+        purchasedAt: { type: string, format: date-time }
+        daysCredited: { type: integer }
+        totalRoiDays: { type: integer }
+        roiPercent: { type: string }
+        principalUsdt: { type: string }
+        totalRoiCredited: { type: string }
+        isActive: { type: boolean }
+        lastCreditedAt: { type: ["string", "null"], format: date-time }
+
+    PackagePurchaseRequest:
+      type: object
+      required: [packageId]
+      properties:
+        packageId: { type: string }
+
+    AdminPackageInput:
+      type: object
+      properties:
+        name: { type: string }
+        priceUsdt: { type: string }
+        roiPercent: { type: string }
+        roiDays: { type: integer }
+        isActive: { type: boolean }
+
+    ReferralLevel:
+      type: object
+      required: [level, percent, requiredDirects]
+      properties:
+        level: { type: integer }
+        percent: { type: string }
+        requiredDirects: { type: integer }
+
+    ReferralLevelsBulkUpdate:
+      type: object
+      required: [levels]
+      properties:
+        levels:
+          type: array
+          items:
+            type: object
+            required: [level, percent, requiredDirects]
+            properties:
+              level: { type: integer }
+              percent: { type: string }
+              requiredDirects: { type: integer }
+
+    IncomeEntry:
+      type: object
+      required: [id, userId, type, amount, createdAt]
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        type:
+          type: string
+          enum: [roi, referral, royalty]
+        amount: { type: string }
+        sourceId: { type: ["string", "null"] }
+        fromUserId: { type: ["string", "null"] }
+        note: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+
+    IncomeSummary:
+      type: object
+      required: [roi, referral, royalty, activePackages, packages]
+      properties:
+        roi: { type: string }
+        referral: { type: string }
+        royalty: { type: string }
+        activePackages: { type: integer }
+        packages:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserPackage"
+
+    AdminIncomeResponse:
+      type: object
+      required: [entries, total]
+      properties:
+        total: { type: string }
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/IncomeEntry"
+
+    ExcessWalletInfo:
+      type: object
+      required: [pendingDistributions, distributions]
+      properties:
+        pendingDistributions: { type: integer }
+        distributions:
+          type: array
+          items: { type: object }
 
     # ─── NFT Schemas ────────────────────────────────────────────────────────────
 

@@ -2,6 +2,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { getSettings } from "./lib/settings";
 import { setTelegramWebhook } from "./lib/telegram-bot";
+import { startCronJobs } from "./lib/cron";
 
 const rawPort = process.env["PORT"];
 
@@ -24,6 +25,9 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+
+  // Start background cron jobs (ROI credit + royalty payouts)
+  startCronJobs();
 
   // Auto-register Telegram webhook using REPLIT_DOMAINS
   const rawDomains = process.env.REPLIT_DOMAINS;

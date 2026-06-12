@@ -22,6 +22,7 @@ import ShopSignInPage from "./pages/sign-in";
 import Home from "./pages/home";
 import AdminSetup from "./pages/admin-setup";
 import InvitePage from "./pages/invite";
+import PackagesPage from "./pages/packages";
 import { Layout } from "./components/layout";
 import { AuthProvider, useAuth } from "./lib/auth-context";
 import { OfflineBanner } from "./components/offline-banner";
@@ -130,6 +131,11 @@ function AppRoutes() {
       <Route path="/p2p">
         <Layout>
           <ProtectedRoute component={P2P} />
+        </Layout>
+      </Route>
+      <Route path="/packages">
+        <Layout>
+          <ProtectedRoute component={PackagesPage} />
         </Layout>
       </Route>
       <Route path="/invite">

@@ -214,13 +214,13 @@ router.post("/admin/withdrawals/:id/reject", requireAuth, requireAdmin, async (r
     return;
   }
 
-  // Refund balance
+  // Refund to income balance (biddingProfitBalance - where withdrawals are drawn from)
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, withdrawal.userId));
   if (user) {
-    const currentBalance = parseFloat(user.walletBalance);
+    const currentBalance = parseFloat(user.biddingProfitBalance);
     const refundAmount = parseFloat(withdrawal.amount);
     await db.update(usersTable)
-      .set({ walletBalance: String(currentBalance + refundAmount) })
+      .set({ biddingProfitBalance: String(currentBalance + refundAmount) } as any)
       .where(eq(usersTable.id, user.id));
   }
 

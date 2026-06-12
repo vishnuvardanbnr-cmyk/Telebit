@@ -169,11 +169,11 @@ function WithdrawSheet({ open, onClose }: { open: boolean; onClose: () => void }
   const totalDeducted = deductFromAmount ? parsedAmount : parsedAmount + fee;
   const recipientGets = deductFromAmount ? Math.max(0, parsedAmount - fee) : parsedAmount;
   const overBalance = totalDeducted > balance && parsedAmount > 0;
-  const underMinimum = parsedAmount > 0 && parsedAmount < 20;
+  const underMinimum = parsedAmount > 0 && parsedAmount < 10;
 
   const onSubmit = (values: WithdrawForm) => {
-    if (overBalance) { toast.error("Insufficient bidding profit balance"); return; }
-    if (underMinimum) { toast.error("Minimum withdrawal amount is $20 USDT"); return; }
+    if (overBalance) { toast.error("Insufficient income balance"); return; }
+    if (underMinimum) { toast.error("Minimum withdrawal amount is $10 USDT"); return; }
     createWithdrawal.mutate({ data: values }, {
       onSuccess: () => {
         toast.success("Withdrawal request submitted — awaiting admin approval");
@@ -232,13 +232,22 @@ function WithdrawSheet({ open, onClose }: { open: boolean; onClose: () => void }
 
         {!isLoading && !disabled && !blocked && (
           <div className="space-y-4">
-            {/* Balance pill - bidding profit (withdrawable) */}
+            {/* Balance pill - income balance (withdrawable) */}
             <div className="flex items-center justify-between rounded-xl bg-muted/40 border border-border px-4 py-3">
               <div>
-                <p className="text-xs text-muted-foreground font-medium">Bidding Profit (Withdrawable)</p>
-                <p className="text-[11px] text-muted-foreground/70 mt-0.5">Min $20 · 48hr cooldown</p>
+                <p className="text-xs text-muted-foreground font-medium">Income Balance (Withdrawable)</p>
+                <p className="text-[11px] text-muted-foreground/70 mt-0.5">Min $10 · 1st & 15th only · Max 2/month</p>
               </div>
               <p className="text-base font-bold text-foreground">{fmtUsdt(user?.biddingProfitBalance ?? "0")} <span className="text-xs font-normal text-muted-foreground">USDT</span></p>
+            </div>
+
+            {/* Withdrawal rules info */}
+            <div className="flex items-start gap-2.5 rounded-xl bg-blue-50 border border-blue-200 px-3 py-3">
+              <AlertCircle className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+              <div className="text-xs text-blue-800 space-y-0.5">
+                <p className="font-semibold">Withdrawal Rules</p>
+                <p>Withdrawals open on the <strong>1st and 15th</strong> of each month. Maximum <strong>2 withdrawals/month</strong>. Minimum <strong>$10 USDT</strong>. A <strong>15% royalty fee</strong> is distributed to your uplines on each withdrawal.</p>
+              </div>
             </div>
 
             <Form {...form}>
@@ -296,10 +305,10 @@ function WithdrawSheet({ open, onClose }: { open: boolean; onClose: () => void }
                     </div>
                   ))}
                   {overBalance && (
-                    <p className="text-[11px] font-semibold text-red-600 pt-0.5">Insufficient bidding profit balance</p>
+                    <p className="text-[11px] font-semibold text-red-600 pt-0.5">Insufficient income balance</p>
                   )}
                   {underMinimum && !overBalance && (
-                    <p className="text-[11px] font-semibold text-amber-600 pt-0.5">Minimum withdrawal is $20 USDT</p>
+                    <p className="text-[11px] font-semibold text-amber-600 pt-0.5">Minimum withdrawal is $10 USDT</p>
                   )}
                 </div>
 

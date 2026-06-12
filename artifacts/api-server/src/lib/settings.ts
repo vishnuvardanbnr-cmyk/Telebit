@@ -30,6 +30,7 @@ export interface Settings {
   smtpPass: string;
   smtpFromEmail: string;
   smtpFromName: string;
+  adminExcessWallet: string;
 }
 
 const DEFAULTS: Settings = {
@@ -61,6 +62,7 @@ const DEFAULTS: Settings = {
   smtpPass: "",
   smtpFromEmail: "",
   smtpFromName: "Telebit Shop",
+  adminExcessWallet: "0",
 };
 
 export async function getSettings(): Promise<Settings> {
@@ -99,6 +101,7 @@ export async function getSettings(): Promise<Settings> {
     smtpPass: map.smtpPass ?? DEFAULTS.smtpPass,
     smtpFromEmail: map.smtpFromEmail ?? DEFAULTS.smtpFromEmail,
     smtpFromName: map.smtpFromName ?? DEFAULTS.smtpFromName,
+    adminExcessWallet: map.adminExcessWallet ?? DEFAULTS.adminExcessWallet,
   };
 }
 

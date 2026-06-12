@@ -1816,3 +1816,209 @@ export const AdminSetUserNftResponse = zod.object({
 })
 
 
+/**
+ * @summary List available packages
+ */
+export const ListPackagesResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "priceUsdt": zod.string(),
+  "roiPercent": zod.string(),
+  "roiDays": zod.number(),
+  "isActive": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date().optional()
+})
+export const ListPackagesResponse = zod.array(ListPackagesResponseItem)
+
+
+/**
+ * @summary List current user's purchased packages
+ */
+export const ListMyPackagesResponseItem = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "packageId": zod.string(),
+  "purchasedAt": zod.coerce.date(),
+  "daysCredited": zod.number(),
+  "totalRoiDays": zod.number(),
+  "roiPercent": zod.string(),
+  "principalUsdt": zod.string(),
+  "totalRoiCredited": zod.string(),
+  "isActive": zod.boolean(),
+  "lastCreditedAt": zod.coerce.date().nullish()
+})
+export const ListMyPackagesResponse = zod.array(ListMyPackagesResponseItem)
+
+
+/**
+ * @summary Purchase a package
+ */
+export const PurchasePackageBody = zod.object({
+  "packageId": zod.string()
+})
+
+
+/**
+ * @summary List income history for current user
+ */
+export const listIncomeQueryLimitDefault = 50;
+export const listIncomeQueryOffsetDefault = 0;
+
+export const ListIncomeQueryParams = zod.object({
+  "limit": zod.coerce.number().default(listIncomeQueryLimitDefault),
+  "offset": zod.coerce.number().default(listIncomeQueryOffsetDefault),
+  "type": zod.enum(['roi', 'referral', 'royalty']).optional()
+})
+
+export const ListIncomeResponseItem = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "type": zod.enum(['roi', 'referral', 'royalty']),
+  "amount": zod.string(),
+  "sourceId": zod.string().nullish(),
+  "fromUserId": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+export const ListIncomeResponse = zod.array(ListIncomeResponseItem)
+
+
+/**
+ * @summary Get income summary for current user
+ */
+export const GetIncomeSummaryResponse = zod.object({
+  "roi": zod.string(),
+  "referral": zod.string(),
+  "royalty": zod.string(),
+  "activePackages": zod.number(),
+  "packages": zod.array(zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "packageId": zod.string(),
+  "purchasedAt": zod.coerce.date(),
+  "daysCredited": zod.number(),
+  "totalRoiDays": zod.number(),
+  "roiPercent": zod.string(),
+  "principalUsdt": zod.string(),
+  "totalRoiCredited": zod.string(),
+  "isActive": zod.boolean(),
+  "lastCreditedAt": zod.coerce.date().nullish()
+}))
+})
+
+
+/**
+ * @summary Admin list all packages
+ */
+export const AdminListPackagesResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "priceUsdt": zod.string(),
+  "roiPercent": zod.string(),
+  "roiDays": zod.number(),
+  "isActive": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date().optional()
+})
+export const AdminListPackagesResponse = zod.array(AdminListPackagesResponseItem)
+
+
+/**
+ * @summary Admin create a package
+ */
+export const AdminCreatePackageBody = zod.object({
+  "name": zod.string().optional(),
+  "priceUsdt": zod.string().optional(),
+  "roiPercent": zod.string().optional(),
+  "roiDays": zod.number().optional(),
+  "isActive": zod.boolean().optional()
+})
+
+
+/**
+ * @summary Admin update package config
+ */
+export const AdminUpdatePackageParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AdminUpdatePackageBody = zod.object({
+  "name": zod.string().optional(),
+  "priceUsdt": zod.string().optional(),
+  "roiPercent": zod.string().optional(),
+  "roiDays": zod.number().optional(),
+  "isActive": zod.boolean().optional()
+})
+
+export const AdminUpdatePackageResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "priceUsdt": zod.string(),
+  "roiPercent": zod.string(),
+  "roiDays": zod.number(),
+  "isActive": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date().optional()
+})
+
+
+/**
+ * @summary Admin get all 10 referral level configs
+ */
+export const AdminGetReferralLevelsResponseItem = zod.object({
+  "level": zod.number(),
+  "percent": zod.string(),
+  "requiredDirects": zod.number()
+})
+export const AdminGetReferralLevelsResponse = zod.array(AdminGetReferralLevelsResponseItem)
+
+
+/**
+ * @summary Admin bulk update referral levels
+ */
+export const AdminUpdateReferralLevelsBody = zod.object({
+  "levels": zod.array(zod.object({
+  "level": zod.number(),
+  "percent": zod.string(),
+  "requiredDirects": zod.number()
+}))
+})
+
+export const AdminUpdateReferralLevelsResponseItem = zod.object({
+  "level": zod.number(),
+  "percent": zod.string(),
+  "requiredDirects": zod.number()
+})
+export const AdminUpdateReferralLevelsResponse = zod.array(AdminUpdateReferralLevelsResponseItem)
+
+
+/**
+ * @summary Admin list all income entries
+ */
+export const AdminListIncomeResponse = zod.object({
+  "total": zod.string(),
+  "entries": zod.array(zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "type": zod.enum(['roi', 'referral', 'royalty']),
+  "amount": zod.string(),
+  "sourceId": zod.string().nullish(),
+  "fromUserId": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Admin get royalty excess wallet info
+ */
+export const AdminGetExcessWalletResponse = zod.object({
+  "pendingDistributions": zod.number(),
+  "distributions": zod.array(zod.object({
+
+}).passthrough())
+})
+
+

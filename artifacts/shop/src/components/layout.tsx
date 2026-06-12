@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { ShoppingCart, ShieldCheck, Menu, X, Zap, Wallet, Home, Gift, Share2, ListOrdered } from "lucide-react";
+import { ShoppingCart, ShieldCheck, Menu, X, Zap, Wallet, Home, Gift, Share2, ListOrdered, TrendingUp } from "lucide-react";
 import { useGetCart } from "@workspace/api-client-react";
 import { useAuth } from "@/lib/auth-context";
 import { fmtUsdt } from "@/lib/utils";
@@ -36,10 +36,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
               Catalog
             </Link>
             {isSignedIn && (
-              <Link href="/invite" className={cn("transition-colors font-medium flex items-center gap-1.5", location.startsWith("/invite") ? "text-primary" : "text-muted-foreground hover:text-foreground")}>
-                <Gift className="w-3.5 h-3.5" />
-                Invite
-              </Link>
+              <>
+                <Link href="/packages" className={cn("transition-colors font-medium flex items-center gap-1.5", location.startsWith("/packages") ? "text-primary" : "text-muted-foreground hover:text-foreground")}>
+                  <TrendingUp className="w-3.5 h-3.5" />
+                  Packages
+                </Link>
+                <Link href="/invite" className={cn("transition-colors font-medium flex items-center gap-1.5", location.startsWith("/invite") ? "text-primary" : "text-muted-foreground hover:text-foreground")}>
+                  <Gift className="w-3.5 h-3.5" />
+                  Invite
+                </Link>
+              </>
             )}
           </nav>
 
@@ -104,6 +110,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 Catalog
               </Link>
               <Link
+                href="/packages"
+                onClick={() => setMobileMenuOpen(false)}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
+                  location.startsWith("/packages") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                )}
+              >
+                <TrendingUp className="h-4 w-4" />
+                Packages & Income
+              </Link>
+              <Link
                 href="/invite"
                 onClick={() => setMobileMenuOpen(false)}
                 className={cn(
@@ -147,7 +164,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Mobile bottom footer nav */}
       <nav className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-card border-t border-border">
-        <div className={cn("grid h-16", isSignedIn ? "grid-cols-5" : "grid-cols-1")}>
+        <div className={cn("grid h-16", isSignedIn ? "grid-cols-6" : "grid-cols-1")}>
           {isSignedIn ? (
             <>
               <Link
@@ -170,6 +187,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
               >
                 <Wallet className={cn("h-5 w-5", location.startsWith("/wallet") && "stroke-[2.5px]")} />
                 <span>Wallet</span>
+              </Link>
+
+              <Link
+                href="/packages"
+                className={cn(
+                  "flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
+                  location.startsWith("/packages") ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                <TrendingUp className={cn("h-5 w-5", location.startsWith("/packages") && "stroke-[2.5px]")} />
+                <span>Income</span>
               </Link>
 
               <Link

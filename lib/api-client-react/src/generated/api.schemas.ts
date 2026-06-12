@@ -559,6 +559,103 @@ export interface ShopStats {
   topProducts?: Product[];
 }
 
+export interface Package {
+  id: string;
+  name: string;
+  priceUsdt: string;
+  roiPercent: string;
+  roiDays: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface UserPackage {
+  id: string;
+  userId: string;
+  packageId: string;
+  purchasedAt: string;
+  daysCredited: number;
+  totalRoiDays: number;
+  roiPercent: string;
+  principalUsdt: string;
+  totalRoiCredited: string;
+  isActive: boolean;
+  /** @nullable */
+  lastCreditedAt?: string | null;
+}
+
+export interface PackagePurchaseRequest {
+  packageId: string;
+}
+
+export interface AdminPackageInput {
+  name?: string;
+  priceUsdt?: string;
+  roiPercent?: string;
+  roiDays?: number;
+  isActive?: boolean;
+}
+
+export interface ReferralLevel {
+  level: number;
+  percent: string;
+  requiredDirects: number;
+}
+
+export type ReferralLevelsBulkUpdateLevelsItem = {
+  level: number;
+  percent: string;
+  requiredDirects: number;
+};
+
+export interface ReferralLevelsBulkUpdate {
+  levels: ReferralLevelsBulkUpdateLevelsItem[];
+}
+
+export type IncomeEntryType = typeof IncomeEntryType[keyof typeof IncomeEntryType];
+
+
+export const IncomeEntryType = {
+  roi: 'roi',
+  referral: 'referral',
+  royalty: 'royalty',
+} as const;
+
+export interface IncomeEntry {
+  id: string;
+  userId: string;
+  type: IncomeEntryType;
+  amount: string;
+  /** @nullable */
+  sourceId?: string | null;
+  /** @nullable */
+  fromUserId?: string | null;
+  /** @nullable */
+  note?: string | null;
+  createdAt: string;
+}
+
+export interface IncomeSummary {
+  roi: string;
+  referral: string;
+  royalty: string;
+  activePackages: number;
+  packages: UserPackage[];
+}
+
+export interface AdminIncomeResponse {
+  total: string;
+  entries: IncomeEntry[];
+}
+
+export type ExcessWalletInfoDistributionsItem = { [key: string]: unknown };
+
+export interface ExcessWalletInfo {
+  pendingDistributions: number;
+  distributions: ExcessWalletInfoDistributionsItem[];
+}
+
 export interface NftGlobal {
   id: string;
   buyPrice: string;
@@ -860,4 +957,19 @@ export type RequestPhoneOtp404 = {
 export type ConfirmPhoneOtp200 = {
   success?: boolean;
 };
+
+export type ListIncomeParams = {
+limit?: number;
+offset?: number;
+type?: ListIncomeType;
+};
+
+export type ListIncomeType = typeof ListIncomeType[keyof typeof ListIncomeType];
+
+
+export const ListIncomeType = {
+  roi: 'roi',
+  referral: 'referral',
+  royalty: 'royalty',
+} as const;
 

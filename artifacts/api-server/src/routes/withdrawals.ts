@@ -1,14 +1,69 @@
 import { Router } from "express";
-import { db, usersTable, withdrawalsTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { db, usersTable, withdrawalsTable, royaltyDistributionsTable, royaltyDailyPayoutsTable, incomeLogTable } from "@workspace/db";
+import { eq, desc, and, gte, count } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../lib/auth";
-import { getSettings } from "../lib/settings";
+import { getSettings, updateSettings } from "../lib/settings";
 import { getProvider, sweepUsdt, sendBnbGas, getBnbBalance } from "../lib/wallet";
 import { encrypt } from "../lib/crypto";
 import { ethers } from "ethers";
 import { logger } from "../lib/logger";
+import { generateDailyAmounts } from "./packages";
 
 const router = Router();
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+async function distributeRoyalty(withdrawalId: string, withdrawerId: string, grossAmount: number) {
+  const royaltyTotal = parseFloat((grossAmount * 0.15).toFixed(8));
+  const perUplineAmount = parseFloat((royaltyTotal / 10).toFixed(8));
+
+  // Traverse upline chain (up to 10 levels)
+  const uplines: string[] = [];
+  let currentUserId = withdrawerId;
+  for (let i = 0; i < 10; i++) {
+    const [current] = await db.select({ uplineId: usersTable.uplineId }).from(usersTable).where(eq(usersTable.id, currentUserId));
+    if (!current?.uplineId) break;
+    uplines.push(current.uplineId);
+    currentUserId = current.uplineId;
+  }
+
+  // Leftover for missing upline levels → admin excess wallet
+  const missingLevels = 10 - uplines.length;
+  if (missingLevels > 0) {
+    const leftover = parseFloat((missingLevels * perUplineAmount).toFixed(8));
+    const settings = await getSettings();
+    const currentExcess = parseFloat(settings.adminExcessWallet || "0");
+    await updateSettings({ adminExcessWallet: String(currentExcess + leftover) });
+  }
+
+  // Create royalty distributions + daily payout schedules
+  const now = new Date();
+  for (let i = 0; i < uplines.length; i++) {
+    const uplineUserId = uplines[i];
+
+    const [dist] = await db.insert(royaltyDistributionsTable).values({
+      withdrawalId,
+      uplineUserId,
+      level: i + 1,
+      totalAmount: String(perUplineAmount),
+      totalDays: 15,
+    }).returning();
+
+    const dailyAmounts = generateDailyAmounts(perUplineAmount, 15);
+    const payouts = dailyAmounts.map((amount, dayIdx) => ({
+      distributionId: dist.id,
+      dayNumber: dayIdx + 1,
+      amount: String(amount),
+      scheduledFor: new Date(now.getTime() + dayIdx * 24 * 60 * 60 * 1000),
+    }));
+
+    await db.insert(royaltyDailyPayoutsTable).values(payouts);
+  }
+
+  logger.info({ withdrawalId, withdrawerId, uplines: uplines.length }, "Royalty distribution created");
+}
+
+// ─── GET /withdrawals ─────────────────────────────────────────────────────────
 
 router.get("/withdrawals", requireAuth, async (req, res): Promise<void> => {
   const user = (req as any).dbUser;
@@ -26,6 +81,8 @@ router.get("/withdrawals", requireAuth, async (req, res): Promise<void> => {
   res.json(withdrawals);
 });
 
+// ─── POST /withdrawals ────────────────────────────────────────────────────────
+
 router.post("/withdrawals", requireAuth, async (req, res): Promise<void> => {
   const user = (req as any).dbUser;
   const { amount, destinationAddress } = req.body;
@@ -38,12 +95,29 @@ router.post("/withdrawals", requireAuth, async (req, res): Promise<void> => {
   const settings = await getSettings();
 
   if (!settings.withdrawalEnabled) {
-    res.status(400).json({ error: "Withdrawals are currently disabled" });
+    res.status(400).json({ error: "Withdrawals are currently disabled by the admin" });
     return;
   }
 
   if (user.withdrawalBlocked) {
     res.status(400).json({ error: "Your account has a withdrawal block. Contact support." });
+    return;
+  }
+
+  // Only allow 1st or 15th of the month
+  const today = new Date();
+  const dayOfMonth = today.getDate();
+  if (dayOfMonth !== 1 && dayOfMonth !== 15) {
+    res.status(400).json({ error: "Withdrawals are only processed on the 1st and 15th of each month" });
+    return;
+  }
+
+  // Max 2 withdrawals per calendar month
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const [monthCount] = await db.select({ cnt: count() }).from(withdrawalsTable)
+    .where(and(eq(withdrawalsTable.userId, user.id), gte(withdrawalsTable.createdAt, monthStart)));
+  if (Number(monthCount?.cnt ?? 0) >= 2) {
+    res.status(400).json({ error: "Maximum 2 withdrawals allowed per month" });
     return;
   }
 
@@ -53,68 +127,67 @@ router.post("/withdrawals", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  // Minimum withdrawal $20
-  if (amountNum < 20) {
-    res.status(400).json({ error: "Minimum withdrawal amount is $20 USDT" });
+  // Minimum $10
+  if (amountNum < 10) {
+    res.status(400).json({ error: "Minimum withdrawal amount is $10 USDT" });
     return;
   }
 
-  // 48-hour cooldown between withdrawals
-  if (user.lastWithdrawalAt) {
-    const hoursSinceLast = (Date.now() - new Date(user.lastWithdrawalAt).getTime()) / (1000 * 60 * 60);
-    if (hoursSinceLast < 48) {
-      const hoursLeft = Math.ceil(48 - hoursSinceLast);
-      res.status(400).json({ error: `You can withdraw again in ${hoursLeft} hour${hoursLeft === 1 ? "" : "s"}` });
-      return;
-    }
+  // Draw from income balance (biddingProfitBalance)
+  const incomeBalance = parseFloat(user.biddingProfitBalance);
+  if (incomeBalance < amountNum) {
+    res.status(400).json({ error: `Insufficient income balance. Required: ${amountNum.toFixed(4)} USDT, available: ${incomeBalance.toFixed(4)} USDT` });
+    return;
   }
 
-  // Calculate fee
+  // 15% royalty deduction
+  const royaltyAmount = parseFloat((amountNum * 0.15).toFixed(8));
+  const afterRoyalty = parseFloat((amountNum - royaltyAmount).toFixed(8));
+
+  // Platform fee on the after-royalty amount
   const flatFee = parseFloat(settings.withdrawFeeFlat);
-  const percentFee = parseFloat(settings.withdrawFeePercent) / 100 * amountNum;
+  const percentFee = afterRoyalty * (parseFloat(settings.withdrawFeePercent) / 100);
   const totalFee = flatFee + percentFee;
 
   let netAmount: number;
   let deductFrom: number;
 
   if (settings.withdrawFeeMode === "deduct_from_amount") {
-    netAmount = Math.max(0, amountNum - totalFee);
+    netAmount = parseFloat(Math.max(0, afterRoyalty - totalFee).toFixed(8));
     deductFrom = amountNum;
   } else {
-    netAmount = amountNum;
-    deductFrom = amountNum + totalFee;
+    netAmount = afterRoyalty;
+    deductFrom = parseFloat((amountNum + totalFee).toFixed(8));
   }
 
-  // Withdraw from biddingProfitBalance
-  const biddingProfitBalance = parseFloat(user.biddingProfitBalance);
-  if (biddingProfitBalance < deductFrom) {
-    res.status(400).json({ error: `Insufficient bidding profit balance. Required: ${deductFrom.toFixed(4)} USDT, available: ${biddingProfitBalance.toFixed(4)} USDT` });
+  if (incomeBalance < deductFrom) {
+    res.status(400).json({ error: `Insufficient income balance. Required: ${deductFrom.toFixed(4)} USDT` });
     return;
   }
 
-  // Deduct from biddingProfitBalance and record lastWithdrawalAt
+  // Deduct from income balance
   await db.update(usersTable)
-    .set({
-      biddingProfitBalance: String(biddingProfitBalance - deductFrom),
-      lastWithdrawalAt: new Date(),
-    } as any)
+    .set({ biddingProfitBalance: String(incomeBalance - deductFrom), lastWithdrawalAt: new Date() } as any)
     .where(eq(usersTable.id, user.id));
 
   const [withdrawal] = await db.insert(withdrawalsTable).values({
     userId: user.id,
     amount: String(amountNum),
-    fee: String(totalFee),
+    fee: String(totalFee + royaltyAmount),
     netAmount: String(netAmount),
     destinationAddress,
     status: "pending",
   }).returning();
 
+  // Distribute royalty (fire-and-forget)
+  distributeRoyalty(withdrawal.id, user.id, amountNum).catch((err) =>
+    logger.error({ err, withdrawalId: withdrawal.id }, "Royalty distribution error")
+  );
+
   // Auto mode: execute on-chain immediately if configured
   if (settings.withdrawalMode === "auto" && settings.withdrawWalletPrivateKey) {
     try {
       const provider = getProvider(settings.bscRpcUrl);
-
-      // Send BNB gas if needed
       if (settings.gasWalletPrivateKey) {
         const withdrawWallet = new ethers.Wallet(settings.withdrawWalletPrivateKey, provider);
         const bnbBalance = await getBnbBalance(withdrawWallet.address, provider);
@@ -122,15 +195,11 @@ router.post("/withdrawals", requireAuth, async (req, res): Promise<void> => {
           await sendBnbGas(withdrawWallet.address, ethers.parseEther("0.002"), settings.gasWalletPrivateKey, provider);
         }
       }
-
-      // Wrap private key in encrypted format for sweepUsdt
       const encryptedKey = encrypt(settings.withdrawWalletPrivateKey);
       const txHash = await sweepUsdt(encryptedKey, destinationAddress, ethers.parseUnits(String(netAmount), 18), provider);
-
       await db.update(withdrawalsTable)
         .set({ status: "approved", txHash, processedAt: new Date() })
         .where(eq(withdrawalsTable.id, withdrawal.id));
-
       withdrawal.status = "approved";
       withdrawal.txHash = txHash;
     } catch (err) {
@@ -138,7 +207,7 @@ router.post("/withdrawals", requireAuth, async (req, res): Promise<void> => {
     }
   }
 
-  res.status(201).json(withdrawal);
+  res.status(201).json({ ...withdrawal, royaltyDeducted: royaltyAmount });
 });
 
 export default router;
