@@ -56,47 +56,77 @@ export default function Home() {
         </UserProfileCard>
       )}
 
-      {/* ── Balance Overview ── */}
-      <div className="rounded-3xl bg-gradient-to-br from-slate-900 to-slate-700 text-white px-5 py-5 shadow-lg space-y-4">
-        <p className="text-[10px] font-semibold opacity-50 uppercase tracking-widest">Account Overview</p>
-
-        <div className="grid grid-cols-2 gap-3">
-          <Link href="/wallet">
-            <div className="rounded-2xl bg-white/8 hover:bg-white/12 transition-colors px-4 py-3.5 cursor-pointer" style={{ background: "rgba(255,255,255,0.08)" }}>
-              <div className="flex items-center gap-1.5 mb-2.5">
-                <ArrowDownLeft className="w-3 h-3 opacity-50" />
-                <p className="text-[10px] font-medium opacity-50 uppercase tracking-wider">Wallet</p>
+      {/* ── Athnol Bio Fuel Share Guarantee ── */}
+      {(() => {
+        const sharesPerPkg = parseInt(settings?.sharesPerPackage ?? "50");
+        const shareVal = parseFloat(settings?.shareValueUsdt ?? "0");
+        const pkgCount = myPackages?.length ?? 0;
+        const userShares = pkgCount * sharesPerPkg;
+        const userSharesValue = userShares * shareVal;
+        return (
+          <div className="rounded-2xl overflow-hidden border border-green-200 shadow-sm">
+            <div className="bg-gradient-to-r from-green-700 to-emerald-600 px-5 pt-5 pb-6">
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
+                  <Leaf className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <p className="text-[9px] font-bold text-green-200 uppercase tracking-widest">Package Guarantee</p>
+                  <p className="text-sm font-black text-white leading-tight">Athnol Bio Fuel Company</p>
+                </div>
               </div>
-              <p className="text-2xl font-black tabular-nums leading-none">{fmtUsdt(walletBal)}</p>
-              <p className="text-[10px] opacity-40 mt-1.5">USDT · for purchases</p>
-            </div>
-          </Link>
-          <Link href="/wallet">
-            <div className="rounded-2xl cursor-pointer px-4 py-3.5 transition-colors hover:opacity-90" style={{ background: "rgba(52,211,153,0.15)", border: "1px solid rgba(52,211,153,0.2)" }}>
-              <div className="flex items-center gap-1.5 mb-2.5">
-                <ArrowUpRight className="w-3 h-3 text-emerald-400" />
-                <p className="text-[10px] font-medium text-emerald-300 uppercase tracking-wider">Income</p>
+              <div className="rounded-2xl bg-white/10 border border-white/20 px-4 py-4">
+                <p className="text-[10px] font-semibold text-green-200 uppercase tracking-widest mb-1">Your Share Holdings</p>
+                <div className="flex items-end justify-between">
+                  <div>
+                    <p className="text-3xl font-black text-white tabular-nums leading-none">{userShares.toLocaleString()}</p>
+                    <p className="text-xs text-green-200 mt-1">shares · {pkgCount} package{pkgCount !== 1 ? "s" : ""} purchased</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-black text-emerald-200 tabular-nums">
+                      {userSharesValue > 0 ? `$${userSharesValue.toFixed(2)}` : shareVal > 0 ? "$0.00" : "—"}
+                    </p>
+                    <p className="text-[10px] text-green-300 mt-0.5">USDT value</p>
+                  </div>
+                </div>
+                {pkgCount === 0 && (
+                  <p className="text-[10px] text-green-300/70 mt-2">Purchase a package to start earning shares</p>
+                )}
               </div>
-              <p className="text-2xl font-black text-emerald-300 tabular-nums leading-none">{fmtUsdt(incomeBal)}</p>
-              <p className="text-[10px] text-emerald-400/60 mt-1.5">USDT · withdrawable</p>
             </div>
-          </Link>
-        </div>
-
-        <div className="flex items-center justify-between pt-1 border-t border-white/10">
-          <div className="flex items-center gap-2 opacity-60">
-            <TrendingUp className="w-3.5 h-3.5" />
-            <span className="text-xs">Active Investment</span>
+            <div className="bg-white px-5 py-4 space-y-4">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Every <strong className="text-foreground">$125 package</strong> awards <strong className="text-green-700">{sharesPerPkg} shares</strong> — backed by real equity in Athnol Bio Fuel Company.
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="rounded-xl bg-green-50 border border-green-100 px-3 py-3 text-center">
+                  <p className="text-[9px] text-green-600 font-semibold uppercase tracking-wide mb-0.5">Per Package</p>
+                  <p className="text-base font-black text-green-800 tabular-nums">{sharesPerPkg}</p>
+                  <p className="text-[9px] text-green-600 mt-0.5">shares</p>
+                </div>
+                <div className="rounded-xl bg-green-50 border border-green-100 px-3 py-3 text-center">
+                  <p className="text-[9px] text-green-600 font-semibold uppercase tracking-wide mb-0.5">Share Price</p>
+                  <p className="text-base font-black text-green-800 tabular-nums">
+                    {shareVal > 0 ? `$${shareVal.toFixed(2)}` : "—"}
+                  </p>
+                  <p className="text-[9px] text-green-600 mt-0.5">USDT/share</p>
+                </div>
+                <div className="rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-3 text-center">
+                  <p className="text-[9px] text-emerald-600 font-semibold uppercase tracking-wide mb-0.5">Your Total</p>
+                  <p className="text-base font-black text-emerald-800 tabular-nums">{userShares.toLocaleString()}</p>
+                  <p className="text-[9px] text-emerald-600 mt-0.5">shares held</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5">
+                <span className="text-amber-500 text-sm leading-none mt-0.5">🔒</span>
+                <p className="text-[11px] text-amber-800 font-medium">
+                  Shares are issued as collateral guaranteeing your returns. Value updates reflect live company valuation.
+                </p>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-black tabular-nums">{fmtUsdt(totalInvested)}</span>
-            <span className="text-[10px] opacity-40">USDT</span>
-            {activePackages.length > 0 && (
-              <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded-full opacity-60">{activePackages.length} active</span>
-            )}
-          </div>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* ── Quick action buttons ── */}
       <div className="flex gap-3">
@@ -228,85 +258,6 @@ export default function Home() {
 
       </div>
 
-      {/* ── Athnol Bio Fuel Share Guarantee ── */}
-      {(() => {
-        const sharesPerPkg = parseInt(settings?.sharesPerPackage ?? "50");
-        const shareVal = parseFloat(settings?.shareValueUsdt ?? "0");
-        const pkgCount = myPackages?.length ?? 0;
-        const userShares = pkgCount * sharesPerPkg;
-        const userSharesValue = userShares * shareVal;
-        return (
-          <div className="rounded-2xl overflow-hidden border border-green-200 shadow-sm">
-            {/* Green gradient header */}
-            <div className="bg-gradient-to-r from-green-700 to-emerald-600 px-5 pt-5 pb-6">
-              <div className="flex items-center gap-2.5 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
-                  <Leaf className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <p className="text-[9px] font-bold text-green-200 uppercase tracking-widest">Package Guarantee</p>
-                  <p className="text-sm font-black text-white leading-tight">Athnol Bio Fuel Company</p>
-                </div>
-              </div>
-
-              {/* User holdings hero */}
-              <div className="rounded-2xl bg-white/10 border border-white/20 px-4 py-4">
-                <p className="text-[10px] font-semibold text-green-200 uppercase tracking-widest mb-1">Your Share Holdings</p>
-                <div className="flex items-end justify-between">
-                  <div>
-                    <p className="text-3xl font-black text-white tabular-nums leading-none">{userShares.toLocaleString()}</p>
-                    <p className="text-xs text-green-200 mt-1">shares · {pkgCount} package{pkgCount !== 1 ? "s" : ""} purchased</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-black text-emerald-200 tabular-nums">
-                      {userSharesValue > 0 ? `$${userSharesValue.toFixed(2)}` : shareVal > 0 ? "$0.00" : "—"}
-                    </p>
-                    <p className="text-[10px] text-green-300 mt-0.5">USDT value</p>
-                  </div>
-                </div>
-                {pkgCount === 0 && (
-                  <p className="text-[10px] text-green-300/70 mt-2">Purchase a package to start earning shares</p>
-                )}
-              </div>
-            </div>
-
-            {/* Body */}
-            <div className="bg-white px-5 py-4 space-y-4">
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Every <strong className="text-foreground">$125 package</strong> awards <strong className="text-green-700">{sharesPerPkg} shares</strong> — backed by real equity in Athnol Bio Fuel Company.
-              </p>
-
-              {/* Rate details */}
-              <div className="grid grid-cols-3 gap-2">
-                <div className="rounded-xl bg-green-50 border border-green-100 px-3 py-3 text-center">
-                  <p className="text-[9px] text-green-600 font-semibold uppercase tracking-wide mb-0.5">Per Package</p>
-                  <p className="text-base font-black text-green-800 tabular-nums">{sharesPerPkg}</p>
-                  <p className="text-[9px] text-green-600 mt-0.5">shares</p>
-                </div>
-                <div className="rounded-xl bg-green-50 border border-green-100 px-3 py-3 text-center">
-                  <p className="text-[9px] text-green-600 font-semibold uppercase tracking-wide mb-0.5">Share Price</p>
-                  <p className="text-base font-black text-green-800 tabular-nums">
-                    {shareVal > 0 ? `$${shareVal.toFixed(2)}` : "—"}
-                  </p>
-                  <p className="text-[9px] text-green-600 mt-0.5">USDT/share</p>
-                </div>
-                <div className="rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-3 text-center">
-                  <p className="text-[9px] text-emerald-600 font-semibold uppercase tracking-wide mb-0.5">Your Total</p>
-                  <p className="text-base font-black text-emerald-800 tabular-nums">{userShares.toLocaleString()}</p>
-                  <p className="text-[9px] text-emerald-600 mt-0.5">shares held</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5">
-                <span className="text-amber-500 text-sm leading-none mt-0.5">🔒</span>
-                <p className="text-[11px] text-amber-800 font-medium">
-                  Shares are issued as collateral guaranteeing your returns. Value updates reflect live company valuation.
-                </p>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
 
     </div>
   );
