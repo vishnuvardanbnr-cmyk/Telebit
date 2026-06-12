@@ -113,33 +113,33 @@ export default function Home() {
               {[1,2,3].map(i => <Skeleton key={i} className="h-5 w-full" />)}
             </div>
           ) : (
-            <div className="divide-y divide-border/60">
+            <div>
               {[
-                { label: "ROI Income", sub: "Daily returns", value: income?.roi ?? "0", dot: "bg-blue-500" },
-                { label: "Spot Referral", sub: "10-level network", value: income?.referral ?? "0", dot: "bg-violet-500" },
-                { label: "Royalty Income", sub: "15% on withdrawals", value: income?.royalty ?? "0", dot: "bg-amber-500" },
+                { label: "ROI Income", sub: "Daily returns from packages", value: income?.roi ?? "0", dot: "bg-blue-500" },
+                { label: "Spot Referral", sub: "10-level network commissions", value: income?.referral ?? "0", dot: "bg-violet-500" },
+                { label: "Royalty Income", sub: "15% on upline withdrawals", value: income?.royalty ?? "0", dot: "bg-amber-500" },
               ].map(({ label, sub, value, dot }) => (
-                <div key={label} className="flex items-center justify-between px-5 py-3.5">
-                  <div className="flex items-center gap-3">
-                    <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
+                <div key={label} className="flex items-center justify-between px-5 py-5 border-t border-border/50">
+                  <div className="flex items-center gap-3.5">
+                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${dot}`} />
                     <div>
-                      <p className="text-sm font-semibold text-foreground leading-tight">{label}</p>
-                      <p className="text-[11px] text-muted-foreground">{sub}</p>
+                      <p className="text-sm font-semibold text-foreground">{label}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-bold tabular-nums text-foreground">{fmtUsdt(value)}</p>
-                    <p className="text-[10px] text-muted-foreground">USDT</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">USDT</p>
                   </div>
                 </div>
               ))}
 
               {/* total */}
-              <div className="flex items-center justify-between px-5 py-3.5 bg-muted/30">
+              <div className="flex items-center justify-between px-5 py-5 border-t border-border bg-muted/20">
                 <p className="text-sm font-bold text-foreground">Total Earned</p>
                 <div className="text-right">
                   <p className="text-base font-black tabular-nums text-emerald-600">{fmtUsdt(totalEarned)}</p>
-                  <p className="text-[10px] text-muted-foreground">USDT</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">USDT</p>
                 </div>
               </div>
             </div>
