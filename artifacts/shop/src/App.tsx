@@ -26,6 +26,7 @@ import PackagesPage from "./pages/packages";
 import RanksPage from "./pages/ranks";
 import IncomeDetailPage from "./pages/income-detail";
 import IncomePage from "./pages/income";
+import DematPage from "./pages/demat";
 import { Layout } from "./components/layout";
 import { AuthProvider, useAuth } from "./lib/auth-context";
 import { OfflineBanner } from "./components/offline-banner";
@@ -159,6 +160,11 @@ function AppRoutes() {
       <Route path="/invite">
         <Layout>
           <ProtectedRoute component={InvitePage} />
+        </Layout>
+      </Route>
+      <Route path="/demat">
+        <Layout>
+          <ProtectedRoute component={DematPage} />
         </Layout>
       </Route>
       <Route component={NotFound} />

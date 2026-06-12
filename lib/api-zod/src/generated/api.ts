@@ -2175,3 +2175,95 @@ export const AdminCheckUserRankResponse = zod.object({
 })
 
 
+/**
+ * @summary Get current user's demat account details
+ */
+export const GetMyDematAccountResponse = zod.object({
+  "id": zod.string(),
+  "holderName": zod.string(),
+  "dpId": zod.string(),
+  "clientId": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Create or update demat account
+ */
+export const UpsertMyDematAccountBody = zod.object({
+  "holderName": zod.string(),
+  "dpId": zod.string(),
+  "clientId": zod.string()
+})
+
+export const UpsertMyDematAccountResponse = zod.object({
+  "id": zod.string(),
+  "holderName": zod.string(),
+  "dpId": zod.string(),
+  "clientId": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary List user's share transfer requests and totals
+ */
+export const GetMyShareRequestsResponse = zod.object({
+  "requests": zod.array(zod.object({
+  "id": zod.string(),
+  "sharesCount": zod.number(),
+  "status": zod.enum(['pending', 'transferred']),
+  "requestedAt": zod.coerce.date(),
+  "transferredAt": zod.coerce.date().nullish(),
+  "adminNote": zod.string().nullish()
+})),
+  "totalConfirmedShares": zod.number(),
+  "totalPendingShares": zod.number()
+})
+
+
+/**
+ * @summary Admin list all share transfer requests
+ */
+export const AdminListShareRequestsQueryParams = zod.object({
+  "status": zod.enum(['pending', 'transferred']).optional()
+})
+
+export const AdminListShareRequestsResponseItem = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "userEmail": zod.string(),
+  "userFullName": zod.string().optional(),
+  "sharesCount": zod.number(),
+  "status": zod.enum(['pending', 'transferred']),
+  "requestedAt": zod.coerce.date(),
+  "transferredAt": zod.coerce.date().nullish(),
+  "adminNote": zod.string().nullish(),
+  "dematAccount": zod.object({
+  "holderName": zod.string().optional(),
+  "dpId": zod.string().optional(),
+  "clientId": zod.string().optional()
+}).nullish()
+})
+export const AdminListShareRequestsResponse = zod.array(AdminListShareRequestsResponseItem)
+
+
+/**
+ * @summary Mark a share transfer request as transferred
+ */
+export const AdminMarkShareTransferredParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AdminMarkShareTransferredResponse = zod.object({
+  "id": zod.string(),
+  "sharesCount": zod.number(),
+  "status": zod.enum(['pending', 'transferred']),
+  "requestedAt": zod.coerce.date(),
+  "transferredAt": zod.coerce.date().nullish(),
+  "adminNote": zod.string().nullish()
+})
+
+

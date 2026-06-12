@@ -935,6 +935,71 @@ export interface UserNftActivationResult {
   investedUsdt?: string;
 }
 
+export interface DematAccount {
+  id: string;
+  holderName: string;
+  dpId: string;
+  clientId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DematAccountInput {
+  holderName: string;
+  dpId: string;
+  clientId: string;
+}
+
+export type ShareTransferRequestStatus = typeof ShareTransferRequestStatus[keyof typeof ShareTransferRequestStatus];
+
+
+export const ShareTransferRequestStatus = {
+  pending: 'pending',
+  transferred: 'transferred',
+} as const;
+
+export interface ShareTransferRequest {
+  id: string;
+  sharesCount: number;
+  status: ShareTransferRequestStatus;
+  requestedAt: string;
+  transferredAt?: string | null;
+  adminNote?: string | null;
+}
+
+export interface ShareRequestsSummary {
+  requests: ShareTransferRequest[];
+  totalConfirmedShares: number;
+  totalPendingShares: number;
+}
+
+export type AdminShareRequestStatus = typeof AdminShareRequestStatus[keyof typeof AdminShareRequestStatus];
+
+
+export const AdminShareRequestStatus = {
+  pending: 'pending',
+  transferred: 'transferred',
+} as const;
+
+export type AdminShareRequestDematAccount = {
+  holderName?: string;
+  dpId?: string;
+  clientId?: string;
+} | null;
+
+export interface AdminShareRequest {
+  id: string;
+  userId: string;
+  userEmail: string;
+  userFullName?: string;
+  sharesCount: number;
+  status: AdminShareRequestStatus;
+  requestedAt: string;
+  transferredAt?: string | null;
+  adminNote?: string | null;
+  dematAccount?: AdminShareRequestDematAccount;
+}
+
 export type ListDepositsParams = {
 limit?: number;
 offset?: number;
@@ -1048,5 +1113,17 @@ export const ListIncomeType = {
   referral: 'referral',
   royalty: 'royalty',
   rank_reward: 'rank_reward',
+} as const;
+
+export type AdminListShareRequestsParams = {
+status?: AdminListShareRequestsStatus;
+};
+
+export type AdminListShareRequestsStatus = typeof AdminListShareRequestsStatus[keyof typeof AdminListShareRequestsStatus];
+
+
+export const AdminListShareRequestsStatus = {
+  pending: 'pending',
+  transferred: 'transferred',
 } as const;
 

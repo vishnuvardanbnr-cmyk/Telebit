@@ -14,6 +14,7 @@ import shopP2pRouter from "./shopP2p";
 import packagesRouter from "./packages";
 import incomeRouter from "./income";
 import ranksRouter from "./ranks";
+import dematRouter from "./demat";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use(shopP2pRouter);
 router.use(packagesRouter);
 router.use(incomeRouter);
 router.use(ranksRouter);
+router.use(dematRouter);
 
 export default router;

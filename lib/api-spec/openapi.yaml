@@ -1754,6 +1754,113 @@ paths:
               schema:
                 $ref: "#/components/schemas/RankProgressResponse"
 
+  /users/me/demat:
+    get:
+      operationId: getMyDematAccount
+      tags: [users]
+      summary: Get current user's demat account details
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Demat account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DematAccount"
+        "404":
+          description: Not found
+    put:
+      operationId: upsertMyDematAccount
+      tags: [users]
+      summary: Create or update demat account
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DematAccountInput"
+      responses:
+        "200":
+          description: Saved demat account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DematAccount"
+
+  /users/me/share-requests:
+    get:
+      operationId: getMyShareRequests
+      tags: [users]
+      summary: List user's share transfer requests and totals
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Share requests summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShareRequestsSummary"
+    post:
+      operationId: submitShareRequest
+      tags: [users]
+      summary: Submit a new share transfer request
+      security:
+        - cookieAuth: []
+      responses:
+        "201":
+          description: Request created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShareTransferRequest"
+
+  /admin/share-requests:
+    get:
+      operationId: adminListShareRequests
+      tags: [admin]
+      summary: Admin list all share transfer requests
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, transferred]
+      responses:
+        "200":
+          description: Share requests list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminShareRequest"
+
+  /admin/share-requests/{id}/transfer:
+    patch:
+      operationId: adminMarkShareTransferred
+      tags: [admin]
+      summary: Mark a share transfer request as transferred
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Updated request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShareTransferRequest"
+
 components:
   schemas:
     HealthStatus:
@@ -2758,3 +2865,65 @@ components:
       properties:
         success: { type: boolean }
         investedUsdt: { type: string }
+
+    DematAccount:
+      type: object
+      required: [id, holderName, dpId, clientId, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        holderName: { type: string }
+        dpId: { type: string }
+        clientId: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    DematAccountInput:
+      type: object
+      required: [holderName, dpId, clientId]
+      properties:
+        holderName: { type: string }
+        dpId: { type: string }
+        clientId: { type: string }
+
+    ShareTransferRequest:
+      type: object
+      required: [id, sharesCount, status, requestedAt]
+      properties:
+        id: { type: string }
+        sharesCount: { type: integer }
+        status: { type: string, enum: [pending, transferred] }
+        requestedAt: { type: string, format: date-time }
+        transferredAt: { type: string, format: date-time, nullable: true }
+        adminNote: { type: string, nullable: true }
+
+    ShareRequestsSummary:
+      type: object
+      required: [requests, totalConfirmedShares, totalPendingShares]
+      properties:
+        requests:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShareTransferRequest"
+        totalConfirmedShares: { type: integer }
+        totalPendingShares: { type: integer }
+
+    AdminShareRequest:
+      type: object
+      required: [id, userId, userEmail, sharesCount, status, requestedAt]
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        userEmail: { type: string }
+        userFullName: { type: string }
+        sharesCount: { type: integer }
+        status: { type: string, enum: [pending, transferred] }
+        requestedAt: { type: string, format: date-time }
+        transferredAt: { type: string, format: date-time, nullable: true }
+        adminNote: { type: string, nullable: true }
+        dematAccount:
+          nullable: true
+          type: object
+          properties:
+            holderName: { type: string }
+            dpId: { type: string }
+            clientId: { type: string }

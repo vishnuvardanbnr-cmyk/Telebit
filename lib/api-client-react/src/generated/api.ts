@@ -25,9 +25,11 @@ import type {
   AdminListDepositsParams,
   AdminListOrdersParams,
   AdminListProductsParams,
+  AdminListShareRequestsParams,
   AdminListUsersParams,
   AdminListWithdrawalsParams,
   AdminPackageInput,
+  AdminShareRequest,
   AdminStats,
   AdminUser,
   BlockToggle,
@@ -40,6 +42,8 @@ import type {
   ConfirmPhoneOtp200,
   CreateSubAccountRequest,
   DashboardSummary,
+  DematAccount,
+  DematAccountInput,
   Deposit,
   DepositCheckResult,
   ExcessWalletInfo,
@@ -97,6 +101,8 @@ import type {
   Review,
   ReviewInput,
   SettingsUpdate,
+  ShareRequestsSummary,
+  ShareTransferRequest,
   ShopStats,
   SubAccount,
   SubscriptionResult,
@@ -6657,5 +6663,454 @@ export const useAdminCheckUserRank = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getAdminCheckUserRankMutationOptions(options));
+    }
+
+export const getGetMyDematAccountUrl = () => {
+
+
+
+
+  return `/api/users/me/demat`
+}
+
+/**
+ * @summary Get current user's demat account details
+ */
+export const getMyDematAccount = async ( options?: RequestInit): Promise<DematAccount> => {
+
+  return customFetch<DematAccount>(getGetMyDematAccountUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyDematAccountQueryKey = () => {
+    return [
+    `/api/users/me/demat`
+    ] as const;
+    }
+
+
+export const getGetMyDematAccountQueryOptions = <TData = Awaited<ReturnType<typeof getMyDematAccount>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyDematAccount>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyDematAccountQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyDematAccount>>> = ({ signal }) => getMyDematAccount({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyDematAccount>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyDematAccountQueryResult = NonNullable<Awaited<ReturnType<typeof getMyDematAccount>>>
+export type GetMyDematAccountQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get current user's demat account details
+ */
+
+export function useGetMyDematAccount<TData = Awaited<ReturnType<typeof getMyDematAccount>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyDematAccount>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyDematAccountQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpsertMyDematAccountUrl = () => {
+
+
+
+
+  return `/api/users/me/demat`
+}
+
+/**
+ * @summary Create or update demat account
+ */
+export const upsertMyDematAccount = async (dematAccountInput: DematAccountInput, options?: RequestInit): Promise<DematAccount> => {
+
+  return customFetch<DematAccount>(getUpsertMyDematAccountUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      dematAccountInput,)
+  }
+);}
+
+
+
+
+export const getUpsertMyDematAccountMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertMyDematAccount>>, TError,{data: BodyType<DematAccountInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof upsertMyDematAccount>>, TError,{data: BodyType<DematAccountInput>}, TContext> => {
+
+const mutationKey = ['upsertMyDematAccount'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof upsertMyDematAccount>>, {data: BodyType<DematAccountInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  upsertMyDematAccount(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpsertMyDematAccountMutationResult = NonNullable<Awaited<ReturnType<typeof upsertMyDematAccount>>>
+    export type UpsertMyDematAccountMutationBody = BodyType<DematAccountInput>
+    export type UpsertMyDematAccountMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create or update demat account
+ */
+export const useUpsertMyDematAccount = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertMyDematAccount>>, TError,{data: BodyType<DematAccountInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof upsertMyDematAccount>>,
+        TError,
+        {data: BodyType<DematAccountInput>},
+        TContext
+      > => {
+      return useMutation(getUpsertMyDematAccountMutationOptions(options));
+    }
+
+export const getGetMyShareRequestsUrl = () => {
+
+
+
+
+  return `/api/users/me/share-requests`
+}
+
+/**
+ * @summary List user's share transfer requests and totals
+ */
+export const getMyShareRequests = async ( options?: RequestInit): Promise<ShareRequestsSummary> => {
+
+  return customFetch<ShareRequestsSummary>(getGetMyShareRequestsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyShareRequestsQueryKey = () => {
+    return [
+    `/api/users/me/share-requests`
+    ] as const;
+    }
+
+
+export const getGetMyShareRequestsQueryOptions = <TData = Awaited<ReturnType<typeof getMyShareRequests>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyShareRequests>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyShareRequestsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyShareRequests>>> = ({ signal }) => getMyShareRequests({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyShareRequests>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyShareRequestsQueryResult = NonNullable<Awaited<ReturnType<typeof getMyShareRequests>>>
+export type GetMyShareRequestsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List user's share transfer requests and totals
+ */
+
+export function useGetMyShareRequests<TData = Awaited<ReturnType<typeof getMyShareRequests>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyShareRequests>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyShareRequestsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSubmitShareRequestUrl = () => {
+
+
+
+
+  return `/api/users/me/share-requests`
+}
+
+/**
+ * @summary Submit a new share transfer request
+ */
+export const submitShareRequest = async ( options?: RequestInit): Promise<ShareTransferRequest> => {
+
+  return customFetch<ShareTransferRequest>(getSubmitShareRequestUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getSubmitShareRequestMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitShareRequest>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitShareRequest>>, TError,void, TContext> => {
+
+const mutationKey = ['submitShareRequest'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitShareRequest>>, void> = () => {
+
+
+          return  submitShareRequest(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitShareRequestMutationResult = NonNullable<Awaited<ReturnType<typeof submitShareRequest>>>
+
+    export type SubmitShareRequestMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Submit a new share transfer request
+ */
+export const useSubmitShareRequest = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitShareRequest>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitShareRequest>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getSubmitShareRequestMutationOptions(options));
+    }
+
+export const getAdminListShareRequestsUrl = (params?: AdminListShareRequestsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/share-requests?${stringifiedParams}` : `/api/admin/share-requests`
+}
+
+/**
+ * @summary Admin list all share transfer requests
+ */
+export const adminListShareRequests = async (params?: AdminListShareRequestsParams, options?: RequestInit): Promise<AdminShareRequest[]> => {
+
+  return customFetch<AdminShareRequest[]>(getAdminListShareRequestsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListShareRequestsQueryKey = (params?: AdminListShareRequestsParams,) => {
+    return [
+    `/api/admin/share-requests`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getAdminListShareRequestsQueryOptions = <TData = Awaited<ReturnType<typeof adminListShareRequests>>, TError = ErrorType<unknown>>(params?: AdminListShareRequestsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListShareRequests>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListShareRequestsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListShareRequests>>> = ({ signal }) => adminListShareRequests(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListShareRequests>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListShareRequestsQueryResult = NonNullable<Awaited<ReturnType<typeof adminListShareRequests>>>
+export type AdminListShareRequestsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Admin list all share transfer requests
+ */
+
+export function useAdminListShareRequests<TData = Awaited<ReturnType<typeof adminListShareRequests>>, TError = ErrorType<unknown>>(
+ params?: AdminListShareRequestsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListShareRequests>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListShareRequestsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAdminMarkShareTransferredUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/share-requests/${id}/transfer`
+}
+
+/**
+ * @summary Mark a share transfer request as transferred
+ */
+export const adminMarkShareTransferred = async (id: string, options?: RequestInit): Promise<ShareTransferRequest> => {
+
+  return customFetch<ShareTransferRequest>(getAdminMarkShareTransferredUrl(id),
+  {
+    ...options,
+    method: 'PATCH'
+
+
+  }
+);}
+
+
+
+
+export const getAdminMarkShareTransferredMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminMarkShareTransferred>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminMarkShareTransferred>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['adminMarkShareTransferred'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminMarkShareTransferred>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminMarkShareTransferred(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminMarkShareTransferredMutationResult = NonNullable<Awaited<ReturnType<typeof adminMarkShareTransferred>>>
+
+    export type AdminMarkShareTransferredMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Mark a share transfer request as transferred
+ */
+export const useAdminMarkShareTransferred = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminMarkShareTransferred>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminMarkShareTransferred>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getAdminMarkShareTransferredMutationOptions(options));
     }
 

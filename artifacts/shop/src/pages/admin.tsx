@@ -22,6 +22,8 @@ import {
   useAdminListRankAchievements,
   useAdminCheckUserRank,
   useListRanks,
+  useAdminListShareRequests,
+  useAdminMarkShareTransferred,
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -38,7 +40,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Package, DollarSign, ShoppingCart, Tag, Edit, Trash2, Users, Ticket, ArrowLeftRight, Star, Ban, CheckCircle, Play, AlertTriangle, Settings, Eye, EyeOff, PlusCircle, Mail, TrendingUp, Share2, BarChart2, Crown, Loader2, CheckCircle2 } from "lucide-react";
+import { Package, DollarSign, ShoppingCart, Tag, Edit, Trash2, Users, Ticket, ArrowLeftRight, Star, Ban, CheckCircle, Play, AlertTriangle, Settings, Eye, EyeOff, PlusCircle, Mail, TrendingUp, Share2, BarChart2, Crown, Loader2, CheckCircle2, Leaf, Clock } from "lucide-react";
 import { useEffect, useCallback } from "react";
 
 const BASE = import.meta.env.BASE_URL;
@@ -1434,6 +1436,115 @@ function IncomeAdminTab() {
   );
 }
 
+// ─── Share Requests Admin Tab ─────────────────────────────────────────────────
+
+function ShareRequestsAdminTab() {
+  const { data: requests, isLoading } = useAdminListShareRequests({});
+  const markTransferred = useAdminMarkShareTransferred();
+  const qc = useQueryClient();
+  const { toast } = useToast();
+
+  async function handleTransfer(id: string) {
+    try {
+      await markTransferred.mutateAsync({ id });
+      await qc.invalidateQueries({ queryKey: ["/admin/share-requests"] });
+      toast({ title: "Marked as transferred" });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+  }
+
+  const pending = requests?.filter((r) => r.status === "pending") ?? [];
+  const transferred = requests?.filter((r) => r.status === "transferred") ?? [];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold uppercase tracking-wider">Share Transfer Requests</h2>
+        <div className="flex gap-2">
+          <span className="text-xs font-bold bg-amber-100 text-amber-800 px-3 py-1.5 rounded-full uppercase tracking-wider">
+            {pending.length} Pending
+          </span>
+          <span className="text-xs font-bold bg-green-100 text-green-800 px-3 py-1.5 rounded-full uppercase tracking-wider">
+            {transferred.length} Transferred
+          </span>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="text-center py-12 text-muted-foreground text-sm">Loading…</div>
+      ) : requests?.length === 0 ? (
+        <div className="text-center py-12">
+          <Leaf className="w-8 h-8 text-muted-foreground/30 mx-auto mb-3" />
+          <p className="text-muted-foreground text-sm">No share transfer requests yet.</p>
+        </div>
+      ) : (
+        <div className="bg-card border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-border hover:bg-transparent">
+                <TableHead className="font-bold uppercase tracking-wider text-xs">User</TableHead>
+                <TableHead className="font-bold uppercase tracking-wider text-xs">Demat Account</TableHead>
+                <TableHead className="font-bold uppercase tracking-wider text-xs text-center">Shares</TableHead>
+                <TableHead className="font-bold uppercase tracking-wider text-xs">Requested</TableHead>
+                <TableHead className="font-bold uppercase tracking-wider text-xs text-center">Status</TableHead>
+                <TableHead className="font-bold uppercase tracking-wider text-xs text-right">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {requests?.map((r) => (
+                <TableRow key={r.id} className="border-border">
+                  <TableCell>
+                    <p className="text-sm font-bold">{r.userFullName || "—"}</p>
+                    <p className="text-xs text-muted-foreground font-mono">{r.userEmail}</p>
+                  </TableCell>
+                  <TableCell>
+                    {r.dematAccount ? (
+                      <div>
+                        <p className="text-xs font-bold">{r.dematAccount.holderName}</p>
+                        <p className="text-[11px] text-muted-foreground font-mono">DP: {r.dematAccount.dpId} · CL: {r.dematAccount.clientId}</p>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center font-black text-green-700">{r.sharesCount}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {new Date(r.requestedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {r.status === "transferred" ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-black text-green-700 bg-green-50 border border-green-200 px-2 py-1 rounded-full uppercase tracking-wider">
+                        <CheckCircle2 className="w-3 h-3" /> Done
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-black text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-full uppercase tracking-wider">
+                        <Clock className="w-3 h-3" /> Pending
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {r.status === "pending" && (
+                      <Button
+                        size="sm"
+                        onClick={() => handleTransfer(r.id)}
+                        disabled={markTransferred.isPending}
+                        className="rounded-none text-xs font-bold uppercase tracking-wider bg-green-700 hover:bg-green-800 h-8 px-3"
+                      >
+                        Mark Transferred
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Ranks Admin Tab ──────────────────────────────────────────────────────────
 
 function RanksAdminTab() {
@@ -1719,6 +1830,7 @@ export default function Admin() {
             { value: "referral-levels", label: "Referral Levels", icon: Share2 },
             { value: "income-admin", label: "Income", icon: BarChart2 },
             { value: "ranks-admin", label: "Ranks", icon: Crown },
+            { value: "shares-admin", label: "Share Requests", icon: Leaf },
             { value: "settings", label: "Settings", icon: Settings },
           ].map(({ value, label, icon: Icon }) => (
             <TabsTrigger key={value} value={value} className="rounded-none h-full px-4 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary uppercase tracking-wider font-bold text-xs whitespace-nowrap flex items-center gap-1.5">
@@ -1845,6 +1957,7 @@ export default function Admin() {
         <TabsContent value="referral-levels"><ReferralLevelsTab /></TabsContent>
         <TabsContent value="income-admin"><IncomeAdminTab /></TabsContent>
         <TabsContent value="ranks-admin"><RanksAdminTab /></TabsContent>
+        <TabsContent value="shares-admin"><ShareRequestsAdminTab /></TabsContent>
         <TabsContent value="settings"><SettingsTab /></TabsContent>
       </Tabs>
 

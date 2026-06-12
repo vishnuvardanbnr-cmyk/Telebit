@@ -22,3 +22,5 @@ export * from "./referral_levels";
 export * from "./income_log";
 export * from "./royalty_distributions";
 export * from "./ranks";
+export * from "./demat_accounts";
+export * from "./share_transfer_requests";
