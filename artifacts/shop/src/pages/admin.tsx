@@ -677,6 +677,7 @@ function SettingsTab() {
   const [cfg, setCfg] = useState<AdminSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [registeringWebhook, setRegisteringWebhook] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -693,6 +694,23 @@ function SettingsTab() {
 
   const set = (key: keyof AdminSettings) => (v: string | boolean) =>
     setCfg((prev) => prev ? { ...prev, [key]: v } : prev);
+
+  const registerWebhook = async () => {
+    setRegisteringWebhook(true);
+    try {
+      const webhookUrl = `${window.location.origin}/api/auth/bot-webhook`;
+      await apiFetch("/auth/bot-webhook/setup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ webhookUrl }),
+      });
+      toast({ title: "Webhook registered!", description: webhookUrl });
+    } catch (err: any) {
+      toast({ title: "Webhook registration failed", description: err.message ?? "Unknown error", variant: "destructive" });
+    } finally {
+      setRegisteringWebhook(false);
+    }
+  };
 
   const save = async () => {
     if (!cfg) return;
@@ -742,6 +760,21 @@ function SettingsTab() {
           value={cfg.telegramBotUsername}
           onChange={set("telegramBotUsername")}
         />
+        <div className="pt-1 flex flex-col gap-1.5">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={!cfg.telegramBotToken || registeringWebhook}
+            onClick={registerWebhook}
+            className="w-full rounded-none text-xs font-bold uppercase tracking-wider border-[#2AABEE]/40 text-[#2AABEE] hover:bg-[#2AABEE]/10"
+          >
+            {registeringWebhook ? "Registering…" : "⚡ Register Webhook with Telegram"}
+          </Button>
+          <p className="text-[11px] text-muted-foreground">
+            Run this once after saving your bot token — or any time your domain changes. Requires the token to be saved first.
+          </p>
+        </div>
       </div>
 
       {/* Blockchain */}
