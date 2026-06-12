@@ -17,6 +17,14 @@ export interface Settings {
   bscRpcUrl: string;
   telegramBotToken: string;
   telegramBotUsername: string;
+  emailVerificationEnabled: boolean;
+  loginOtpEnabled: boolean;
+  smtpHost: string;
+  smtpPort: string;
+  smtpUser: string;
+  smtpPass: string;
+  smtpFromEmail: string;
+  smtpFromName: string;
 }
 
 const DEFAULTS: Settings = {
@@ -35,6 +43,14 @@ const DEFAULTS: Settings = {
   bscRpcUrl: "https://bsc-dataseed.binance.org/",
   telegramBotToken: "",
   telegramBotUsername: "",
+  emailVerificationEnabled: false,
+  loginOtpEnabled: false,
+  smtpHost: "",
+  smtpPort: "587",
+  smtpUser: "",
+  smtpPass: "",
+  smtpFromEmail: "",
+  smtpFromName: "Telebit Shop",
 };
 
 export async function getSettings(): Promise<Settings> {
@@ -60,6 +76,14 @@ export async function getSettings(): Promise<Settings> {
     bscRpcUrl: map.bscRpcUrl ?? DEFAULTS.bscRpcUrl,
     telegramBotToken: map.telegramBotToken ?? DEFAULTS.telegramBotToken,
     telegramBotUsername: map.telegramBotUsername ?? DEFAULTS.telegramBotUsername,
+    emailVerificationEnabled: map.emailVerificationEnabled === "true",
+    loginOtpEnabled: map.loginOtpEnabled === "true",
+    smtpHost: map.smtpHost ?? DEFAULTS.smtpHost,
+    smtpPort: map.smtpPort ?? DEFAULTS.smtpPort,
+    smtpUser: map.smtpUser ?? DEFAULTS.smtpUser,
+    smtpPass: map.smtpPass ?? DEFAULTS.smtpPass,
+    smtpFromEmail: map.smtpFromEmail ?? DEFAULTS.smtpFromEmail,
+    smtpFromName: map.smtpFromName ?? DEFAULTS.smtpFromName,
   };
 }
 

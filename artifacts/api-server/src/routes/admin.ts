@@ -242,6 +242,14 @@ router.get("/admin/settings", requireAuth, requireAdmin, async (_req, res): Prom
     gasWalletAddress: null,
     telegramBotToken: settings.telegramBotToken,
     telegramBotUsername: settings.telegramBotUsername,
+    emailVerificationEnabled: settings.emailVerificationEnabled,
+    loginOtpEnabled: settings.loginOtpEnabled,
+    smtpHost: settings.smtpHost,
+    smtpPort: settings.smtpPort,
+    smtpUser: settings.smtpUser,
+    smtpPass: settings.smtpPass,
+    smtpFromEmail: settings.smtpFromEmail,
+    smtpFromName: settings.smtpFromName,
   });
 });
 
@@ -263,6 +271,14 @@ router.put("/admin/settings", requireAuth, requireAdmin, async (req, res): Promi
     gasWalletAddress: null,
     telegramBotToken: settings.telegramBotToken,
     telegramBotUsername: settings.telegramBotUsername,
+    emailVerificationEnabled: settings.emailVerificationEnabled,
+    loginOtpEnabled: settings.loginOtpEnabled,
+    smtpHost: settings.smtpHost,
+    smtpPort: settings.smtpPort,
+    smtpUser: settings.smtpUser,
+    smtpPass: settings.smtpPass,
+    smtpFromEmail: settings.smtpFromEmail,
+    smtpFromName: settings.smtpFromName,
   });
 });
 

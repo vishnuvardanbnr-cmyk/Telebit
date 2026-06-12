@@ -28,7 +28,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Package, DollarSign, ShoppingCart, Tag, Edit, Trash2, Users, Ticket, ArrowLeftRight, Star, Ban, CheckCircle, Play, AlertTriangle, Settings, Eye, EyeOff, PlusCircle, Layers } from "lucide-react";
+import { Package, DollarSign, ShoppingCart, Tag, Edit, Trash2, Users, Ticket, ArrowLeftRight, Star, Ban, CheckCircle, Play, AlertTriangle, Settings, Eye, EyeOff, PlusCircle, Layers, Mail } from "lucide-react";
 import { useEffect, useCallback } from "react";
 
 const BASE = import.meta.env.BASE_URL;
@@ -731,6 +731,14 @@ type AdminSettings = {
   minDepositUsdt: string;
   depositFeeFlat: string;
   depositFeePercent: string;
+  emailVerificationEnabled: boolean;
+  loginOtpEnabled: boolean;
+  smtpHost: string;
+  smtpPort: string;
+  smtpUser: string;
+  smtpPass: string;
+  smtpFromEmail: string;
+  smtpFromName: string;
 };
 
 // ─── Pools Tab ────────────────────────────────────────────────────────────────
@@ -1241,6 +1249,89 @@ function SettingsTab() {
           >
             <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${cfg.withdrawalEnabled ? "translate-x-5" : ""}`} />
           </button>
+        </div>
+      </div>
+
+      {/* Email & OTP */}
+      <div className="bg-card border border-border p-5 space-y-4">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-7 h-7 rounded bg-blue-500/10 flex items-center justify-center">
+            <Mail className="w-4 h-4 text-blue-500" />
+          </div>
+          <h3 className="font-bold uppercase tracking-wider text-sm">Email &amp; OTP</h3>
+        </div>
+
+        <div className="flex items-center justify-between pt-1">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider">Email Verification on Register</p>
+            <p className="text-xs text-muted-foreground">Require OTP code to create a new account</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => set("emailVerificationEnabled")(!cfg.emailVerificationEnabled)}
+            className={`relative w-10 h-5 rounded-full transition-colors ${cfg.emailVerificationEnabled ? "bg-primary" : "bg-muted"}`}
+          >
+            <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${cfg.emailVerificationEnabled ? "translate-x-5" : ""}`} />
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between pt-1">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider">OTP Required on Login</p>
+            <p className="text-xs text-muted-foreground">Send email code after password check on sign-in</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => set("loginOtpEnabled")(!cfg.loginOtpEnabled)}
+            className={`relative w-10 h-5 rounded-full transition-colors ${cfg.loginOtpEnabled ? "bg-primary" : "bg-muted"}`}
+          >
+            <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${cfg.loginOtpEnabled ? "translate-x-5" : ""}`} />
+          </button>
+        </div>
+
+        <div className="border-t border-border pt-4 space-y-3">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">SMTP Configuration</p>
+          <div className="grid grid-cols-2 gap-4">
+            <SettingField
+              label="SMTP Host"
+              hint="e.g. smtp.gmail.com"
+              value={cfg.smtpHost ?? ""}
+              onChange={set("smtpHost")}
+            />
+            <SettingField
+              label="SMTP Port"
+              hint="587 (TLS) or 465 (SSL)"
+              value={cfg.smtpPort ?? "587"}
+              onChange={set("smtpPort")}
+            />
+          </div>
+          <SettingField
+            label="SMTP Username"
+            hint="Usually your full email address"
+            value={cfg.smtpUser ?? ""}
+            onChange={set("smtpUser")}
+          />
+          <SettingField
+            label="SMTP Password"
+            hint="App password or account password"
+            value={cfg.smtpPass ?? ""}
+            onChange={set("smtpPass")}
+            secret
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <SettingField
+              label="From Email"
+              hint="Sender address"
+              value={cfg.smtpFromEmail ?? ""}
+              onChange={set("smtpFromEmail")}
+            />
+            <SettingField
+              label="From Name"
+              hint="Display name"
+              value={cfg.smtpFromName ?? "Telebit Shop"}
+              onChange={set("smtpFromName")}
+            />
+          </div>
         </div>
       </div>
 

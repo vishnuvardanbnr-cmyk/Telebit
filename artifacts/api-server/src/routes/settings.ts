@@ -14,6 +14,8 @@ router.get("/settings", async (_req, res): Promise<void> => {
     withdrawFeeMode: settings.withdrawFeeMode,
     withdrawalEnabled: settings.withdrawalEnabled,
     otpWithdrawalEnabled: settings.otpWithdrawalEnabled,
+    emailVerificationEnabled: settings.emailVerificationEnabled,
+    loginOtpEnabled: settings.loginOtpEnabled,
   });
 });
 

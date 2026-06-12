@@ -4,6 +4,9 @@ import { db, usersTable } from "@workspace/db";
 import { eq, or } from "drizzle-orm";
 import { generateWallet, generateReferralCode } from "../lib/wallet";
 import { setAuthCookie, clearAuthCookie } from "../lib/auth";
+import { getSettings } from "../lib/settings";
+import { generateOtp, storeOtp, verifyOtp, hasRecentOtp } from "../lib/otp-store";
+import { sendOtpEmail } from "../lib/mailer";
 
 const router = Router();
 
@@ -22,14 +25,68 @@ router.get("/auth/check-referral", async (req, res): Promise<void> => {
   res.json({ valid: !!user });
 });
 
+// ─── Send Email OTP (registration) ─────────────────────────────────────────
+
+router.post("/auth/send-email-otp", async (req, res): Promise<void> => {
+  const { email, purpose } = req.body as { email?: string; purpose?: string };
+
+  if (!email || typeof email !== "string") {
+    res.status(400).json({ error: "Email is required" });
+    return;
+  }
+  if (purpose !== "register" && purpose !== "login") {
+    res.status(400).json({ error: "Invalid purpose" });
+    return;
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const settings = await getSettings();
+
+  if (purpose === "register") {
+    if (!settings.emailVerificationEnabled) {
+      res.status(400).json({ error: "Email verification is not enabled" });
+      return;
+    }
+    // Don't allow sending OTP to already-registered email
+    const [existing] = await db
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(eq(usersTable.email, normalizedEmail))
+      .limit(1);
+    if (existing) {
+      res.status(409).json({ error: "An account with this email already exists" });
+      return;
+    }
+  }
+
+  // Rate limit: don't allow resend if a code was sent recently
+  if (hasRecentOtp(normalizedEmail)) {
+    res.status(429).json({ error: "A code was already sent. Please wait before requesting a new one." });
+    return;
+  }
+
+  const code = generateOtp();
+  storeOtp(normalizedEmail, code);
+
+  try {
+    await sendOtpEmail(normalizedEmail, code, purpose as "register" | "login");
+  } catch (err: any) {
+    res.status(503).json({ error: err?.message ?? "Failed to send email" });
+    return;
+  }
+
+  res.json({ success: true });
+});
+
 // ─── Email + Password Registration ─────────────────────────────────────────
 
 router.post("/auth/register", async (req, res): Promise<void> => {
-  const { email, password, fullName, referralCode } = req.body as {
+  const { email, password, fullName, referralCode, otpCode } = req.body as {
     email?: string;
     password?: string;
     fullName?: string;
     referralCode?: string;
+    otpCode?: string;
   };
 
   if (!email || typeof email !== "string") {
@@ -42,6 +99,28 @@ router.post("/auth/register", async (req, res): Promise<void> => {
   }
 
   const normalizedEmail = email.trim().toLowerCase();
+  const settings = await getSettings();
+
+  // Verify OTP if email verification is enabled
+  if (settings.emailVerificationEnabled) {
+    if (!otpCode) {
+      res.status(400).json({ error: "Email verification code is required" });
+      return;
+    }
+    const result = verifyOtp(normalizedEmail, otpCode.trim());
+    if (result === "expired") {
+      res.status(400).json({ error: "Verification code has expired. Please request a new one." });
+      return;
+    }
+    if (result === "too_many_attempts") {
+      res.status(400).json({ error: "Too many incorrect attempts. Please request a new code." });
+      return;
+    }
+    if (result === "invalid") {
+      res.status(400).json({ error: "Incorrect verification code. Please try again." });
+      return;
+    }
+  }
 
   const [existing] = await db
     .select({ id: usersTable.id })
@@ -103,9 +182,10 @@ router.post("/auth/register", async (req, res): Promise<void> => {
 // ─── Email + Password Login ─────────────────────────────────────────────────
 
 router.post("/auth/login", async (req, res): Promise<void> => {
-  const { email, password } = req.body as {
+  const { email, password, otpCode } = req.body as {
     email?: string;
     password?: string;
+    otpCode?: string;
   };
 
   if (!email || !password) {
@@ -130,6 +210,39 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   if (!valid) {
     res.status(401).json({ error: "Invalid email or password" });
     return;
+  }
+
+  const settings = await getSettings();
+
+  if (settings.loginOtpEnabled) {
+    if (!otpCode) {
+      // Send OTP and signal that OTP is required
+      const code = generateOtp();
+      storeOtp(normalizedEmail, code);
+      try {
+        await sendOtpEmail(normalizedEmail, code, "login");
+      } catch (err: any) {
+        res.status(503).json({ error: err?.message ?? "Failed to send verification email" });
+        return;
+      }
+      res.json({ otpRequired: true });
+      return;
+    }
+
+    // Verify OTP
+    const result = verifyOtp(normalizedEmail, otpCode.trim());
+    if (result === "expired") {
+      res.status(400).json({ error: "Verification code has expired. Please sign in again." });
+      return;
+    }
+    if (result === "too_many_attempts") {
+      res.status(400).json({ error: "Too many incorrect attempts. Please sign in again." });
+      return;
+    }
+    if (result === "invalid") {
+      res.status(400).json({ error: "Incorrect verification code. Please try again." });
+      return;
+    }
   }
 
   setAuthCookie(res, user.id);

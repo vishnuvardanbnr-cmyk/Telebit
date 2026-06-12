@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation, Redirect, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
-import { Mail, Lock, User, Eye, EyeOff, Gift, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Mail, Lock, User, Eye, EyeOff, Gift, CheckCircle2, XCircle, Loader2, ShieldCheck } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -28,6 +28,32 @@ export default function ShopSignInPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // OTP state
+  const [otpStep, setOtpStep] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [sendingOtp, setSendingOtp] = useState(false);
+
+  // Settings from server
+  const [emailVerifEnabled, setEmailVerifEnabled] = useState(false);
+  const [loginOtpEnabled, setLoginOtpEnabled] = useState(false);
+
+  useEffect(() => {
+    fetch(`${BASE}/api/settings`, { credentials: "include" })
+      .then((r) => r.json())
+      .then((s: any) => {
+        setEmailVerifEnabled(!!s.emailVerificationEnabled);
+        setLoginOtpEnabled(!!s.loginOtpEnabled);
+      })
+      .catch(() => {});
+  }, []);
+
+  // Reset OTP step when switching modes
+  useEffect(() => {
+    setOtpStep(false);
+    setOtpCode("");
+    setError(null);
+  }, [mode]);
 
   const checkRef = (code: string) => {
     const trimmed = code.trim().toUpperCase();
@@ -57,6 +83,27 @@ export default function ShopSignInPage() {
     checkRef(upper);
   };
 
+  const handleSendOtp = async () => {
+    if (!email.trim()) { setError("Email is required."); return; }
+    setSendingOtp(true);
+    setError(null);
+    try {
+      const res = await fetch(`${BASE}/api/auth/send-email-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email: email.trim().toLowerCase(), purpose: "register" }),
+      });
+      const data = await res.json().catch(() => ({})) as { error?: string };
+      if (!res.ok) throw new Error(data.error || "Failed to send verification code");
+      setOtpStep(true);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -81,6 +128,18 @@ export default function ShopSignInPage() {
       return;
     }
 
+    // Register Step 1: send OTP if email verification is enabled
+    if (mode === "register" && emailVerifEnabled && !otpStep) {
+      await handleSendOtp();
+      return;
+    }
+
+    // Validate OTP code when in OTP step
+    if (otpStep && !otpCode.trim()) {
+      setError("Please enter the verification code sent to your email.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const endpoint = mode === "login" ? "/api/auth/login" : "/api/auth/register";
@@ -89,6 +148,10 @@ export default function ShopSignInPage() {
         if (fullName.trim()) body.fullName = fullName.trim();
         const ref = refInput.trim().toUpperCase();
         if (ref) body.referralCode = ref;
+        if (otpStep && otpCode.trim()) body.otpCode = otpCode.trim();
+      }
+      if (mode === "login" && otpStep && otpCode.trim()) {
+        body.otpCode = otpCode.trim();
       }
 
       const res = await fetch(`${BASE}${endpoint}`, {
@@ -98,7 +161,14 @@ export default function ShopSignInPage() {
         body: JSON.stringify(body),
       });
 
-      const data = await res.json().catch(() => ({})) as { error?: string; user?: any };
+      const data = await res.json().catch(() => ({})) as { error?: string; user?: any; otpRequired?: boolean };
+
+      // Login OTP: server sent OTP and is awaiting it
+      if (mode === "login" && data.otpRequired) {
+        setOtpStep(true);
+        return;
+      }
+
       if (!res.ok) throw new Error(data.error || "Something went wrong");
       if (data.user) queryClient.setQueryData(["getMe"], data.user);
       setLocation("/");
@@ -120,6 +190,15 @@ export default function ShopSignInPage() {
     if (refStatus === "valid") return "border-green-500 focus:ring-green-500/50 focus:border-green-500";
     if (refStatus === "invalid") return "border-destructive focus:ring-destructive/50 focus:border-destructive";
     return "border-border focus:ring-primary/50 focus:border-primary";
+  };
+
+  const submitLabel = () => {
+    if (submitting) {
+      if (mode === "login") return otpStep ? "Verifying…" : "Signing in…";
+      return otpStep ? "Creating account…" : emailVerifEnabled ? "Sending code…" : "Creating account…";
+    }
+    if (mode === "login") return otpStep ? "Verify & Sign In" : "Sign In";
+    return otpStep ? "Create Account" : emailVerifEnabled ? "Send Verification Code" : "Create Account";
   };
 
   return (
@@ -151,147 +230,219 @@ export default function ShopSignInPage() {
                 </p>
               </div>
 
-              {refFromUrl && mode === "register" && (
+              {refFromUrl && mode === "register" && !otpStep && (
                 <div className="mb-4 bg-primary/10 border border-primary/20 rounded-lg px-3 py-2 text-xs text-primary text-center font-medium">
                   🎁 You were invited! Referral code applied.
                 </div>
               )}
 
-              <div className="flex rounded-lg border border-border overflow-hidden mb-5 text-sm font-medium">
-                <button
-                  type="button"
-                  onClick={() => { setMode("login"); setError(null); }}
-                  className={`flex-1 py-2 transition-colors ${mode === "login" ? "bg-primary text-primary-foreground" : "bg-transparent text-muted-foreground hover:text-foreground"}`}
-                >
-                  Sign In
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setMode("register"); setError(null); }}
-                  className={`flex-1 py-2 transition-colors ${mode === "register" ? "bg-primary text-primary-foreground" : "bg-transparent text-muted-foreground hover:text-foreground"}`}
-                >
-                  Register
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-3">
-                {mode === "register" && (
-                  <>
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                        Full name <span className="text-destructive">*</span>
-                      </label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <input
-                          type="text"
-                          placeholder="Your name"
-                          value={fullName}
-                          onChange={(e) => setFullName(e.target.value)}
-                          className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                          autoComplete="name"
-                          disabled={submitting}
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                        Referral code <span className="text-destructive">*</span>
-                      </label>
-                      <div className="relative">
-                        <Gift className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <input
-                          type="text"
-                          placeholder="e.g. ABC123"
-                          value={refInput}
-                          onChange={(e) => handleRefChange(e.target.value)}
-                          readOnly={refFromUrl}
-                          className={`w-full pl-9 pr-10 py-2.5 rounded-lg border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 transition-colors font-mono tracking-widest ${refBorderClass()} ${refFromUrl ? "opacity-75 cursor-not-allowed select-none" : ""}`}
-                          autoComplete="off"
-                          disabled={submitting}
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2">
-                          {refStatusIcon()}
-                        </span>
-                      </div>
-                      {refStatus === "valid" && (
-                        <p className="text-[11px] text-green-600 mt-1">✓ Valid referral code</p>
-                      )}
-                      {refStatus === "invalid" && (
-                        <p className="text-[11px] text-destructive mt-1">✗ Referral code not found</p>
-                      )}
-                    </div>
-                  </>
-                )}
-
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                    Email address
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <input
-                      type="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                      autoComplete="email"
-                      disabled={submitting}
-                      autoFocus
-                    />
-                  </div>
+              {!otpStep && (
+                <div className="flex rounded-lg border border-border overflow-hidden mb-5 text-sm font-medium">
+                  <button
+                    type="button"
+                    onClick={() => { setMode("login"); setError(null); }}
+                    className={`flex-1 py-2 transition-colors ${mode === "login" ? "bg-primary text-primary-foreground" : "bg-transparent text-muted-foreground hover:text-foreground"}`}
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setMode("register"); setError(null); }}
+                    className={`flex-1 py-2 transition-colors ${mode === "register" ? "bg-primary text-primary-foreground" : "bg-transparent text-muted-foreground hover:text-foreground"}`}
+                  >
+                    Register
+                  </button>
                 </div>
+              )}
 
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                    Password {mode === "register" && <span className="font-normal">(min 6 characters)</span>}
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-9 pr-10 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                      autoComplete={mode === "login" ? "current-password" : "new-password"}
-                      disabled={submitting}
-                    />
+              {/* ── OTP Step ── */}
+              {otpStep ? (
+                <div className="space-y-4">
+                  <div className="bg-primary/10 border border-primary/20 rounded-lg px-4 py-3 text-center">
+                    <div className="flex items-center justify-center gap-2 mb-1">
+                      <Mail className="w-4 h-4 text-primary" />
+                      <span className="font-semibold text-sm text-foreground">Check your email</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      We sent a 6-digit code to <strong className="text-foreground">{email}</strong>
+                    </p>
+                  </div>
+
+                  <form onSubmit={handleSubmit} className="space-y-3">
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                        Verification code <span className="text-destructive">*</span>
+                      </label>
+                      <div className="relative">
+                        <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="000000"
+                          value={otpCode}
+                          onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                          className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors font-mono tracking-[0.4em] text-center"
+                          autoComplete="one-time-code"
+                          maxLength={6}
+                          autoFocus
+                          disabled={submitting}
+                        />
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        Code expires in 5 minutes.
+                      </p>
+                    </div>
+
+                    {error && (
+                      <div className="bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2 text-xs text-destructive text-center">
+                        {error}
+                      </div>
+                    )}
+
                     <button
-                      type="button"
-                      onClick={() => setShowPassword((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      tabIndex={-1}
+                      type="submit"
+                      disabled={submitting || otpCode.length < 6}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {submitting ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                          {mode === "login" ? "Verifying…" : "Creating account…"}
+                        </>
+                      ) : (
+                        mode === "login" ? "Verify & Sign In" : "Create Account"
+                      )}
                     </button>
-                  </div>
+                  </form>
+
+                  <button
+                    type="button"
+                    onClick={() => { setOtpStep(false); setOtpCode(""); setError(null); }}
+                    className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+                  >
+                    ← Back
+                  </button>
                 </div>
-
-                {error && (
-                  <div className="bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2 text-xs text-destructive text-center">
-                    {error}
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={submitting || (mode === "register" && (refStatus === "invalid" || refStatus === "checking"))}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-1"
-                >
-                  {submitting ? (
+              ) : (
+                /* ── Normal Form ── */
+                <form onSubmit={handleSubmit} className="space-y-3">
+                  {mode === "register" && (
                     <>
-                      <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-                      {mode === "login" ? "Signing in…" : "Creating account…"}
-                    </>
-                  ) : (
-                    mode === "login" ? "Sign In" : "Create Account"
-                  )}
-                </button>
-              </form>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                          Full name <span className="text-destructive">*</span>
+                        </label>
+                        <div className="relative">
+                          <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <input
+                            type="text"
+                            placeholder="Your name"
+                            value={fullName}
+                            onChange={(e) => setFullName(e.target.value)}
+                            className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                            autoComplete="name"
+                            disabled={submitting || sendingOtp}
+                          />
+                        </div>
+                      </div>
 
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                          Referral code <span className="text-destructive">*</span>
+                        </label>
+                        <div className="relative">
+                          <Gift className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <input
+                            type="text"
+                            placeholder="e.g. ABC123"
+                            value={refInput}
+                            onChange={(e) => handleRefChange(e.target.value)}
+                            readOnly={refFromUrl}
+                            className={`w-full pl-9 pr-10 py-2.5 rounded-lg border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 transition-colors font-mono tracking-widest ${refBorderClass()} ${refFromUrl ? "opacity-75 cursor-not-allowed select-none" : ""}`}
+                            autoComplete="off"
+                            disabled={submitting || sendingOtp}
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                            {refStatusIcon()}
+                          </span>
+                        </div>
+                        {refStatus === "valid" && (
+                          <p className="text-[11px] text-green-600 mt-1">✓ Valid referral code</p>
+                        )}
+                        {refStatus === "invalid" && (
+                          <p className="text-[11px] text-destructive mt-1">✗ Referral code not found</p>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                      Email address
+                    </label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <input
+                        type="email"
+                        placeholder="you@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                        autoComplete="email"
+                        disabled={submitting || sendingOtp}
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                      Password {mode === "register" && <span className="font-normal">(min 6 characters)</span>}
+                    </label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full pl-9 pr-10 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                        autoComplete={mode === "login" ? "current-password" : "new-password"}
+                        disabled={submitting || sendingOtp}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((v) => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {error && (
+                    <div className="bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2 text-xs text-destructive text-center">
+                      {error}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={submitting || sendingOtp || (mode === "register" && (refStatus === "invalid" || refStatus === "checking"))}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-1"
+                  >
+                    {(submitting || sendingOtp) ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                        {submitLabel()}
+                      </>
+                    ) : (
+                      submitLabel()
+                    )}
+                  </button>
+                </form>
+              )}
             </div>
           </div>
 
