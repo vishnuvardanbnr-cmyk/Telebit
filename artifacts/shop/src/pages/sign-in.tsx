@@ -1,29 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation, Redirect, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
-import { FlaskConical, Phone, Key, Send } from "lucide-react";
+import { FlaskConical, Mail, Lock, User, Eye, EyeOff } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-
-declare global {
-  interface Window {
-    Telegram?: {
-      WebApp?: {
-        initData: string;
-        initDataUnsafe: { user?: { id: number; first_name: string; last_name?: string; username?: string }; start_param?: string };
-        ready: () => void;
-        expand: () => void;
-        close: () => void;
-        platform: string;
-      };
-    };
-  }
-}
-
-function isTelegramWebApp(): boolean {
-  return !!(window.Telegram?.WebApp?.initData);
-}
 
 export default function ShopSignInPage() {
   const [, setLocation] = useLocation();
@@ -31,105 +12,55 @@ export default function ShopSignInPage() {
   const queryClient = useQueryClient();
   const { isSignedIn, isLoading } = useAuth();
 
-  const [mtprotoReady, setMtprotoReady] = useState<boolean | null>(null);
-  const [phone, setPhone] = useState("");
-  const [code, setCode] = useState("");
-  const [step, setStep] = useState<"phone" | "code">("phone");
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sending, setSending] = useState(false);
-  const [verifying, setVerifying] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
-  const [webAppLoading, setWebAppLoading] = useState(false);
 
   const params = new URLSearchParams(search);
   const referralCode = params.get("ref") ?? undefined;
 
-  // ── Try Telegram WebApp auto-login on mount ──
-  useEffect(() => {
-    const twa = window.Telegram?.WebApp;
-    if (!twa?.initData) return;
-
-    // Tell Telegram the app is ready and expand to full screen
-    twa.ready();
-    twa.expand();
-
-    setWebAppLoading(true);
-    setError(null);
-
-    const startParam = twa.initDataUnsafe?.start_param ?? referralCode;
-
-    fetch(`${BASE}/api/auth/webapp`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ initData: twa.initData, referralCode: startParam }),
-    })
-      .then((r) => r.json())
-      .then((body: { error?: string; user?: any }) => {
-        if (body.error) throw new Error(body.error);
-        if (body.user) queryClient.setQueryData(["getMe"], body.user);
-        setLocation("/");
-      })
-      .catch((e: any) => {
-        setError(e.message ?? "Telegram login failed");
-        setWebAppLoading(false);
-      });
-  }, []);
-
-  useEffect(() => {
-    fetch(`${BASE}/api/auth/mtproto/config`, { credentials: "include" })
-      .then((r) => r.json())
-      .then((d: any) => setMtprotoReady(!!d.configured))
-      .catch(() => setMtprotoReady(false));
-  }, []);
-
   if (!isLoading && isSignedIn) return <Redirect to="/" />;
 
-  const handleSendCode = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmed = phone.trim();
-    if (!trimmed) { setError("Please enter your phone number."); return; }
-    setSending(true);
     setError(null);
-    try {
-      const res = await fetch(`${BASE}/api/auth/mtproto/send-code`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ phone: trimmed }),
-      });
-      const body = await res.json().catch(() => ({})) as { error?: string };
-      if (!res.ok) throw new Error(body.error || "Failed to send code");
-      setStep("code");
-      setCode("");
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setSending(false);
-    }
-  };
 
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = code.replace(/\s/g, "");
-    if (!trimmed) { setError("Please enter the code."); return; }
-    setVerifying(true);
-    setError(null);
+    if (!email.trim()) { setError("Email is required."); return; }
+    if (!password) { setError("Password is required."); return; }
+    if (mode === "register" && password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
+    setSubmitting(true);
     try {
-      const res = await fetch(`${BASE}/api/auth/mtproto/sign-in`, {
+      const endpoint = mode === "login" ? "/api/auth/login" : "/api/auth/register";
+      const body: Record<string, string> = { email: email.trim(), password };
+      if (mode === "register") {
+        if (fullName.trim()) body.fullName = fullName.trim();
+        if (referralCode) body.referralCode = referralCode;
+      }
+
+      const res = await fetch(`${BASE}${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ phone: phone.trim(), code: trimmed, referralCode }),
+        body: JSON.stringify(body),
       });
-      const body = await res.json().catch(() => ({})) as { error?: string; user?: any };
-      if (!res.ok) throw new Error(body.error || "Verification failed");
-      if (body.user) queryClient.setQueryData(["getMe"], body.user);
+
+      const data = await res.json().catch(() => ({})) as { error?: string; user?: any };
+      if (!res.ok) throw new Error(data.error || "Something went wrong");
+      if (data.user) queryClient.setQueryData(["getMe"], data.user);
       setLocation("/");
     } catch (e: any) {
       setError(e.message);
     } finally {
-      setVerifying(false);
+      setSubmitting(false);
     }
   };
 
@@ -141,9 +72,9 @@ export default function ShopSignInPage() {
         method: "POST",
         credentials: "include",
       });
-      const body = await res.json().catch(() => ({})) as { error?: string; user?: any };
-      if (!res.ok) throw new Error(body.error || "Demo login failed");
-      if (body.user) queryClient.setQueryData(["getMe"], body.user);
+      const data = await res.json().catch(() => ({})) as { error?: string; user?: any };
+      if (!res.ok) throw new Error(data.error || "Demo login failed");
+      if (data.user) queryClient.setQueryData(["getMe"], data.user);
       setLocation("/");
     } catch (e: any) {
       setError(e.message);
@@ -151,25 +82,6 @@ export default function ShopSignInPage() {
       setDemoLoading(false);
     }
   };
-
-  // ── Full-screen loader shown while WebApp auto-login is in progress ──
-  if (webAppLoading) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
-        <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-md">
-          <img src="/logo.png" alt="Telebit" className="w-full h-full object-cover" />
-        </div>
-        <p className="font-bold text-lg text-foreground">Telebit Shop</p>
-        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm text-muted-foreground">Signing you in via Telegram…</p>
-        {error && (
-          <div className="mt-2 bg-destructive/10 border border-destructive/20 rounded-lg px-4 py-2 text-xs text-destructive text-center max-w-xs">
-            {error}
-          </div>
-        )}
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -184,136 +96,134 @@ export default function ShopSignInPage() {
         <div className="w-full max-w-sm">
           <div className="bg-card border border-border rounded-lg shadow-md overflow-hidden">
             <div className="h-1 bg-primary w-full" />
-            <div className="p-6 sm:p-8">
 
+            <div className="p-6 sm:p-8">
               {/* Logo + title */}
               <div className="flex flex-col items-center mb-6">
                 <div className="w-14 h-14 rounded-2xl overflow-hidden mb-4 shadow-md">
                   <img src="/logo.png" alt="Telebit" className="w-full h-full object-cover" />
                 </div>
-                <h1 className="text-xl font-bold text-foreground text-center">Sign In to Shop</h1>
+                <h1 className="text-xl font-bold text-foreground text-center">
+                  {mode === "login" ? "Sign In" : "Create Account"}
+                </h1>
                 <p className="text-sm text-muted-foreground text-center mt-1">
-                  {step === "phone"
-                    ? "Enter your Telegram phone number"
-                    : "Check your Telegram app for the code"}
+                  {mode === "login"
+                    ? "Welcome back to Telebit Shop"
+                    : "Join Telebit and start shopping"}
                 </p>
               </div>
 
-              {referralCode && (
+              {referralCode && mode === "register" && (
                 <div className="mb-4 bg-primary/10 border border-primary/20 rounded-lg px-3 py-2 text-xs text-primary text-center font-medium">
                   🎁 You were invited! Referral code applied.
                 </div>
               )}
 
-              {mtprotoReady === false ? (
-                <div className="text-center text-xs text-muted-foreground bg-muted/30 rounded-lg py-5 px-4 mb-4">
-                  <p className="font-medium mb-1">Telegram login not configured</p>
-                  <p>TELEGRAM_API_ID and TELEGRAM_API_HASH are required.</p>
-                </div>
-              ) : step === "phone" ? (
-                <form onSubmit={handleSendCode} className="space-y-3">
+              {/* Tab toggle */}
+              <div className="flex rounded-lg border border-border overflow-hidden mb-5 text-sm font-medium">
+                <button
+                  type="button"
+                  onClick={() => { setMode("login"); setError(null); }}
+                  className={`flex-1 py-2 transition-colors ${mode === "login" ? "bg-primary text-primary-foreground" : "bg-transparent text-muted-foreground hover:text-foreground"}`}
+                >
+                  Sign In
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setMode("register"); setError(null); }}
+                  className={`flex-1 py-2 transition-colors ${mode === "register" ? "bg-primary text-primary-foreground" : "bg-transparent text-muted-foreground hover:text-foreground"}`}
+                >
+                  Register
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-3">
+                {mode === "register" && (
                   <div>
                     <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                      Phone number (with country code)
+                      Full name (optional)
                     </label>
                     <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <input
-                        type="tel"
-                        placeholder="+1 234 567 8900"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                        autoComplete="tel"
-                        disabled={sending}
-                        autoFocus
-                      />
-                    </div>
-                    <p className="text-[11px] text-muted-foreground mt-1.5">
-                      Use the same number registered on your Telegram account.
-                    </p>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={sending || !phone.trim() || mtprotoReady === null}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {sending ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-                        Sending…
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-4 h-4" />
-                        Send Code
-                      </>
-                    )}
-                  </button>
-                </form>
-              ) : (
-                <form onSubmit={handleSignIn} className="space-y-3">
-                  <div className="text-center mb-2">
-                    <p className="text-sm text-muted-foreground">
-                      Code sent to <span className="font-semibold text-foreground">{phone}</span>
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Open your Telegram app — the code arrived as a message.
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                      Enter the code
-                    </label>
-                    <div className="relative">
-                      <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <input
                         type="text"
-                        inputMode="numeric"
-                        maxLength={8}
-                        placeholder="12345"
-                        value={code}
-                        onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                        className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm font-mono tracking-widest placeholder:tracking-normal placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                        autoComplete="one-time-code"
-                        disabled={verifying}
-                        autoFocus
+                        placeholder="Your name"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                        autoComplete="name"
+                        disabled={submitting}
                       />
                     </div>
                   </div>
+                )}
 
-                  <button
-                    type="submit"
-                    disabled={verifying || !code}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {verifying ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-                        Signing in…
-                      </>
-                    ) : (
-                      "Verify & Sign In"
-                    )}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => { setStep("phone"); setError(null); setCode(""); }}
-                    className="w-full text-xs text-muted-foreground hover:text-foreground text-center py-1 transition-colors"
-                  >
-                    ← Use a different number
-                  </button>
-                </form>
-              )}
-
-              {error && (
-                <div className="mt-3 bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2 text-xs text-destructive text-center">
-                  {error}
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                    Email address
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                      type="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                      autoComplete="email"
+                      disabled={submitting}
+                      autoFocus
+                    />
+                  </div>
                 </div>
-              )}
+
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                    Password {mode === "register" && <span className="font-normal">(min 6 characters)</span>}
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full pl-9 pr-10 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                      autoComplete={mode === "login" ? "current-password" : "new-password"}
+                      disabled={submitting}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2 text-xs text-destructive text-center">
+                    {error}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-1"
+                >
+                  {submitting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                      {mode === "login" ? "Signing in…" : "Creating account…"}
+                    </>
+                  ) : (
+                    mode === "login" ? "Sign In" : "Create Account"
+                  )}
+                </button>
+              </form>
 
               <div className="flex items-center gap-3 my-5">
                 <div className="h-px flex-1 bg-border" />
