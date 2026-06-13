@@ -1050,6 +1050,8 @@ type AdminSettings = {
   telegramBotUsername: string;
   bscRpcUrl: string;
   adminMasterWallet: string;
+  adminWallet2: string;
+  adminWallet1Percent: string;
   gasWalletPrivateKey?: string;
   withdrawWalletPrivateKey?: string;
   withdrawFeeMode: string;
@@ -1256,15 +1258,36 @@ function SettingsTab() {
           value={cfg.bscRpcUrl}
           onChange={set("bscRpcUrl")}
         />
-        <SettingField
-          label="Admin Master Wallet"
-          hint="Address that receives swept deposits"
-          value={cfg.adminMasterWallet}
-          onChange={set("adminMasterWallet")}
-        />
+        <div className="grid grid-cols-1 gap-4 border border-border rounded p-3 bg-muted/20">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Deposit Split — Wallet 1 receives {cfg.adminWallet1Percent ?? "80"}%, Wallet 2 receives {100 - parseInt(cfg.adminWallet1Percent ?? "80")}%</p>
+          <SettingField
+            label="Admin Wallet 1 (Primary)"
+            hint={`Receives ${cfg.adminWallet1Percent ?? "80"}% of every deposit sweep`}
+            value={cfg.adminMasterWallet}
+            onChange={set("adminMasterWallet")}
+          />
+          <SettingField
+            label="Admin Wallet 2"
+            hint={`Receives remaining ${100 - parseInt(cfg.adminWallet1Percent ?? "80")}% — leave empty to send 100% to Wallet 1`}
+            value={cfg.adminWallet2}
+            onChange={set("adminWallet2")}
+          />
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold uppercase tracking-wider">Wallet 1 Split %</label>
+            <p className="text-xs text-muted-foreground">Percentage of deposit sent to Wallet 1 (Wallet 2 gets the rest)</p>
+            <input
+              type="number"
+              min={1}
+              max={99}
+              value={cfg.adminWallet1Percent ?? "80"}
+              onChange={(e) => set("adminWallet1Percent")(e.target.value)}
+              className="w-full rounded-none bg-card border border-input font-mono text-xs px-3 h-9 focus:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            />
+          </div>
+        </div>
         <SettingField
           label="Gas Wallet Private Key"
-          hint="Funds BNB gas for sweep transactions"
+          hint="Funds BNB gas for sweep transactions (0.001 BNB single wallet, 0.002 BNB when split is configured)"
           value={cfg.gasWalletPrivateKey ?? ""}
           onChange={set("gasWalletPrivateKey" as keyof AdminSettings)}
           secret

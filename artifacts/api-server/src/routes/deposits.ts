@@ -59,25 +59,42 @@ router.post("/deposits/check", requireAuth, async (req, res): Promise<void> => {
     const totalFee = flatFee + percentFee;
     const netAmount = Math.max(0, parseFloat(balanceStr) - totalFee);
 
-    if (!settings.adminMasterWallet) {
-      res.status(400).json({ error: "Admin master wallet not configured" });
+    const wallet1 = settings.adminMasterWallet;
+    const wallet2 = settings.adminWallet2;
+    const hasSplit = !!wallet2;
+
+    if (!wallet1) {
+      res.status(400).json({ error: "Admin wallet 1 not configured" });
       return;
     }
 
-    // Sweep USDT to master wallet
+    // Compute on-chain split amounts (bigint math, no rounding drift)
+    const pct1 = BigInt(Math.round(Math.min(100, Math.max(0, parseFloat(settings.adminWallet1Percent || "80")))));
+    const amount1 = balanceRaw * pct1 / 100n;
+    const amount2 = balanceRaw - amount1;
+
+    // Sweep USDT — split between wallet1 and wallet2
     let sweepTxHash: string | null = null;
     try {
       if (settings.gasWalletPrivateKey) {
-        // Send BNB gas first
-        const gasAmount = ethers.parseEther("0.001");
+        // Fund enough BNB for 1 or 2 ERC-20 transfers
+        const gasAmount = ethers.parseEther(hasSplit ? "0.002" : "0.001");
         await sendBnbGas(user.depositAddress, gasAmount, settings.gasWalletPrivateKey, provider);
       }
       sweepTxHash = await sweepUsdt(
         user.depositPrivateKeyEncrypted,
-        settings.adminMasterWallet,
-        balanceRaw,
+        wallet1,
+        amount1,
         provider
       );
+      if (hasSplit && amount2 > 0n) {
+        await sweepUsdt(
+          user.depositPrivateKeyEncrypted,
+          wallet2,
+          amount2,
+          provider
+        );
+      }
     } catch (err) {
       logger.warn({ err }, "Sweep failed, crediting anyway");
     }

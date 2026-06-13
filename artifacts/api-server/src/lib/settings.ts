@@ -12,6 +12,8 @@ export interface Settings {
   withdrawalEnabled: boolean;
   otpWithdrawalEnabled: boolean;
   adminMasterWallet: string;
+  adminWallet2: string;
+  adminWallet1Percent: string;
   gasWalletPrivateKey: string;
   withdrawWalletPrivateKey: string;
   bscRpcUrl: string;
@@ -50,6 +52,8 @@ const DEFAULTS: Settings = {
   withdrawalEnabled: true,
   otpWithdrawalEnabled: false,
   adminMasterWallet: "",
+  adminWallet2: "",
+  adminWallet1Percent: "80",
   gasWalletPrivateKey: "",
   withdrawWalletPrivateKey: "",
   bscRpcUrl: "https://bsc-dataseed.binance.org/",
@@ -94,6 +98,8 @@ export async function getSettings(): Promise<Settings> {
     withdrawalEnabled: map.withdrawalEnabled === undefined ? DEFAULTS.withdrawalEnabled : map.withdrawalEnabled === "true",
     otpWithdrawalEnabled: map.otpWithdrawalEnabled === "true",
     adminMasterWallet: map.adminMasterWallet ?? DEFAULTS.adminMasterWallet,
+    adminWallet2: map.adminWallet2 ?? DEFAULTS.adminWallet2,
+    adminWallet1Percent: map.adminWallet1Percent ?? DEFAULTS.adminWallet1Percent,
     gasWalletPrivateKey: map.gasWalletPrivateKey ?? DEFAULTS.gasWalletPrivateKey,
     withdrawWalletPrivateKey: map.withdrawWalletPrivateKey ?? DEFAULTS.withdrawWalletPrivateKey,
     bscRpcUrl: map.bscRpcUrl ?? DEFAULTS.bscRpcUrl,
