@@ -24,6 +24,7 @@ function userToAdminResponse(user: typeof usersTable.$inferSelect, extra?: { tot
     depositAddress: user.depositAddress,
     referralCode: user.referralCode,
     isAdmin: user.isAdmin,
+    subscriptionActive: user.subscriptionActive ?? false,
     // ── Blocking ────────────────────────────────────────────────────────────
     isBlocked: user.isBlocked ?? false,
     withdrawalBlocked: user.withdrawalBlocked,
@@ -102,6 +103,30 @@ router.patch("/admin/users/:userId/block", requireAuth, requireAdmin, async (req
 
   const [user] = await db.update(usersTable)
     .set(updates as any)
+    .where(eq(usersTable.id, userId))
+    .returning();
+
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  res.json(userToAdminResponse(user));
+});
+
+// ─── PATCH /admin/users/:userId/activate ─────────────────────────────────────
+
+router.patch("/admin/users/:userId/activate", requireAuth, requireAdmin, async (req, res): Promise<void> => {
+  const userId = req.params.userId as string;
+  const { active } = req.body as { active?: boolean };
+
+  if (typeof active !== "boolean") {
+    res.status(400).json({ error: "active (boolean) is required" });
+    return;
+  }
+
+  const [user] = await db.update(usersTable)
+    .set({ subscriptionActive: active } as any)
     .where(eq(usersTable.id, userId))
     .returning();
 

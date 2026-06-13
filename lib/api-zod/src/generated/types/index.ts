@@ -121,6 +121,7 @@ export * from './serverStatus';
 export * from './settingsUpdate';
 export * from './settingsUpdateWithdrawalMode';
 export * from './settingsUpdateWithdrawFeeMode';
+export * from './setUserActivationRequest';
 export * from './shareRequestsSummary';
 export * from './shareTransferRequest';
 export * from './shareTransferRequestStatus';

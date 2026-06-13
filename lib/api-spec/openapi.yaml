@@ -873,6 +873,36 @@ paths:
         "403":
           description: Forbidden
 
+  /admin/users/{userId}/activate:
+    patch:
+      operationId: adminSetUserActivation
+      tags: [admin]
+      summary: Manually activate or deactivate a user's subscription
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetUserActivationRequest"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: User not found
+
   /admin/users/{userId}/add-balance:
     post:
       operationId: adminAddUserBalance
@@ -2008,7 +2038,7 @@ components:
 
     AdminUser:
       type: object
-      required: [id, email, walletBalance, earningsBalance, depositAddress, referralCode, isAdmin, isBlocked, withdrawalBlocked, p2pBlocked, investmentBlocked, createdAt]
+      required: [id, email, walletBalance, earningsBalance, depositAddress, referralCode, isAdmin, isBlocked, withdrawalBlocked, p2pBlocked, investmentBlocked, subscriptionActive, createdAt]
       properties:
         id: { type: string }
         clerkId: { type: ["string", "null"] }
@@ -2020,6 +2050,7 @@ components:
         referralCode: { type: string }
         isAdmin: { type: boolean }
         isBlocked: { type: boolean }
+        subscriptionActive: { type: boolean }
         withdrawalBlocked: { type: boolean }
         p2pBlocked: { type: boolean }
         investmentBlocked: { type: boolean }
@@ -2238,6 +2269,12 @@ components:
         withdrawalBlockReason: { type: string }
         p2pBlockReason: { type: string }
         investmentBlockReason: { type: string }
+
+    SetUserActivationRequest:
+      type: object
+      required: [active]
+      properties:
+        active: { type: boolean }
 
     ServerStatus:
       type: object

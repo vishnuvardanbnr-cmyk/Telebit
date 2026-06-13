@@ -12,6 +12,7 @@ import {
   useAdminListUsers,
   useAdminToggleUserBlock,
   useAdminAddUserBalance,
+  useAdminSetUserActivation,
   useAdminListPackages,
   useAdminCreatePackage,
   useAdminUpdatePackage,
@@ -44,7 +45,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Package, DollarSign, ShoppingCart, Tag, Edit, Trash2, Users, Ticket, ArrowLeftRight, Star, Ban, CheckCircle, Play, AlertTriangle, Settings, Eye, EyeOff, PlusCircle, Mail, TrendingUp, Share2, BarChart2, Crown, Loader2, CheckCircle2, Leaf, Clock, Shield, RefreshCcw, Wrench, Server, Wallet, ChevronDown, ChevronRight, MessageCircle, Send, ChevronLeft } from "lucide-react";
+import { Package, DollarSign, ShoppingCart, Tag, Edit, Trash2, Users, Ticket, ArrowLeftRight, Star, Ban, CheckCircle, Play, AlertTriangle, Settings, Eye, EyeOff, PlusCircle, Mail, TrendingUp, Share2, BarChart2, Crown, Loader2, CheckCircle2, Leaf, Clock, Shield, RefreshCcw, Wrench, Server, Wallet, ChevronDown, ChevronRight, MessageCircle, Send, ChevronLeft, UserCheck } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 const BASE = import.meta.env.BASE_URL;
@@ -127,7 +128,8 @@ function lotteryStatusColor(status: string) {
 
 type AdminUser = {
   id: string; email: string; fullName?: string | null; walletBalance: string;
-  isAdmin: boolean; isBlocked: boolean; withdrawalBlocked: boolean; p2pBlocked: boolean; investmentBlocked: boolean;
+  isAdmin: boolean; isBlocked: boolean; subscriptionActive: boolean;
+  withdrawalBlocked: boolean; p2pBlocked: boolean; investmentBlocked: boolean;
   blockReason?: string | null; withdrawalBlockReason?: string | null; p2pBlockReason?: string | null; investmentBlockReason?: string | null;
   depositAddress: string; referralCode: string; earningsBalance: string; createdAt: string;
   totalDeposited?: string; totalWithdrawn?: string;
@@ -241,6 +243,19 @@ function UsersTab() {
     }
   });
 
+  const activateMutation = useAdminSetUserActivation({
+    mutation: {
+      onSuccess: (data, vars) => {
+        const activated = vars.data.active;
+        toast({ title: activated ? "User activated" : "User deactivated", description: activated ? "User can now earn referral & income rewards." : "User's membership has been deactivated." });
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      },
+      onError: (err: any) => {
+        toast({ title: "Failed", description: err?.message ?? "Unknown error", variant: "destructive" });
+      }
+    }
+  });
+
   const submitAddBalance = () => {
     if (!balanceTarget) return;
     addBalance.mutate({ userId: balanceTarget.id, data: { amount: balanceAmount, note: balanceNote || undefined } });
@@ -265,16 +280,18 @@ function UsersTab() {
               <TableHead className="font-bold uppercase tracking-wider text-xs">Email</TableHead>
               <TableHead className="font-bold uppercase tracking-wider text-xs text-right">Balance</TableHead>
               <TableHead className="font-bold uppercase tracking-wider text-xs text-center">Role</TableHead>
+              <TableHead className="font-bold uppercase tracking-wider text-xs text-center">Membership</TableHead>
               <TableHead className="font-bold uppercase tracking-wider text-xs text-center">Status</TableHead>
               <TableHead className="text-right"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading && (
-              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Loading users...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Loading users...</TableCell></TableRow>
             )}
             {(users as AdminUser[] | undefined)?.map((user) => {
               const status = getOverallStatus(user);
+              const isPending = activateMutation.isPending && (activateMutation.variables as any)?.userId === user.id;
               return (
                 <TableRow key={user.id} className="border-border">
                   <TableCell className="font-bold text-sm">{user.fullName ?? "—"}</TableCell>
@@ -288,12 +305,28 @@ function UsersTab() {
                     )}
                   </TableCell>
                   <TableCell className="text-center">
+                    {user.subscriptionActive ? (
+                      <Badge variant="outline" className="rounded-none text-[10px] uppercase tracking-widest bg-emerald-500/10 text-emerald-600 border-emerald-500/20">Active</Badge>
+                    ) : (
+                      <Badge variant="outline" className="rounded-none text-[10px] uppercase tracking-widest bg-slate-100 text-slate-500 border-slate-300">Inactive</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center">
                     <Badge variant="outline" className={`rounded-none text-[10px] uppercase tracking-widest ${status.cls}`}>
                       {status.label}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={isPending}
+                        onClick={() => activateMutation.mutate({ userId: user.id, data: { active: !user.subscriptionActive } })}
+                        className={`h-8 rounded-none text-xs font-bold uppercase tracking-wider ${user.subscriptionActive ? "text-amber-600 hover:text-amber-700 hover:bg-amber-500/10" : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10"}`}
+                      >
+                        <UserCheck className="h-3 w-3 mr-1" />{user.subscriptionActive ? "Deactivate" : "Activate"}
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"

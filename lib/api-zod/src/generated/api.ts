@@ -1121,6 +1121,7 @@ export const AdminListUsersResponseItem = zod.object({
   "referralCode": zod.string(),
   "isAdmin": zod.boolean(),
   "isBlocked": zod.boolean(),
+  "subscriptionActive": zod.boolean(),
   "withdrawalBlocked": zod.boolean(),
   "p2pBlocked": zod.boolean(),
   "investmentBlocked": zod.boolean(),
@@ -1165,6 +1166,43 @@ export const AdminToggleUserBlockResponse = zod.object({
   "referralCode": zod.string(),
   "isAdmin": zod.boolean(),
   "isBlocked": zod.boolean(),
+  "subscriptionActive": zod.boolean(),
+  "withdrawalBlocked": zod.boolean(),
+  "p2pBlocked": zod.boolean(),
+  "investmentBlocked": zod.boolean(),
+  "blockReason": zod.string().nullish(),
+  "withdrawalBlockReason": zod.string().nullish(),
+  "p2pBlockReason": zod.string().nullish(),
+  "investmentBlockReason": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "totalDeposited": zod.string().optional(),
+  "totalWithdrawn": zod.string().optional()
+})
+
+
+/**
+ * @summary Manually activate or deactivate a user's subscription
+ */
+export const AdminSetUserActivationParams = zod.object({
+  "userId": zod.coerce.string()
+})
+
+export const AdminSetUserActivationBody = zod.object({
+  "active": zod.boolean()
+})
+
+export const AdminSetUserActivationResponse = zod.object({
+  "id": zod.string(),
+  "clerkId": zod.string().nullish(),
+  "email": zod.string(),
+  "fullName": zod.string().nullish(),
+  "walletBalance": zod.string(),
+  "earningsBalance": zod.string(),
+  "depositAddress": zod.string(),
+  "referralCode": zod.string(),
+  "isAdmin": zod.boolean(),
+  "isBlocked": zod.boolean(),
+  "subscriptionActive": zod.boolean(),
   "withdrawalBlocked": zod.boolean(),
   "p2pBlocked": zod.boolean(),
   "investmentBlocked": zod.boolean(),
@@ -1201,6 +1239,7 @@ export const AdminAddUserBalanceResponse = zod.object({
   "referralCode": zod.string(),
   "isAdmin": zod.boolean(),
   "isBlocked": zod.boolean(),
+  "subscriptionActive": zod.boolean(),
   "withdrawalBlocked": zod.boolean(),
   "p2pBlocked": zod.boolean(),
   "investmentBlocked": zod.boolean(),

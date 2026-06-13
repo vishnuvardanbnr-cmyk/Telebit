@@ -105,6 +105,7 @@ import type {
   Review,
   ReviewInput,
   ServerStatus,
+  SetUserActivationRequest,
   SettingsUpdate,
   ShareRequestsSummary,
   ShareTransferRequest,
@@ -3300,6 +3301,78 @@ export const useAdminToggleUserBlock = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getAdminToggleUserBlockMutationOptions(options));
+    }
+
+export const getAdminSetUserActivationUrl = (userId: string,) => {
+
+
+
+
+  return `/api/admin/users/${userId}/activate`
+}
+
+/**
+ * @summary Manually activate or deactivate a user's subscription
+ */
+export const adminSetUserActivation = async (userId: string,
+    setUserActivationRequest: SetUserActivationRequest, options?: RequestInit): Promise<AdminUser> => {
+
+  return customFetch<AdminUser>(getAdminSetUserActivationUrl(userId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      setUserActivationRequest,)
+  }
+);}
+
+
+
+
+export const getAdminSetUserActivationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminSetUserActivation>>, TError,{userId: string;data: BodyType<SetUserActivationRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminSetUserActivation>>, TError,{userId: string;data: BodyType<SetUserActivationRequest>}, TContext> => {
+
+const mutationKey = ['adminSetUserActivation'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminSetUserActivation>>, {userId: string;data: BodyType<SetUserActivationRequest>}> = (props) => {
+          const {userId,data} = props ?? {};
+
+          return  adminSetUserActivation(userId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminSetUserActivationMutationResult = NonNullable<Awaited<ReturnType<typeof adminSetUserActivation>>>
+    export type AdminSetUserActivationMutationBody = BodyType<SetUserActivationRequest>
+    export type AdminSetUserActivationMutationError = ErrorType<void>
+
+    /**
+ * @summary Manually activate or deactivate a user's subscription
+ */
+export const useAdminSetUserActivation = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminSetUserActivation>>, TError,{userId: string;data: BodyType<SetUserActivationRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminSetUserActivation>>,
+        TError,
+        {userId: string;data: BodyType<SetUserActivationRequest>},
+        TContext
+      > => {
+      return useMutation(getAdminSetUserActivationMutationOptions(options));
     }
 
 export const getAdminAddUserBalanceUrl = (userId: string,) => {

@@ -70,6 +70,7 @@ export interface AdminUser {
   referralCode: string;
   isAdmin: boolean;
   isBlocked: boolean;
+  subscriptionActive: boolean;
   withdrawalBlocked: boolean;
   p2pBlocked: boolean;
   investmentBlocked: boolean;
@@ -314,6 +315,10 @@ export interface BlockToggle {
   withdrawalBlockReason?: string;
   p2pBlockReason?: string;
   investmentBlockReason?: string;
+}
+
+export interface SetUserActivationRequest {
+  active: boolean;
 }
 
 export interface ServerStatus {
