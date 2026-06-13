@@ -59,7 +59,8 @@ export interface User {
 
 export interface AdminUser {
   id: string;
-  clerkId: string;
+  /** @nullable */
+  clerkId?: string | null;
   email: string;
   /** @nullable */
   fullName?: string | null;
@@ -68,7 +69,18 @@ export interface AdminUser {
   depositAddress: string;
   referralCode: string;
   isAdmin: boolean;
+  isBlocked: boolean;
   withdrawalBlocked: boolean;
+  p2pBlocked: boolean;
+  investmentBlocked: boolean;
+  /** @nullable */
+  blockReason?: string | null;
+  /** @nullable */
+  withdrawalBlockReason?: string | null;
+  /** @nullable */
+  p2pBlockReason?: string | null;
+  /** @nullable */
+  investmentBlockReason?: string | null;
   createdAt: string;
   totalDeposited?: string;
   totalWithdrawn?: string;
@@ -293,7 +305,64 @@ export interface TelegramConfig {
 }
 
 export interface BlockToggle {
-  blocked: boolean;
+  blocked?: boolean;
+  isBlocked?: boolean;
+  withdrawalBlocked?: boolean;
+  p2pBlocked?: boolean;
+  investmentBlocked?: boolean;
+  blockReason?: string;
+  withdrawalBlockReason?: string;
+  p2pBlockReason?: string;
+  investmentBlockReason?: string;
+}
+
+export interface ServerStatus {
+  heapUsed: number;
+  heapTotal: number;
+  rss: number;
+  uptimeSeconds: number;
+}
+
+export interface WalletAddressChange {
+  id: string;
+  userId: string;
+  /** @nullable */
+  oldAddress: string | null;
+  newAddress: string;
+  /** @nullable */
+  changedBy: string | null;
+  reason: string;
+  createdAt: string;
+}
+
+export interface WalletStats {
+  totalUsers: number;
+  totalWithAddress: number;
+  recentChanges: WalletAddressChange[];
+}
+
+export type RegenerateAddressesRequestConfirm = typeof RegenerateAddressesRequestConfirm[keyof typeof RegenerateAddressesRequestConfirm];
+
+
+export const RegenerateAddressesRequestConfirm = {
+  REGENERATE: 'REGENERATE',
+} as const;
+
+export interface RegenerateAddressesRequest {
+  confirm: RegenerateAddressesRequestConfirm;
+}
+
+export type ResetForLiveRequestConfirm = typeof ResetForLiveRequestConfirm[keyof typeof ResetForLiveRequestConfirm];
+
+
+export const ResetForLiveRequestConfirm = {
+  RESET_FOR_LIVE: 'RESET FOR LIVE',
+} as const;
+
+export interface ResetForLiveRequest {
+  confirm: ResetForLiveRequestConfirm;
+  newEmail: string;
+  newPassword: string;
 }
 
 export interface AddBalanceRequest {
@@ -1114,6 +1183,16 @@ export const ListIncomeType = {
   royalty: 'royalty',
   rank_reward: 'rank_reward',
 } as const;
+
+export type AdminRegenerateAddresses200 = {
+  regenerated: number;
+  message: string;
+};
+
+export type AdminResetForLive200 = {
+  success: boolean;
+  message: string;
+};
 
 export type AdminListShareRequestsParams = {
 status?: AdminListShareRequestsStatus;

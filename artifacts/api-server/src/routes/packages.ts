@@ -125,6 +125,17 @@ router.post("/packages/purchase", requireAuth, async (req, res): Promise<void> =
     return;
   }
 
+  // Block check
+  if (user.isBlocked) {
+    res.status(403).json({ error: "Your account has been blocked. Please contact support." });
+    return;
+  }
+  if (user.investmentBlocked) {
+    const reason = user.investmentBlockReason ? ` Reason: ${user.investmentBlockReason}` : "";
+    res.status(403).json({ error: `Package purchases have been restricted on your account.${reason}` });
+    return;
+  }
+
   const [pkg] = await db.select().from(packagesTable).where(and(eq(packagesTable.id, packageId), eq(packagesTable.isActive, true)));
   if (!pkg) {
     res.status(404).json({ error: "Package not found or inactive" });

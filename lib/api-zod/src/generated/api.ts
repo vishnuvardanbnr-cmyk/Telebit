@@ -1112,7 +1112,7 @@ export const AdminListUsersQueryParams = zod.object({
 
 export const AdminListUsersResponseItem = zod.object({
   "id": zod.string(),
-  "clerkId": zod.string(),
+  "clerkId": zod.string().nullish(),
   "email": zod.string(),
   "fullName": zod.string().nullish(),
   "walletBalance": zod.string(),
@@ -1120,7 +1120,14 @@ export const AdminListUsersResponseItem = zod.object({
   "depositAddress": zod.string(),
   "referralCode": zod.string(),
   "isAdmin": zod.boolean(),
+  "isBlocked": zod.boolean(),
   "withdrawalBlocked": zod.boolean(),
+  "p2pBlocked": zod.boolean(),
+  "investmentBlocked": zod.boolean(),
+  "blockReason": zod.string().nullish(),
+  "withdrawalBlockReason": zod.string().nullish(),
+  "p2pBlockReason": zod.string().nullish(),
+  "investmentBlockReason": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "totalDeposited": zod.string().optional(),
   "totalWithdrawn": zod.string().optional()
@@ -1136,12 +1143,20 @@ export const AdminToggleUserBlockParams = zod.object({
 })
 
 export const AdminToggleUserBlockBody = zod.object({
-  "blocked": zod.boolean()
+  "blocked": zod.boolean().optional(),
+  "isBlocked": zod.boolean().optional(),
+  "withdrawalBlocked": zod.boolean().optional(),
+  "p2pBlocked": zod.boolean().optional(),
+  "investmentBlocked": zod.boolean().optional(),
+  "blockReason": zod.string().optional(),
+  "withdrawalBlockReason": zod.string().optional(),
+  "p2pBlockReason": zod.string().optional(),
+  "investmentBlockReason": zod.string().optional()
 })
 
 export const AdminToggleUserBlockResponse = zod.object({
   "id": zod.string(),
-  "clerkId": zod.string(),
+  "clerkId": zod.string().nullish(),
   "email": zod.string(),
   "fullName": zod.string().nullish(),
   "walletBalance": zod.string(),
@@ -1149,7 +1164,14 @@ export const AdminToggleUserBlockResponse = zod.object({
   "depositAddress": zod.string(),
   "referralCode": zod.string(),
   "isAdmin": zod.boolean(),
+  "isBlocked": zod.boolean(),
   "withdrawalBlocked": zod.boolean(),
+  "p2pBlocked": zod.boolean(),
+  "investmentBlocked": zod.boolean(),
+  "blockReason": zod.string().nullish(),
+  "withdrawalBlockReason": zod.string().nullish(),
+  "p2pBlockReason": zod.string().nullish(),
+  "investmentBlockReason": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "totalDeposited": zod.string().optional(),
   "totalWithdrawn": zod.string().optional()
@@ -1170,7 +1192,7 @@ export const AdminAddUserBalanceBody = zod.object({
 
 export const AdminAddUserBalanceResponse = zod.object({
   "id": zod.string(),
-  "clerkId": zod.string(),
+  "clerkId": zod.string().nullish(),
   "email": zod.string(),
   "fullName": zod.string().nullish(),
   "walletBalance": zod.string(),
@@ -1178,7 +1200,14 @@ export const AdminAddUserBalanceResponse = zod.object({
   "depositAddress": zod.string(),
   "referralCode": zod.string(),
   "isAdmin": zod.boolean(),
+  "isBlocked": zod.boolean(),
   "withdrawalBlocked": zod.boolean(),
+  "p2pBlocked": zod.boolean(),
+  "investmentBlocked": zod.boolean(),
+  "blockReason": zod.string().nullish(),
+  "withdrawalBlockReason": zod.string().nullish(),
+  "p2pBlockReason": zod.string().nullish(),
+  "investmentBlockReason": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "totalDeposited": zod.string().optional(),
   "totalWithdrawn": zod.string().optional()
@@ -2221,6 +2250,63 @@ export const GetMyShareRequestsResponse = zod.object({
 })),
   "totalConfirmedShares": zod.number(),
   "totalPendingShares": zod.number()
+})
+
+
+/**
+ * @summary Get server memory / uptime stats
+ */
+export const AdminGetServerStatusResponse = zod.object({
+  "heapUsed": zod.number(),
+  "heapTotal": zod.number(),
+  "rss": zod.number(),
+  "uptimeSeconds": zod.number()
+})
+
+
+/**
+ * @summary Get deposit-wallet stats and recent address changes
+ */
+export const AdminGetWalletStatsResponse = zod.object({
+  "totalUsers": zod.number(),
+  "totalWithAddress": zod.number(),
+  "recentChanges": zod.array(zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "oldAddress": zod.string().nullable(),
+  "newAddress": zod.string(),
+  "changedBy": zod.string().nullable(),
+  "reason": zod.string(),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Regenerate deposit wallet addresses for all non-admin users
+ */
+export const AdminRegenerateAddressesBody = zod.object({
+  "confirm": zod.enum(['REGENERATE'])
+})
+
+export const AdminRegenerateAddressesResponse = zod.object({
+  "regenerated": zod.number(),
+  "message": zod.string()
+})
+
+
+/**
+ * @summary Nuclear reset — clears all non-admin data for a live launch
+ */
+export const AdminResetForLiveBody = zod.object({
+  "confirm": zod.enum(['RESET FOR LIVE']),
+  "newEmail": zod.string(),
+  "newPassword": zod.string()
+})
+
+export const AdminResetForLiveResponse = zod.object({
+  "success": zod.boolean(),
+  "message": zod.string()
 })
 
 

@@ -29,6 +29,8 @@ import type {
   AdminListUsersParams,
   AdminListWithdrawalsParams,
   AdminPackageInput,
+  AdminRegenerateAddresses200,
+  AdminResetForLive200,
   AdminShareRequest,
   AdminStats,
   AdminUser,
@@ -96,10 +98,13 @@ import type {
   ReferralLevel,
   ReferralLevelsBulkUpdate,
   ReferralNetwork,
+  RegenerateAddressesRequest,
   RequestPhoneOtp200,
   RequestPhoneOtp404,
+  ResetForLiveRequest,
   Review,
   ReviewInput,
+  ServerStatus,
   SettingsUpdate,
   ShareRequestsSummary,
   ShareTransferRequest,
@@ -112,6 +117,7 @@ import type {
   UserNftActivation,
   UserNftActivationResult,
   UserPackage,
+  WalletStats,
   Wishlist,
   Withdrawal,
   WithdrawalRequest
@@ -6958,6 +6964,302 @@ export const useSubmitShareRequest = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getSubmitShareRequestMutationOptions(options));
+    }
+
+export const getAdminGetServerStatusUrl = () => {
+
+
+
+
+  return `/api/admin/server-status`
+}
+
+/**
+ * @summary Get server memory / uptime stats
+ */
+export const adminGetServerStatus = async ( options?: RequestInit): Promise<ServerStatus> => {
+
+  return customFetch<ServerStatus>(getAdminGetServerStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetServerStatusQueryKey = () => {
+    return [
+    `/api/admin/server-status`
+    ] as const;
+    }
+
+
+export const getAdminGetServerStatusQueryOptions = <TData = Awaited<ReturnType<typeof adminGetServerStatus>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetServerStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetServerStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetServerStatus>>> = ({ signal }) => adminGetServerStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetServerStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetServerStatusQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetServerStatus>>>
+export type AdminGetServerStatusQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get server memory / uptime stats
+ */
+
+export function useAdminGetServerStatus<TData = Awaited<ReturnType<typeof adminGetServerStatus>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetServerStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetServerStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAdminGetWalletStatsUrl = () => {
+
+
+
+
+  return `/api/admin/wallet-stats`
+}
+
+/**
+ * @summary Get deposit-wallet stats and recent address changes
+ */
+export const adminGetWalletStats = async ( options?: RequestInit): Promise<WalletStats> => {
+
+  return customFetch<WalletStats>(getAdminGetWalletStatsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetWalletStatsQueryKey = () => {
+    return [
+    `/api/admin/wallet-stats`
+    ] as const;
+    }
+
+
+export const getAdminGetWalletStatsQueryOptions = <TData = Awaited<ReturnType<typeof adminGetWalletStats>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetWalletStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetWalletStatsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetWalletStats>>> = ({ signal }) => adminGetWalletStats({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetWalletStats>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetWalletStatsQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetWalletStats>>>
+export type AdminGetWalletStatsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get deposit-wallet stats and recent address changes
+ */
+
+export function useAdminGetWalletStats<TData = Awaited<ReturnType<typeof adminGetWalletStats>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetWalletStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetWalletStatsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAdminRegenerateAddressesUrl = () => {
+
+
+
+
+  return `/api/admin/regenerate-addresses`
+}
+
+/**
+ * @summary Regenerate deposit wallet addresses for all non-admin users
+ */
+export const adminRegenerateAddresses = async (regenerateAddressesRequest: RegenerateAddressesRequest, options?: RequestInit): Promise<AdminRegenerateAddresses200> => {
+
+  return customFetch<AdminRegenerateAddresses200>(getAdminRegenerateAddressesUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      regenerateAddressesRequest,)
+  }
+);}
+
+
+
+
+export const getAdminRegenerateAddressesMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRegenerateAddresses>>, TError,{data: BodyType<RegenerateAddressesRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminRegenerateAddresses>>, TError,{data: BodyType<RegenerateAddressesRequest>}, TContext> => {
+
+const mutationKey = ['adminRegenerateAddresses'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminRegenerateAddresses>>, {data: BodyType<RegenerateAddressesRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminRegenerateAddresses(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminRegenerateAddressesMutationResult = NonNullable<Awaited<ReturnType<typeof adminRegenerateAddresses>>>
+    export type AdminRegenerateAddressesMutationBody = BodyType<RegenerateAddressesRequest>
+    export type AdminRegenerateAddressesMutationError = ErrorType<void>
+
+    /**
+ * @summary Regenerate deposit wallet addresses for all non-admin users
+ */
+export const useAdminRegenerateAddresses = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRegenerateAddresses>>, TError,{data: BodyType<RegenerateAddressesRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminRegenerateAddresses>>,
+        TError,
+        {data: BodyType<RegenerateAddressesRequest>},
+        TContext
+      > => {
+      return useMutation(getAdminRegenerateAddressesMutationOptions(options));
+    }
+
+export const getAdminResetForLiveUrl = () => {
+
+
+
+
+  return `/api/admin/reset-for-live`
+}
+
+/**
+ * @summary Nuclear reset — clears all non-admin data for a live launch
+ */
+export const adminResetForLive = async (resetForLiveRequest: ResetForLiveRequest, options?: RequestInit): Promise<AdminResetForLive200> => {
+
+  return customFetch<AdminResetForLive200>(getAdminResetForLiveUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      resetForLiveRequest,)
+  }
+);}
+
+
+
+
+export const getAdminResetForLiveMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminResetForLive>>, TError,{data: BodyType<ResetForLiveRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminResetForLive>>, TError,{data: BodyType<ResetForLiveRequest>}, TContext> => {
+
+const mutationKey = ['adminResetForLive'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminResetForLive>>, {data: BodyType<ResetForLiveRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminResetForLive(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminResetForLiveMutationResult = NonNullable<Awaited<ReturnType<typeof adminResetForLive>>>
+    export type AdminResetForLiveMutationBody = BodyType<ResetForLiveRequest>
+    export type AdminResetForLiveMutationError = ErrorType<void>
+
+    /**
+ * @summary Nuclear reset — clears all non-admin data for a live launch
+ */
+export const useAdminResetForLive = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminResetForLive>>, TError,{data: BodyType<ResetForLiveRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminResetForLive>>,
+        TError,
+        {data: BodyType<ResetForLiveRequest>},
+        TContext
+      > => {
+      return useMutation(getAdminResetForLiveMutationOptions(options));
     }
 
 export const getAdminListShareRequestsUrl = (params?: AdminListShareRequestsParams,) => {

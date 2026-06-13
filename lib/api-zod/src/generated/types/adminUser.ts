@@ -8,7 +8,8 @@
 
 export interface AdminUser {
   id: string;
-  clerkId: string;
+  /** @nullable */
+  clerkId?: string | null;
   email: string;
   /** @nullable */
   fullName?: string | null;
@@ -17,7 +18,18 @@ export interface AdminUser {
   depositAddress: string;
   referralCode: string;
   isAdmin: boolean;
+  isBlocked: boolean;
   withdrawalBlocked: boolean;
+  p2pBlocked: boolean;
+  investmentBlocked: boolean;
+  /** @nullable */
+  blockReason?: string | null;
+  /** @nullable */
+  withdrawalBlockReason?: string | null;
+  /** @nullable */
+  p2pBlockReason?: string | null;
+  /** @nullable */
+  investmentBlockReason?: string | null;
   createdAt: Date;
   totalDeposited?: string;
   totalWithdrawn?: string;

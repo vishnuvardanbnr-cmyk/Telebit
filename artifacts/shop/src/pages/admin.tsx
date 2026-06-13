@@ -24,6 +24,10 @@ import {
   useListRanks,
   useAdminListShareRequests,
   useAdminMarkShareTransferred,
+  useAdminGetServerStatus,
+  useAdminGetWalletStats,
+  useAdminRegenerateAddresses,
+  useAdminResetForLive,
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -40,7 +44,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Package, DollarSign, ShoppingCart, Tag, Edit, Trash2, Users, Ticket, ArrowLeftRight, Star, Ban, CheckCircle, Play, AlertTriangle, Settings, Eye, EyeOff, PlusCircle, Mail, TrendingUp, Share2, BarChart2, Crown, Loader2, CheckCircle2, Leaf, Clock } from "lucide-react";
+import { Package, DollarSign, ShoppingCart, Tag, Edit, Trash2, Users, Ticket, ArrowLeftRight, Star, Ban, CheckCircle, Play, AlertTriangle, Settings, Eye, EyeOff, PlusCircle, Mail, TrendingUp, Share2, BarChart2, Crown, Loader2, CheckCircle2, Leaf, Clock, Shield, RefreshCcw, Wrench, Server, Wallet, ChevronDown, ChevronRight } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 import { useEffect, useCallback } from "react";
 
 const BASE = import.meta.env.BASE_URL;
@@ -121,6 +126,97 @@ function lotteryStatusColor(status: string) {
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
+type AdminUser = {
+  id: string; email: string; fullName?: string | null; walletBalance: string;
+  isAdmin: boolean; isBlocked: boolean; withdrawalBlocked: boolean; p2pBlocked: boolean; investmentBlocked: boolean;
+  blockReason?: string | null; withdrawalBlockReason?: string | null; p2pBlockReason?: string | null; investmentBlockReason?: string | null;
+  depositAddress: string; referralCode: string; earningsBalance: string; createdAt: string;
+  totalDeposited?: string; totalWithdrawn?: string;
+};
+
+function BlockingDrawer({ user, onClose }: { user: AdminUser; onClose: () => void }) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [fields, setFields] = useState({
+    isBlocked: user.isBlocked,
+    withdrawalBlocked: user.withdrawalBlocked,
+    p2pBlocked: user.p2pBlocked,
+    investmentBlocked: user.investmentBlocked,
+    blockReason: user.blockReason ?? "",
+    withdrawalBlockReason: user.withdrawalBlockReason ?? "",
+    p2pBlockReason: user.p2pBlockReason ?? "",
+    investmentBlockReason: user.investmentBlockReason ?? "",
+  });
+
+  const toggle = useAdminToggleUserBlock({
+    mutation: {
+      onSuccess: () => {
+        toast({ title: "Block settings updated" });
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+        onClose();
+      },
+      onError: (err: any) => {
+        toast({ title: "Failed", description: err?.message ?? "Unknown error", variant: "destructive" });
+      }
+    }
+  });
+
+  const BlockRow = ({ label, fieldKey, reasonKey }: { label: string; fieldKey: keyof typeof fields; reasonKey: keyof typeof fields }) => (
+    <div className="space-y-2 p-3 border border-border bg-muted/20">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-bold uppercase tracking-wider">{label}</span>
+        <button
+          type="button"
+          onClick={() => setFields(f => ({ ...f, [fieldKey]: !f[fieldKey] }))}
+          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${fields[fieldKey] ? 'bg-destructive' : 'bg-muted-foreground/30'}`}
+        >
+          <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${fields[fieldKey] ? 'translate-x-5' : 'translate-x-0.5'}`} />
+        </button>
+      </div>
+      {fields[fieldKey] && (
+        <Input
+          placeholder={`Reason for ${label.toLowerCase()}…`}
+          value={fields[reasonKey] as string}
+          onChange={(e) => setFields(f => ({ ...f, [reasonKey]: e.target.value }))}
+          className="rounded-none text-xs h-8"
+        />
+      )}
+    </div>
+  );
+
+  return (
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="sm:max-w-sm rounded-none border-border">
+        <DialogHeader>
+          <DialogTitle className="uppercase tracking-wider text-sm font-bold flex items-center gap-2">
+            <Shield className="h-4 w-4" />Block Settings
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-1 pt-1">
+          <div className="bg-muted/50 border border-border p-2.5 mb-3">
+            <p className="text-xs font-bold">{user.fullName ?? "—"}</p>
+            <p className="text-[11px] text-muted-foreground font-mono">{user.email}</p>
+          </div>
+          <BlockRow label="Full Account Block" fieldKey="isBlocked" reasonKey="blockReason" />
+          <BlockRow label="Withdrawal Block" fieldKey="withdrawalBlocked" reasonKey="withdrawalBlockReason" />
+          <BlockRow label="P2P Block" fieldKey="p2pBlocked" reasonKey="p2pBlockReason" />
+          <BlockRow label="Investment Block" fieldKey="investmentBlocked" reasonKey="investmentBlockReason" />
+        </div>
+        <div className="flex gap-2 pt-2">
+          <Button variant="outline" className="flex-1 rounded-none text-xs" onClick={onClose}>Cancel</Button>
+          <Button
+            className="flex-1 rounded-none font-bold uppercase tracking-wider text-xs"
+            disabled={toggle.isPending}
+            onClick={() => toggle.mutate({ userId: user.id, data: fields as any })}
+          >
+            {toggle.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function UsersTab() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -129,15 +225,7 @@ function UsersTab() {
   const [balanceTarget, setBalanceTarget] = useState<{ id: string; name: string; email: string; balance: string } | null>(null);
   const [balanceAmount, setBalanceAmount] = useState("");
   const [balanceNote, setBalanceNote] = useState("");
-
-  const toggle = useAdminToggleUserBlock({
-    mutation: {
-      onSuccess: () => {
-        toast({ title: "User status updated" });
-        queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      }
-    }
-  });
+  const [blockTarget, setBlockTarget] = useState<AdminUser | null>(null);
 
   const addBalance = useAdminAddUserBalance({
     mutation: {
@@ -159,6 +247,14 @@ function UsersTab() {
     addBalance.mutate({ userId: balanceTarget.id, data: { amount: balanceAmount, note: balanceNote || undefined } });
   };
 
+  const getOverallStatus = (user: AdminUser) => {
+    if (user.isBlocked) return { label: "Blocked", cls: "bg-destructive/10 text-destructive border-destructive/20" };
+    const flags = [user.withdrawalBlocked, user.p2pBlocked, user.investmentBlocked];
+    const count = flags.filter(Boolean).length;
+    if (count > 0) return { label: `${count} Restriction${count > 1 ? "s" : ""}`, cls: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20" };
+    return { label: "Active", cls: "bg-green-500/10 text-green-500 border-green-500/20" };
+  };
+
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-bold uppercase tracking-wider">User Management</h2>
@@ -178,48 +274,53 @@ function UsersTab() {
             {isLoading && (
               <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Loading users...</TableCell></TableRow>
             )}
-            {users?.map((user) => (
-              <TableRow key={user.id} className="border-border">
-                <TableCell className="font-bold text-sm">{user.fullName ?? "—"}</TableCell>
-                <TableCell className="text-sm text-muted-foreground font-mono text-xs">{user.email}</TableCell>
-                <TableCell className="text-right font-mono font-bold text-primary">{parseFloat(user.walletBalance).toFixed(2)} USDT</TableCell>
-                <TableCell className="text-center">
-                  {user.isAdmin ? (
-                    <Badge variant="outline" className="rounded-none text-[10px] uppercase tracking-widest bg-primary/10 text-primary border-primary/20">Admin</Badge>
-                  ) : (
-                    <Badge variant="outline" className="rounded-none text-[10px] uppercase tracking-widest">User</Badge>
-                  )}
-                </TableCell>
-                <TableCell className="text-center">
-                  <Badge variant="outline" className={`rounded-none text-[10px] uppercase tracking-widest ${user.withdrawalBlocked ? 'bg-destructive/10 text-destructive border-destructive/20' : 'bg-green-500/10 text-green-500 border-green-500/20'}`}>
-                    {user.withdrawalBlocked ? "Blocked" : "Active"}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setBalanceTarget({ id: user.id, name: user.fullName ?? user.email, email: user.email, balance: user.walletBalance })}
-                      className="h-8 rounded-none text-xs font-bold uppercase tracking-wider text-green-600 hover:text-green-700 hover:bg-green-500/10"
-                    >
-                      <PlusCircle className="h-3 w-3 mr-1" />Add Balance
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggle.mutate({ userId: user.id, data: { blocked: !user.withdrawalBlocked } })}
-                      className={`h-8 rounded-none text-xs font-bold uppercase tracking-wider ${user.withdrawalBlocked ? 'text-green-600 hover:text-green-700' : 'text-destructive hover:text-destructive/80'}`}
-                    >
-                      {user.withdrawalBlocked ? <><CheckCircle className="h-3 w-3 mr-1" />Unblock</> : <><Ban className="h-3 w-3 mr-1" />Block</>}
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+            {(users as AdminUser[] | undefined)?.map((user) => {
+              const status = getOverallStatus(user);
+              return (
+                <TableRow key={user.id} className="border-border">
+                  <TableCell className="font-bold text-sm">{user.fullName ?? "—"}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground font-mono text-xs">{user.email}</TableCell>
+                  <TableCell className="text-right font-mono font-bold text-primary">{parseFloat(user.walletBalance).toFixed(2)} USDT</TableCell>
+                  <TableCell className="text-center">
+                    {user.isAdmin ? (
+                      <Badge variant="outline" className="rounded-none text-[10px] uppercase tracking-widest bg-primary/10 text-primary border-primary/20">Admin</Badge>
+                    ) : (
+                      <Badge variant="outline" className="rounded-none text-[10px] uppercase tracking-widest">User</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant="outline" className={`rounded-none text-[10px] uppercase tracking-widest ${status.cls}`}>
+                      {status.label}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setBalanceTarget({ id: user.id, name: user.fullName ?? user.email, email: user.email, balance: user.walletBalance })}
+                        className="h-8 rounded-none text-xs font-bold uppercase tracking-wider text-green-600 hover:text-green-700 hover:bg-green-500/10"
+                      >
+                        <PlusCircle className="h-3 w-3 mr-1" />Add Balance
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setBlockTarget(user)}
+                        className="h-8 rounded-none text-xs font-bold uppercase tracking-wider text-destructive hover:text-destructive/80 hover:bg-destructive/10"
+                      >
+                        <Shield className="h-3 w-3 mr-1" />Block
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
+
+      {blockTarget && <BlockingDrawer user={blockTarget} onClose={() => setBlockTarget(null)} />}
 
       {/* Add Balance Dialog */}
       <Dialog open={!!balanceTarget} onOpenChange={(open) => { if (!open) { setBalanceTarget(null); setBalanceAmount(""); setBalanceNote(""); } }}>
@@ -275,6 +376,222 @@ function UsersTab() {
           )}
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+// ─── Maintenance Tab ──────────────────────────────────────────────────────────
+
+function MaintenanceTab() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: serverStatus, refetch: refetchStatus, isFetching: fetchingStatus } = useAdminGetServerStatus();
+  const { data: walletStats, refetch: refetchWallet } = useAdminGetWalletStats();
+
+  const [regenConfirm, setRegenConfirm] = useState("");
+  const [resetConfirm, setResetConfirm] = useState("");
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetPassword, setResetPassword] = useState("");
+  const [showResetPassword, setShowResetPassword] = useState(false);
+
+  const regen = useAdminRegenerateAddresses({
+    mutation: {
+      onSuccess: (data) => {
+        toast({ title: "Addresses regenerated", description: data.message });
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/wallet-stats"] });
+        setRegenConfirm("");
+        refetchWallet();
+      },
+      onError: (err: any) => {
+        toast({ title: "Failed", description: err?.message ?? "Unknown error", variant: "destructive" });
+      }
+    }
+  });
+
+  const reset = useAdminResetForLive({
+    mutation: {
+      onSuccess: (data) => {
+        toast({ title: "Reset complete", description: data.message });
+        setResetConfirm(""); setResetEmail(""); setResetPassword("");
+      },
+      onError: (err: any) => {
+        toast({ title: "Reset failed", description: err?.message ?? "Unknown error", variant: "destructive" });
+      }
+    }
+  });
+
+  const formatUptime = (secs: number) => {
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = secs % 60;
+    return `${h}h ${m}m ${s}s`;
+  };
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-xl font-bold uppercase tracking-wider flex items-center gap-2">
+        <Wrench className="h-5 w-5" />Maintenance
+      </h2>
+
+      {/* Server Status */}
+      <Card className="rounded-none border-border bg-card">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center justify-between">
+            <span className="flex items-center gap-2"><Server className="h-4 w-4" />Server Status</span>
+            <Button variant="ghost" size="sm" className="h-7 rounded-none text-xs" onClick={() => refetchStatus()} disabled={fetchingStatus}>
+              <RefreshCcw className={`h-3 w-3 mr-1 ${fetchingStatus ? "animate-spin" : ""}`} />Refresh
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {serverStatus ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { label: "Heap Used", value: `${serverStatus.heapUsed} MB` },
+                { label: "Heap Total", value: `${serverStatus.heapTotal} MB` },
+                { label: "RSS", value: `${serverStatus.rss} MB` },
+                { label: "Uptime", value: formatUptime(serverStatus.uptimeSeconds) },
+              ].map(({ label, value }) => (
+                <div key={label} className="bg-muted/40 border border-border p-3">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{label}</p>
+                  <p className="font-mono font-bold text-sm">{value}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">Click refresh to load server stats.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Wallet Address Stats */}
+      <Card className="rounded-none border-border bg-card">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+            <Wallet className="h-4 w-4" />Deposit Wallet Stats
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {walletStats && (
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="bg-muted/40 border border-border p-3">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Total Users</p>
+                <p className="font-mono font-bold text-lg">{walletStats.totalUsers}</p>
+              </div>
+              <div className="bg-muted/40 border border-border p-3">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">With Address</p>
+                <p className="font-mono font-bold text-lg">{walletStats.totalWithAddress}</p>
+              </div>
+            </div>
+          )}
+          {walletStats?.recentChanges && walletStats.recentChanges.length > 0 && (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider mb-2">Recent Address Changes</p>
+              <div className="space-y-1">
+                {walletStats.recentChanges.slice(0, 5).map((ch: any) => (
+                  <div key={ch.id} className="bg-muted/20 border border-border p-2 text-[11px] font-mono">
+                    <span className="text-muted-foreground">{new Date(ch.createdAt).toLocaleDateString()}</span>
+                    {" · "}<span className="text-yellow-600">{ch.oldAddress?.slice(0, 10)}…</span>
+                    {" → "}<span className="text-green-600">{ch.newAddress?.slice(0, 10)}…</span>
+                    <span className="text-muted-foreground ml-2">({ch.reason})</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Regenerate Deposit Addresses */}
+      <Card className="rounded-none border-orange-500/30 bg-orange-500/5">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2 text-orange-600">
+            <RefreshCcw className="h-4 w-4" />Regenerate Deposit Addresses
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Generates new deposit wallet addresses for <strong>all non-admin users</strong> and logs the changes. 
+            Old funds sent to previous addresses will still be swept but new deposits should go to the new addresses.
+          </p>
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold uppercase tracking-wider">Type <span className="font-mono text-orange-600">REGENERATE</span> to confirm</label>
+            <Input
+              value={regenConfirm}
+              onChange={(e) => setRegenConfirm(e.target.value)}
+              placeholder="REGENERATE"
+              className="rounded-none font-mono text-sm"
+            />
+          </div>
+          <Button
+            className="rounded-none font-bold uppercase tracking-wider text-xs bg-orange-600 hover:bg-orange-700"
+            disabled={regenConfirm !== "REGENERATE" || regen.isPending}
+            onClick={() => regen.mutate({ data: { confirm: "REGENERATE" } })}
+          >
+            {regen.isPending ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Regenerating…</> : <><RefreshCcw className="h-3 w-3 mr-1" />Regenerate All Addresses</>}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Reset For Live */}
+      <Card className="rounded-none border-destructive/40 bg-destructive/5">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2 text-destructive">
+            <AlertTriangle className="h-4 w-4" />Reset For Live
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="bg-destructive/10 border border-destructive/30 p-3 text-xs text-destructive space-y-1">
+            <p className="font-bold uppercase tracking-wider">⚠ Irreversible Nuclear Action</p>
+            <p>This will permanently delete ALL non-admin users, deposits, withdrawals, packages, income, P2P history, and OTP codes. Admin credentials will be reset to the new values provided.</p>
+          </div>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider">New Admin Email</label>
+              <Input
+                type="email"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                placeholder="admin@example.com"
+                className="rounded-none text-sm"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider">New Admin Password</label>
+              <div className="relative">
+                <Input
+                  type={showResetPassword ? "text" : "password"}
+                  value={resetPassword}
+                  onChange={(e) => setResetPassword(e.target.value)}
+                  placeholder="Min 6 characters"
+                  className="rounded-none text-sm pr-10"
+                />
+                <button type="button" onClick={() => setShowResetPassword(v => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  {showResetPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider">Type <span className="font-mono text-destructive">RESET FOR LIVE</span> to confirm</label>
+              <Input
+                value={resetConfirm}
+                onChange={(e) => setResetConfirm(e.target.value)}
+                placeholder="RESET FOR LIVE"
+                className="rounded-none font-mono text-sm"
+              />
+            </div>
+          </div>
+          <Button
+            variant="destructive"
+            className="rounded-none font-bold uppercase tracking-wider text-xs w-full"
+            disabled={resetConfirm !== "RESET FOR LIVE" || !resetEmail || resetPassword.length < 6 || reset.isPending}
+            onClick={() => reset.mutate({ data: { confirm: "RESET FOR LIVE", newEmail: resetEmail, newPassword: resetPassword } })}
+          >
+            {reset.isPending ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Resetting…</> : <><AlertTriangle className="h-3 w-3 mr-1" />Execute Reset For Live</>}
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -1832,6 +2149,7 @@ export default function Admin() {
             { value: "ranks-admin", label: "Ranks", icon: Crown },
             { value: "shares-admin", label: "Share Requests", icon: Leaf },
             { value: "settings", label: "Settings", icon: Settings },
+            { value: "maintenance", label: "Maintenance", icon: Wrench },
           ].map(({ value, label, icon: Icon }) => (
             <TabsTrigger key={value} value={value} className="rounded-none h-full px-4 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary uppercase tracking-wider font-bold text-xs whitespace-nowrap flex items-center gap-1.5">
               <Icon className="h-3.5 w-3.5" />{label}
@@ -1959,6 +2277,7 @@ export default function Admin() {
         <TabsContent value="ranks-admin"><RanksAdminTab /></TabsContent>
         <TabsContent value="shares-admin"><ShareRequestsAdminTab /></TabsContent>
         <TabsContent value="settings"><SettingsTab /></TabsContent>
+        <TabsContent value="maintenance"><MaintenanceTab /></TabsContent>
       </Tabs>
 
       {/* Product Dialog */}

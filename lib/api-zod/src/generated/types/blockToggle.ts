@@ -7,5 +7,13 @@
  */
 
 export interface BlockToggle {
-  blocked: boolean;
+  blocked?: boolean;
+  isBlocked?: boolean;
+  withdrawalBlocked?: boolean;
+  p2pBlocked?: boolean;
+  investmentBlocked?: boolean;
+  blockReason?: string;
+  withdrawalBlockReason?: string;
+  p2pBlockReason?: string;
+  investmentBlockReason?: string;
 }

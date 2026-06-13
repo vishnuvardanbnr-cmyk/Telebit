@@ -1,15 +1,45 @@
 import { Router } from "express";
 import { sendWithdrawalStatusEmail } from "../lib/mailer";
-import { db, usersTable, depositsTable, withdrawalsTable, p2pTransfersTable } from "@workspace/db";
-import { eq, desc, like, or, sum, count } from "drizzle-orm";
+import { db, usersTable, depositsTable, withdrawalsTable, p2pTransfersTable, incomeLogTable, walletAddressChangesTable } from "@workspace/db";
+import { eq, desc, sum, count } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../lib/auth";
 import { getSettings, updateSettings } from "../lib/settings";
-import { getProvider, sweepUsdt, sendBnbGas, getBnbBalance } from "../lib/wallet";
+import { getProvider, sweepUsdt, sendBnbGas, getBnbBalance, generateWallet } from "../lib/wallet";
 import { encrypt } from "../lib/crypto";
 import { ethers } from "ethers";
 import { logger } from "../lib/logger";
 
 const router = Router();
+
+// ─── Helper: serialize user for admin responses ───────────────────────────────
+
+function userToAdminResponse(user: typeof usersTable.$inferSelect, extra?: { totalDeposited?: string; totalWithdrawn?: string }) {
+  return {
+    id: user.id,
+    clerkId: user.clerkId,
+    email: user.email,
+    fullName: user.fullName,
+    walletBalance: user.walletBalance,
+    earningsBalance: user.earningsBalance,
+    depositAddress: user.depositAddress,
+    referralCode: user.referralCode,
+    isAdmin: user.isAdmin,
+    // ── Blocking ────────────────────────────────────────────────────────────
+    isBlocked: user.isBlocked ?? false,
+    withdrawalBlocked: user.withdrawalBlocked,
+    p2pBlocked: user.p2pBlocked ?? false,
+    investmentBlocked: user.investmentBlocked ?? false,
+    blockReason: user.blockReason ?? null,
+    withdrawalBlockReason: user.withdrawalBlockReason ?? null,
+    p2pBlockReason: user.p2pBlockReason ?? null,
+    investmentBlockReason: user.investmentBlockReason ?? null,
+    createdAt: user.createdAt,
+    totalDeposited: extra?.totalDeposited ?? "0",
+    totalWithdrawn: extra?.totalWithdrawn ?? "0",
+  };
+}
+
+// ─── GET /admin/users ─────────────────────────────────────────────────────────
 
 router.get("/admin/users", requireAuth, requireAdmin, async (req, res): Promise<void> => {
   const limit = Math.min(Number(req.query.limit) || 50, 200);
@@ -28,33 +58,51 @@ router.get("/admin/users", requireAuth, requireAdmin, async (req, res): Promise<
   const result = await Promise.all(filtered.map(async (u) => {
     const [depTotal] = await db.select({ total: sum(depositsTable.netAmount) }).from(depositsTable).where(eq(depositsTable.userId, u.id));
     const [wdTotal] = await db.select({ total: sum(withdrawalsTable.netAmount) }).from(withdrawalsTable).where(eq(withdrawalsTable.userId, u.id));
-    return {
-      id: u.id,
-      clerkId: u.clerkId,
-      email: u.email,
-      fullName: u.fullName,
-      walletBalance: u.walletBalance,
-      earningsBalance: u.earningsBalance,
-      depositAddress: u.depositAddress,
-      referralCode: u.referralCode,
-      isAdmin: u.isAdmin,
-      withdrawalBlocked: u.withdrawalBlocked,
-      createdAt: u.createdAt,
-      totalDeposited: depTotal?.total ?? "0",
-      totalWithdrawn: wdTotal?.total ?? "0",
-    };
+    return userToAdminResponse(u, { totalDeposited: depTotal?.total ?? "0", totalWithdrawn: wdTotal?.total ?? "0" });
   }));
 
   res.json(result);
 });
 
+// ─── PATCH /admin/users/:userId/block ────────────────────────────────────────
+
 router.patch("/admin/users/:userId/block", requireAuth, requireAdmin, async (req, res): Promise<void> => {
-  const raw = Array.isArray(req.params.userId) ? req.params.userId[0] : req.params.userId;
-  const { blocked } = req.body;
+  const userId = req.params.userId as string;
+  const {
+    blocked,
+    isBlocked,
+    p2pBlocked,
+    investmentBlocked,
+    blockReason,
+    withdrawalBlockReason,
+    p2pBlockReason,
+    investmentBlockReason,
+  } = req.body;
+
+  const updates: Partial<typeof usersTable.$inferInsert> = {};
+
+  // Legacy single-field support
+  if (typeof blocked === "boolean") updates.withdrawalBlocked = blocked;
+
+  // Granular block fields
+  if (typeof isBlocked === "boolean") updates.isBlocked = isBlocked;
+  if (typeof blocked === "boolean" && typeof isBlocked === "undefined") updates.withdrawalBlocked = blocked;
+  if (typeof req.body.withdrawalBlocked === "boolean") updates.withdrawalBlocked = req.body.withdrawalBlocked;
+  if (typeof p2pBlocked === "boolean") updates.p2pBlocked = p2pBlocked;
+  if (typeof investmentBlocked === "boolean") updates.investmentBlocked = investmentBlocked;
+  if (blockReason !== undefined) updates.blockReason = blockReason || null;
+  if (withdrawalBlockReason !== undefined) updates.withdrawalBlockReason = withdrawalBlockReason || null;
+  if (p2pBlockReason !== undefined) updates.p2pBlockReason = p2pBlockReason || null;
+  if (investmentBlockReason !== undefined) updates.investmentBlockReason = investmentBlockReason || null;
+
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: "No fields to update" });
+    return;
+  }
 
   const [user] = await db.update(usersTable)
-    .set({ withdrawalBlocked: Boolean(blocked) })
-    .where(eq(usersTable.id, raw))
+    .set(updates as any)
+    .where(eq(usersTable.id, userId))
     .returning();
 
   if (!user) {
@@ -62,22 +110,10 @@ router.patch("/admin/users/:userId/block", requireAuth, requireAdmin, async (req
     return;
   }
 
-  res.json({
-    id: user.id,
-    clerkId: user.clerkId,
-    email: user.email,
-    fullName: user.fullName,
-    walletBalance: user.walletBalance,
-    earningsBalance: user.earningsBalance,
-    depositAddress: user.depositAddress,
-    referralCode: user.referralCode,
-    isAdmin: user.isAdmin,
-    withdrawalBlocked: user.withdrawalBlocked,
-    createdAt: user.createdAt,
-    totalDeposited: "0",
-    totalWithdrawn: "0",
-  });
+  res.json(userToAdminResponse(user));
 });
+
+// ─── POST /admin/users/:userId/add-balance ────────────────────────────────────
 
 router.post("/admin/users/:userId/add-balance", requireAuth, requireAdmin, async (req, res): Promise<void> => {
   const userId = req.params.userId as string;
@@ -107,37 +143,26 @@ router.post("/admin/users/:userId/add-balance", requireAuth, requireAdmin, async
   const [depTotal] = await db.select({ total: sum(depositsTable.netAmount) }).from(depositsTable).where(eq(depositsTable.userId, user.id));
   const [wdTotal] = await db.select({ total: sum(withdrawalsTable.netAmount) }).from(withdrawalsTable).where(eq(withdrawalsTable.userId, user.id));
 
-  res.json({
-    id: user.id,
-    clerkId: user.clerkId,
-    email: user.email,
-    fullName: user.fullName,
-    walletBalance: user.walletBalance,
-    earningsBalance: user.earningsBalance,
-    depositAddress: user.depositAddress,
-    referralCode: user.referralCode,
-    isAdmin: user.isAdmin,
-    withdrawalBlocked: user.withdrawalBlocked,
-    createdAt: user.createdAt,
-    totalDeposited: depTotal?.total ?? "0",
-    totalWithdrawn: wdTotal?.total ?? "0",
-  });
+  res.json(userToAdminResponse(user, { totalDeposited: depTotal?.total ?? "0", totalWithdrawn: wdTotal?.total ?? "0" }));
 });
+
+// ─── GET /admin/deposits ──────────────────────────────────────────────────────
 
 router.get("/admin/deposits", requireAuth, requireAdmin, async (req, res): Promise<void> => {
   const limit = Math.min(Number(req.query.limit) || 50, 200);
   const offset = Number(req.query.offset) || 0;
   const status = req.query.status as string | undefined;
 
-  let query = db.select().from(depositsTable).orderBy(desc(depositsTable.createdAt)).limit(limit).offset(offset);
   if (status) {
     const deposits = await db.select().from(depositsTable).where(eq(depositsTable.status, status)).orderBy(desc(depositsTable.createdAt)).limit(limit).offset(offset);
     res.json(deposits);
     return;
   }
-  const deposits = await query;
+  const deposits = await db.select().from(depositsTable).orderBy(desc(depositsTable.createdAt)).limit(limit).offset(offset);
   res.json(deposits);
 });
+
+// ─── GET /admin/withdrawals ───────────────────────────────────────────────────
 
 router.get("/admin/withdrawals", requireAuth, requireAdmin, async (req, res): Promise<void> => {
   const limit = Math.min(Number(req.query.limit) || 50, 200);
@@ -154,18 +179,14 @@ router.get("/admin/withdrawals", requireAuth, requireAdmin, async (req, res): Pr
   res.json(withdrawals);
 });
 
+// ─── POST /admin/withdrawals/:id/approve ─────────────────────────────────────
+
 router.post("/admin/withdrawals/:id/approve", requireAuth, requireAdmin, async (req, res): Promise<void> => {
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 
   const [withdrawal] = await db.select().from(withdrawalsTable).where(eq(withdrawalsTable.id, raw));
-  if (!withdrawal) {
-    res.status(404).json({ error: "Withdrawal not found" });
-    return;
-  }
-  if (withdrawal.status !== "pending") {
-    res.status(400).json({ error: "Withdrawal is not pending" });
-    return;
-  }
+  if (!withdrawal) { res.status(404).json({ error: "Withdrawal not found" }); return; }
+  if (withdrawal.status !== "pending") { res.status(400).json({ error: "Withdrawal is not pending" }); return; }
 
   const settings = await getSettings();
   let txHash: string | null = null;
@@ -192,7 +213,6 @@ router.post("/admin/withdrawals/:id/approve", requireAuth, requireAdmin, async (
     .where(eq(withdrawalsTable.id, raw))
     .returning();
 
-  // Send withdrawal approved email (fire-and-forget)
   db.select().from(usersTable).where(eq(usersTable.id, withdrawal.userId)).limit(1).then((rows: any[]) => {
     const u = rows[0];
     if (u) sendWithdrawalStatusEmail(u.email, u.fullName ?? u.email, "approved", withdrawal.amount).catch(() => {});
@@ -201,20 +221,15 @@ router.post("/admin/withdrawals/:id/approve", requireAuth, requireAdmin, async (
   res.json(updated);
 });
 
+// ─── POST /admin/withdrawals/:id/reject ──────────────────────────────────────
+
 router.post("/admin/withdrawals/:id/reject", requireAuth, requireAdmin, async (req, res): Promise<void> => {
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 
   const [withdrawal] = await db.select().from(withdrawalsTable).where(eq(withdrawalsTable.id, raw));
-  if (!withdrawal) {
-    res.status(404).json({ error: "Withdrawal not found" });
-    return;
-  }
-  if (withdrawal.status !== "pending") {
-    res.status(400).json({ error: "Withdrawal is not pending" });
-    return;
-  }
+  if (!withdrawal) { res.status(404).json({ error: "Withdrawal not found" }); return; }
+  if (withdrawal.status !== "pending") { res.status(400).json({ error: "Withdrawal is not pending" }); return; }
 
-  // Refund to income balance (biddingProfitBalance - where withdrawals are drawn from)
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, withdrawal.userId));
   if (user) {
     const currentBalance = parseFloat(user.biddingProfitBalance);
@@ -229,11 +244,12 @@ router.post("/admin/withdrawals/:id/reject", requireAuth, requireAdmin, async (r
     .where(eq(withdrawalsTable.id, raw))
     .returning();
 
-  // Send withdrawal rejected email (fire-and-forget)
   if (user) sendWithdrawalStatusEmail(user.email, user.fullName ?? user.email, "rejected", withdrawal.amount).catch(() => {});
 
   res.json(updated);
 });
+
+// ─── GET /admin/settings ──────────────────────────────────────────────────────
 
 router.get("/admin/settings", requireAuth, requireAdmin, async (_req, res): Promise<void> => {
   const settings = await getSettings();
@@ -267,6 +283,8 @@ router.get("/admin/settings", requireAuth, requireAdmin, async (_req, res): Prom
     smtpFromName: settings.smtpFromName,
   });
 });
+
+// ─── PUT /admin/settings ──────────────────────────────────────────────────────
 
 router.put("/admin/settings", requireAuth, requireAdmin, async (req, res): Promise<void> => {
   await updateSettings(req.body);
@@ -302,6 +320,8 @@ router.put("/admin/settings", requireAuth, requireAdmin, async (req, res): Promi
   });
 });
 
+// ─── GET /admin/stats ─────────────────────────────────────────────────────────
+
 router.get("/admin/stats", requireAuth, requireAdmin, async (_req, res): Promise<void> => {
   const [userCount] = await db.select({ count: count() }).from(usersTable);
   const [depTotal] = await db.select({ total: sum(depositsTable.netAmount), cnt: count() }).from(depositsTable);
@@ -323,6 +343,123 @@ router.get("/admin/stats", requireAuth, requireAdmin, async (_req, res): Promise
     recentDeposits,
     recentWithdrawals,
   });
+});
+
+// ─── GET /admin/server-status ─────────────────────────────────────────────────
+
+router.get("/admin/server-status", requireAuth, requireAdmin, async (_req, res): Promise<void> => {
+  const mem = process.memoryUsage();
+  res.json({
+    heapUsed: Math.round(mem.heapUsed / 1024 / 1024),
+    heapTotal: Math.round(mem.heapTotal / 1024 / 1024),
+    rss: Math.round(mem.rss / 1024 / 1024),
+    uptimeSeconds: Math.floor(process.uptime()),
+  });
+});
+
+// ─── GET /admin/wallet-stats ──────────────────────────────────────────────────
+
+router.get("/admin/wallet-stats", requireAuth, requireAdmin, async (_req, res): Promise<void> => {
+  const users = await db.select({ id: usersTable.id, depositAddress: usersTable.depositAddress }).from(usersTable);
+  const changes = await db.select().from(walletAddressChangesTable).orderBy(desc(walletAddressChangesTable.createdAt)).limit(50);
+
+  res.json({
+    totalUsers: users.length,
+    totalWithAddress: users.filter(u => u.depositAddress).length,
+    recentChanges: changes,
+  });
+});
+
+// ─── POST /admin/regenerate-addresses ────────────────────────────────────────
+// Regenerates deposit wallets for ALL non-admin users and logs the old→new change.
+
+router.post("/admin/regenerate-addresses", requireAuth, requireAdmin, async (req, res): Promise<void> => {
+  const admin = (req as any).dbUser;
+  const { confirm } = req.body as { confirm?: string };
+
+  if (confirm !== "REGENERATE") {
+    res.status(400).json({ error: 'Send { "confirm": "REGENERATE" } to proceed' });
+    return;
+  }
+
+  const users = await db.select().from(usersTable).where(eq(usersTable.isAdmin, false));
+  let regenerated = 0;
+
+  for (const user of users) {
+    const { address: newAddress, privateKeyEncrypted } = generateWallet();
+    await db.update(usersTable)
+      .set({ depositAddress: newAddress, depositPrivateKeyEncrypted: privateKeyEncrypted } as any)
+      .where(eq(usersTable.id, user.id));
+
+    await db.insert(walletAddressChangesTable).values({
+      userId: user.id,
+      oldAddress: user.depositAddress,
+      newAddress,
+      changedBy: admin.id,
+      reason: "admin_regenerate",
+    });
+
+    regenerated++;
+  }
+
+  logger.info({ adminId: admin.id, regenerated }, "Admin regenerated deposit addresses");
+
+  res.json({ regenerated, message: `Successfully regenerated ${regenerated} deposit addresses.` });
+});
+
+// ─── POST /admin/reset-for-live ───────────────────────────────────────────────
+// Nuclear: clears all non-admin transactional data and resets admin credentials.
+
+router.post("/admin/reset-for-live", requireAuth, requireAdmin, async (req, res): Promise<void> => {
+  const { confirm, newEmail, newPassword } = req.body as { confirm?: string; newEmail?: string; newPassword?: string };
+
+  if (confirm !== "RESET FOR LIVE") {
+    res.status(400).json({ error: 'Send { confirm: "RESET FOR LIVE", newEmail, newPassword } to proceed' });
+    return;
+  }
+  if (!newEmail || !newEmail.includes("@")) {
+    res.status(400).json({ error: "Valid newEmail is required" });
+    return;
+  }
+  if (!newPassword || newPassword.length < 6) {
+    res.status(400).json({ error: "newPassword must be at least 6 characters" });
+    return;
+  }
+
+  const { sql } = await import("drizzle-orm");
+  const { userPackagesTable, incomeLogTable: incomeLog, royaltyDistributionsTable } = await import("@workspace/db");
+  const bcrypt = await import("bcryptjs");
+
+  // Clear all transactional data
+  await db.delete(withdrawalsTable);
+  await db.delete(depositsTable);
+  await db.delete(userPackagesTable);
+  await db.delete(incomeLog);
+  if (royaltyDistributionsTable) await db.delete(royaltyDistributionsTable).catch(() => {});
+  await db.execute(sql`DELETE FROM income_log`);
+  await db.execute(sql`DELETE FROM p2p_transfers`);
+  await db.execute(sql`DELETE FROM wallet_address_changes`);
+  await db.execute(sql`DELETE FROM otp_codes`);
+
+  // Delete all non-admin users
+  await db.delete(usersTable).where(eq(usersTable.isAdmin, false));
+
+  // Reset admin credentials
+  const passwordHash = await bcrypt.default.hash(newPassword, 12);
+  await db.update(usersTable)
+    .set({
+      email: newEmail,
+      passwordHash,
+      walletBalance: "0",
+      earningsBalance: "0",
+      totalIncomeEarned: "0",
+      biddingProfitBalance: "0",
+    } as any)
+    .where(eq(usersTable.isAdmin, true));
+
+  logger.warn({ newEmail }, "Admin triggered RESET FOR LIVE — all non-admin data cleared");
+
+  res.json({ success: true, message: "All non-admin data cleared and admin credentials updated." });
 });
 
 export default router;
