@@ -30,7 +30,7 @@ jobs:
           version: 10
 
       - name: Install workspace dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
       - name: Build shop web app
         run: pnpm --filter @workspace/shop run build
@@ -42,6 +42,21 @@ jobs:
         run: |
           cd artifacts/shop
           npx cap add android
+
+      - name: Apply custom app icon
+        run: |
+          ICON="artifacts/shop/public/logo.png"
+          BASE="artifacts/shop/android/app/src/main/res"
+          convert "$ICON" -resize 48x48   "$BASE/mipmap-mdpi/ic_launcher.png"
+          convert "$ICON" -resize 72x72   "$BASE/mipmap-hdpi/ic_launcher.png"
+          convert "$ICON" -resize 96x96   "$BASE/mipmap-xhdpi/ic_launcher.png"
+          convert "$ICON" -resize 144x144 "$BASE/mipmap-xxhdpi/ic_launcher.png"
+          convert "$ICON" -resize 192x192 "$BASE/mipmap-xxxhdpi/ic_launcher.png"
+          convert "$ICON" -resize 48x48   "$BASE/mipmap-mdpi/ic_launcher_round.png"
+          convert "$ICON" -resize 72x72   "$BASE/mipmap-hdpi/ic_launcher_round.png"
+          convert "$ICON" -resize 96x96   "$BASE/mipmap-xhdpi/ic_launcher_round.png"
+          convert "$ICON" -resize 144x144 "$BASE/mipmap-xxhdpi/ic_launcher_round.png"
+          convert "$ICON" -resize 192x192 "$BASE/mipmap-xxxhdpi/ic_launcher_round.png"
 
       - name: Sync Capacitor
         run: |
