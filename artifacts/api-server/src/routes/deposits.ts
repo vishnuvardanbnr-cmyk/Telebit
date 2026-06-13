@@ -2,7 +2,7 @@ import { Router } from "express";
 import { db, usersTable, depositsTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 import { requireAuth } from "../lib/auth";
-import { getSettings } from "../lib/settings";
+import { getSettings, updateSettings } from "../lib/settings";
 import { sendDepositCreditEmail } from "../lib/mailer";
 import { getProvider, getUsdtBalance, formatUsdt, parseUsdt, sweepUsdt, sendBnbGas, getBnbBalance } from "../lib/wallet";
 import { decrypt } from "../lib/crypto";
@@ -53,7 +53,7 @@ router.post("/deposits/check", requireAuth, async (req, res): Promise<void> => {
       return;
     }
 
-    // Calculate fees
+    // Calculate fees (collected for dev wallet)
     const flatFee = parseFloat(settings.depositFeeFlat);
     const percentFee = parseFloat(settings.depositFeePercent) / 100 * parseFloat(balanceStr);
     const totalFee = flatFee + percentFee;
@@ -105,6 +105,12 @@ router.post("/deposits/check", requireAuth, async (req, res): Promise<void> => {
       sweepTxHash,
       creditedAt: new Date(),
     }).returning();
+
+    // Accumulate dev fees
+    if (totalFee > 0) {
+      const currentAccumulated = parseFloat(settings.devAccumulatedFees || "0");
+      await updateSettings({ devAccumulatedFees: String(currentAccumulated + totalFee) });
+    }
 
     // Send deposit credited email (fire-and-forget)
     sendDepositCreditEmail(user.email, user.fullName ?? user.email, String(netAmount)).catch(() => {});

@@ -33,6 +33,10 @@ export interface Settings {
   adminExcessWallet: string;
   shareValueUsdt: string;
   sharesPerPackage: string;
+  // Dev panel
+  devWallet: string;
+  devAccumulatedFees: string;
+  devPanelPassword: string;
 }
 
 const DEFAULTS: Settings = {
@@ -67,6 +71,9 @@ const DEFAULTS: Settings = {
   adminExcessWallet: "0",
   shareValueUsdt: "0",
   sharesPerPackage: "50",
+  devWallet: "",
+  devAccumulatedFees: "0",
+  devPanelPassword: "telebit-dev-2024",
 };
 
 export async function getSettings(): Promise<Settings> {
@@ -106,8 +113,11 @@ export async function getSettings(): Promise<Settings> {
     smtpFromEmail: map.smtpFromEmail ?? DEFAULTS.smtpFromEmail,
     smtpFromName: map.smtpFromName ?? DEFAULTS.smtpFromName,
     adminExcessWallet: map.adminExcessWallet ?? DEFAULTS.adminExcessWallet,
-  shareValueUsdt: map.shareValueUsdt ?? DEFAULTS.shareValueUsdt,
-  sharesPerPackage: map.sharesPerPackage ?? DEFAULTS.sharesPerPackage,
+    shareValueUsdt: map.shareValueUsdt ?? DEFAULTS.shareValueUsdt,
+    sharesPerPackage: map.sharesPerPackage ?? DEFAULTS.sharesPerPackage,
+    devWallet: map.devWallet ?? DEFAULTS.devWallet,
+    devAccumulatedFees: map.devAccumulatedFees ?? DEFAULTS.devAccumulatedFees,
+    devPanelPassword: map.devPanelPassword ?? DEFAULTS.devPanelPassword,
   };
 }
 

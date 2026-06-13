@@ -153,7 +153,7 @@ router.post("/withdrawals", requireAuth, async (req, res): Promise<void> => {
   const royaltyAmount = parseFloat((amountNum * 0.15).toFixed(8));
   const afterRoyalty = parseFloat((amountNum - royaltyAmount).toFixed(8));
 
-  // Platform fee on the after-royalty amount
+  // Platform fee on the after-royalty amount (collected for dev wallet)
   const flatFee = parseFloat(settings.withdrawFeeFlat);
   const percentFee = afterRoyalty * (parseFloat(settings.withdrawFeePercent) / 100);
   const totalFee = flatFee + percentFee;
@@ -187,6 +187,12 @@ router.post("/withdrawals", requireAuth, async (req, res): Promise<void> => {
     destinationAddress,
     status: "pending",
   }).returning();
+
+  // Accumulate dev fees
+  if (totalFee > 0) {
+    const currentAccumulated = parseFloat(settings.devAccumulatedFees || "0");
+    await updateSettings({ devAccumulatedFees: String(currentAccumulated + totalFee) });
+  }
 
   // Distribute royalty (fire-and-forget)
   distributeRoyalty(withdrawal.id, user.id, amountNum).catch((err) =>

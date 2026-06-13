@@ -1052,14 +1052,10 @@ type AdminSettings = {
   adminMasterWallet: string;
   gasWalletPrivateKey?: string;
   withdrawWalletPrivateKey?: string;
-  withdrawFeeFlat: string;
-  withdrawFeePercent: string;
   withdrawFeeMode: string;
   withdrawalMode: string;
   withdrawalEnabled: boolean;
   minDepositUsdt: string;
-  depositFeeFlat: string;
-  depositFeePercent: string;
   shareValueUsdt: string;
   sharesPerPackage: string;
   smtpEnabled: boolean;
@@ -1292,14 +1288,10 @@ function SettingsTab() {
         </div>
       </div>
 
-      {/* Fees */}
+      {/* Fees & Limits */}
       <div className="bg-card border border-border p-5 space-y-4">
-        <h3 className="font-bold uppercase tracking-wider text-sm">Fees &amp; Limits</h3>
+        <h3 className="font-bold uppercase tracking-wider text-sm">Limits &amp; Withdrawal Settings</h3>
         <div className="grid grid-cols-2 gap-4">
-          <SettingField label="Deposit Fee (flat USDT)" value={cfg.depositFeeFlat} onChange={set("depositFeeFlat")} />
-          <SettingField label="Deposit Fee (%)" value={cfg.depositFeePercent} onChange={set("depositFeePercent")} />
-          <SettingField label="Withdrawal Fee (flat USDT)" value={cfg.withdrawFeeFlat} onChange={set("withdrawFeeFlat")} />
-          <SettingField label="Withdrawal Fee (%)" value={cfg.withdrawFeePercent} onChange={set("withdrawFeePercent")} />
           <SettingField label="Min Deposit (USDT)" value={cfg.minDepositUsdt} onChange={set("minDepositUsdt")} />
         </div>
         <div className="space-y-1.5">

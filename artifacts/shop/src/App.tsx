@@ -27,6 +27,7 @@ import RanksPage from "./pages/ranks";
 import IncomeDetailPage from "./pages/income-detail";
 import IncomePage from "./pages/income";
 import DematPage from "./pages/demat";
+import DevPanel from "./pages/dev";
 import { Layout } from "./components/layout";
 import { AuthProvider, useAuth } from "./lib/auth-context";
 import { OfflineBanner } from "./components/offline-banner";
@@ -167,6 +168,7 @@ function AppRoutes() {
           <ProtectedRoute component={DematPage} />
         </Layout>
       </Route>
+      <Route path="/dev" component={DevPanel} />
       <Route component={NotFound} />
     </Switch>
   );

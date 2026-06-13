@@ -15,6 +15,7 @@ import packagesRouter from "./packages";
 import incomeRouter from "./income";
 import ranksRouter from "./ranks";
 import dematRouter from "./demat";
+import devRouter from "./dev";
 
 const router: IRouter = Router();
 
@@ -34,5 +35,6 @@ router.use(packagesRouter);
 router.use(incomeRouter);
 router.use(ranksRouter);
 router.use(dematRouter);
+router.use(devRouter);
 
 export default router;
