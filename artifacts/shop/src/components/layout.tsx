@@ -194,17 +194,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </Link>
 
               <Link
-                href="/wallet"
-                className={cn(
-                  "flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
-                  location.startsWith("/wallet") ? "text-primary" : "text-muted-foreground"
-                )}
-              >
-                <Wallet className={cn("h-5 w-5", location.startsWith("/wallet") && "stroke-[2.5px]")} />
-                <span>Wallet</span>
-              </Link>
-
-              <Link
                 href="/packages"
                 className={cn(
                   "flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
@@ -213,6 +202,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
               >
                 <TrendingUp className={cn("h-5 w-5", location.startsWith("/packages") && "stroke-[2.5px]")} />
                 <span>Invest</span>
+              </Link>
+
+              <Link
+                href="/wallet"
+                className={cn(
+                  "flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
+                  location.startsWith("/wallet") ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                <Wallet className={cn("h-5 w-5", location.startsWith("/wallet") && "stroke-[2.5px]")} />
+                <span>Wallet</span>
               </Link>
 
               <Link
