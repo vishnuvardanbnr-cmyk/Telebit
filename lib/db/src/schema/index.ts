@@ -25,3 +25,4 @@ export * from "./ranks";
 export * from "./demat_accounts";
 export * from "./share_transfer_requests";
 export * from "./wallet_address_changes";
+export * from "./support";

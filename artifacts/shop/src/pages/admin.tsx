@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import {
   useAdminGetShopStats,
   useAdminListProducts,
@@ -44,9 +44,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Package, DollarSign, ShoppingCart, Tag, Edit, Trash2, Users, Ticket, ArrowLeftRight, Star, Ban, CheckCircle, Play, AlertTriangle, Settings, Eye, EyeOff, PlusCircle, Mail, TrendingUp, Share2, BarChart2, Crown, Loader2, CheckCircle2, Leaf, Clock, Shield, RefreshCcw, Wrench, Server, Wallet, ChevronDown, ChevronRight } from "lucide-react";
+import { Package, DollarSign, ShoppingCart, Tag, Edit, Trash2, Users, Ticket, ArrowLeftRight, Star, Ban, CheckCircle, Play, AlertTriangle, Settings, Eye, EyeOff, PlusCircle, Mail, TrendingUp, Share2, BarChart2, Crown, Loader2, CheckCircle2, Leaf, Clock, Shield, RefreshCcw, Wrench, Server, Wallet, ChevronDown, ChevronRight, MessageCircle, Send, ChevronLeft } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { useEffect, useCallback } from "react";
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -376,6 +375,172 @@ function UsersTab() {
           )}
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+// ─── Support Tab ──────────────────────────────────────────────────────────────
+
+function SupportAdminTab() {
+  const BASE = import.meta.env.BASE_URL;
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<"all"|"open"|"in_progress"|"closed">("all");
+  const [active, setActive] = useState<any | null>(null);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  async function api(path: string, opts?: RequestInit) {
+    const res = await fetch(`${BASE}api/support${path}`, { ...opts, credentials: "include", headers: { "Content-Type": "application/json", ...(opts?.headers ?? {}) } });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.error ?? "Request failed");
+    return d;
+  }
+
+  const loadTickets = useCallback(async () => {
+    try { const d = await api("/admin/tickets"); setTickets(d.data ?? []); }
+    catch { /* ignore */ } finally { setLoading(false); }
+  }, []);
+
+  const openTicket = async (t: any) => {
+    setActive(t); setMessages([]);
+    try { const d = await api(`/admin/tickets/${t.id}`); setMessages(d.messages ?? []); setActive(d.ticket); }
+    catch { /* ignore */ }
+  };
+
+  useEffect(() => { loadTickets(); }, [loadTickets]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+  const updateStatus = async (status: string) => {
+    if (!active) return;
+    try {
+      const d = await api(`/admin/tickets/${active.id}/status`, { method: "PUT", body: JSON.stringify({ status }) });
+      setActive(d); setTickets(prev => prev.map(t => t.id === d.id ? d : t));
+    } catch { /* ignore */ }
+  };
+
+  const sendReply = async () => {
+    const text = input.trim(); if (!text || !active) return;
+    setSending(true);
+    try {
+      const msg = await api(`/admin/tickets/${active.id}/messages`, { method: "POST", body: JSON.stringify({ message: text }) });
+      setMessages(prev => [...prev, msg]); setInput("");
+      setActive((prev: any) => prev ? { ...prev, status: prev.status === "open" ? "in_progress" : prev.status } : prev);
+      setTickets(prev => prev.map(t => t.id === active.id ? { ...t, status: active.status === "open" ? "in_progress" : active.status } : t));
+    } catch { /* ignore */ } finally { setSending(false); }
+  };
+
+  const STATUS_CFG: Record<string, { label: string; cls: string }> = {
+    open:        { label: "Open",        cls: "bg-blue-50 text-blue-600 border-blue-200" },
+    in_progress: { label: "In Progress", cls: "bg-amber-50 text-amber-600 border-amber-200" },
+    closed:      { label: "Closed",      cls: "bg-slate-100 text-slate-500 border-slate-200" },
+  };
+
+  const filtered = filter === "all" ? tickets : tickets.filter(t => t.status === filter);
+  const open_count = tickets.filter(t => t.status === "open").length;
+
+  if (active) {
+    const cfg = STATUS_CFG[active.status] ?? STATUS_CFG.open;
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <button onClick={() => { setActive(null); loadTickets(); }} className="w-8 h-8 rounded-lg border border-border flex items-center justify-center hover:bg-muted transition-colors">
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <div className="flex-1">
+            <p className="font-bold text-sm">{active.subject}</p>
+            <p className="text-xs text-muted-foreground">{active.userName} · {active.userEmail}</p>
+          </div>
+          <div className="flex gap-2 items-center">
+            <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${cfg.cls}`}>{cfg.label}</span>
+            {active.status !== "in_progress" && active.status !== "closed" && (
+              <button onClick={() => updateStatus("in_progress")} className="text-xs px-3 py-1.5 rounded-lg font-bold bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100">In Progress</button>
+            )}
+            {active.status !== "closed" && (
+              <button onClick={() => updateStatus("closed")} className="text-xs px-3 py-1.5 rounded-lg font-bold bg-slate-100 border border-slate-200 text-slate-600 hover:bg-slate-200">Close</button>
+            )}
+            {active.status === "closed" && (
+              <button onClick={() => updateStatus("open")} className="text-xs px-3 py-1.5 rounded-lg font-bold bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100">Reopen</button>
+            )}
+          </div>
+        </div>
+        <div className="border border-border rounded-xl bg-white overflow-hidden flex flex-col" style={{ height: "500px" }}>
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {messages.length === 0 && <p className="text-xs text-muted-foreground text-center py-8">No messages yet.</p>}
+            {messages.map((msg: any) => (
+              <div key={msg.id} className={`flex ${msg.isAdmin ? "justify-end" : "justify-start"}`}>
+                <div className={`max-w-sm rounded-2xl px-4 py-2.5 text-sm ${msg.isAdmin ? "bg-primary text-primary-foreground rounded-tr-sm" : "bg-muted border border-border rounded-tl-sm"}`}>
+                  <p className="text-[10px] font-bold mb-1 opacity-60">{msg.isAdmin ? "Support Team" : msg.senderName}</p>
+                  <p style={{ wordBreak: "break-word" }}>{msg.message}</p>
+                  <p className="text-[10px] mt-1 opacity-50 text-right">{new Date(msg.createdAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</p>
+                </div>
+              </div>
+            ))}
+            <div ref={bottomRef} />
+          </div>
+          {active.status === "closed" ? (
+            <div className="border-t border-border px-4 py-3 text-center text-xs text-muted-foreground bg-muted/30">Ticket closed — reopen to reply</div>
+          ) : (
+            <div className="border-t border-border p-3 flex gap-2">
+              <input
+                value={input} onChange={e => setInput(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendReply(); } }}
+                placeholder="Reply to user…"
+                className="flex-1 rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+              <button onClick={sendReply} disabled={sending || !input.trim()} className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-primary-foreground disabled:opacity-40 shrink-0">
+                {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold uppercase tracking-wider">Support Tickets</h2>
+        {open_count > 0 && (
+          <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-600">{open_count} open</span>
+        )}
+      </div>
+      <div className="flex gap-2 flex-wrap">
+        {(["all","open","in_progress","closed"] as const).map(f => (
+          <button key={f} onClick={() => setFilter(f)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${filter === f ? "bg-primary/10 border-primary/30 text-primary" : "bg-card border-border text-muted-foreground hover:border-primary/20"}`}>
+            {f === "all" ? `All (${tickets.length})` : f === "in_progress" ? "In Progress" : f.charAt(0).toUpperCase() + f.slice(1)}
+          </button>
+        ))}
+      </div>
+      {loading ? (
+        <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-14 bg-muted animate-pulse rounded-xl" />)}</div>
+      ) : filtered.length === 0 ? (
+        <div className="py-12 text-center border border-border rounded-xl bg-card">
+          <MessageCircle className="w-8 h-8 mx-auto text-muted-foreground/20 mb-2" />
+          <p className="text-sm text-muted-foreground">No tickets</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {filtered.map((t: any) => {
+            const cfg = STATUS_CFG[t.status] ?? STATUS_CFG.open;
+            return (
+              <button key={t.id} onClick={() => openTicket(t)}
+                className="w-full text-left rounded-xl border border-border bg-card px-4 py-3 flex items-center gap-3 hover:border-primary/30 hover:shadow-sm transition-all">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate">{t.subject}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t.userName} · {t.userEmail}</p>
+                </div>
+                <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border shrink-0 ${cfg.cls}`}>{cfg.label}</span>
+                <p className="text-[11px] text-muted-foreground shrink-0">{new Date(t.updatedAt).toLocaleDateString()}</p>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -2164,6 +2329,7 @@ export default function Admin() {
             { value: "ranks-admin", label: "Ranks", icon: Crown },
             { value: "shares-admin", label: "Share Requests", icon: Leaf },
             { value: "settings", label: "Settings", icon: Settings },
+            { value: "support-admin", label: "Support", icon: MessageCircle },
             { value: "maintenance", label: "Maintenance", icon: Wrench },
           ].map(({ value, label, icon: Icon }) => (
             <TabsTrigger key={value} value={value} className="rounded-none h-full px-4 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary uppercase tracking-wider font-bold text-xs whitespace-nowrap flex items-center gap-1.5">
@@ -2292,6 +2458,7 @@ export default function Admin() {
         <TabsContent value="ranks-admin"><RanksAdminTab /></TabsContent>
         <TabsContent value="shares-admin"><ShareRequestsAdminTab /></TabsContent>
         <TabsContent value="settings"><SettingsTab /></TabsContent>
+        <TabsContent value="support-admin"><SupportAdminTab /></TabsContent>
         <TabsContent value="maintenance"><MaintenanceTab /></TabsContent>
       </Tabs>
 
