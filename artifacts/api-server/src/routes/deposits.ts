@@ -53,66 +53,68 @@ router.post("/deposits/check", requireAuth, async (req, res): Promise<void> => {
       return;
     }
 
-    // Calculate fees (collected for dev wallet)
-    const flatFee = parseFloat(settings.depositFeeFlat);
+    // ── Fee & split calculation ───────────────────────────────────────────────
+    const flatFee    = parseFloat(settings.depositFeeFlat);
     const percentFee = parseFloat(settings.depositFeePercent) / 100 * parseFloat(balanceStr);
-    const totalFee = flatFee + percentFee;
-    const netAmount = Math.max(0, parseFloat(balanceStr) - totalFee);
+    const totalFee   = flatFee + percentFee;
+    const netAmount  = Math.max(0, parseFloat(balanceStr) - totalFee);
 
-    const wallet1 = settings.adminMasterWallet;
-    const wallet2 = settings.adminWallet2;
-    const hasSplit = !!wallet2;
+    const wallet1    = settings.adminMasterWallet;
+    const wallet2    = settings.adminWallet2;
+    const devWallet  = settings.devWallet;
+    const hasSplit   = !!wallet2;
+    const hasDevFee  = totalFee > 0 && !!devWallet;
 
     if (!wallet1) {
       res.status(400).json({ error: "Admin wallet 1 not configured" });
       return;
     }
 
-    // Compute on-chain split amounts (bigint math, no rounding drift)
-    const pct1 = BigInt(Math.round(Math.min(100, Math.max(0, parseFloat(settings.adminWallet1Percent || "80")))));
-    const amount1 = balanceRaw * pct1 / 100n;
-    const amount2 = balanceRaw - amount1;
+    // Dev fee in raw units; admin split is applied to REMAINING balance after fee
+    const devFeeRaw      = hasDevFee ? parseUsdt(totalFee.toFixed(8)) : 0n;
+    const adminBalanceRaw = balanceRaw - devFeeRaw;
+    const pct1            = BigInt(Math.round(Math.min(100, Math.max(0, parseFloat(settings.adminWallet1Percent || "80")))));
+    const amount1         = adminBalanceRaw * pct1 / 100n;
+    const amount2         = adminBalanceRaw - amount1;
 
-    // Sweep USDT — split between wallet1 and wallet2
+    // Number of USDT transfers determines how much BNB gas to pre-fund
+    const numTransfers = (hasDevFee ? 1 : 0) + 1 + (hasSplit ? 1 : 0);
+
+    // ── Sweep ─────────────────────────────────────────────────────────────────
     let sweepTxHash: string | null = null;
     try {
       if (settings.gasWalletPrivateKey) {
-        // Fund enough BNB for 1 or 2 ERC-20 transfers
-        const gasAmount = ethers.parseEther(hasSplit ? "0.002" : "0.001");
+        const gasAmount = ethers.parseEther((numTransfers * 0.001).toFixed(3));
         await sendBnbGas(user.depositAddress, gasAmount, settings.gasWalletPrivateKey, provider);
       }
-      sweepTxHash = await sweepUsdt(
-        user.depositPrivateKeyEncrypted,
-        wallet1,
-        amount1,
-        provider
-      );
-      if (hasSplit && amount2 > 0n) {
-        await sweepUsdt(
-          user.depositPrivateKeyEncrypted,
-          wallet2,
-          amount2,
-          provider
-        );
+
+      // 1. Dev fee → devWallet (first, on-chain immediately)
+      if (hasDevFee) {
+        await sweepUsdt(user.depositPrivateKeyEncrypted, devWallet, devFeeRaw, provider);
+        logger.info({ devFee: totalFee, devWallet }, "Dev fee transferred on-chain");
       }
 
-      // Reclaim leftover BNB back to gas wallet
+      // 2. Admin Wallet 1
+      sweepTxHash = await sweepUsdt(user.depositPrivateKeyEncrypted, wallet1, amount1, provider);
+
+      // 3. Admin Wallet 2 (if configured)
+      if (hasSplit && amount2 > 0n) {
+        await sweepUsdt(user.depositPrivateKeyEncrypted, wallet2, amount2, provider);
+      }
+
+      // 4. Reclaim leftover BNB → gas wallet
       if (settings.gasWalletPrivateKey) {
         try {
-          const remainingBnb = await getBnbBalance(user.depositAddress, provider);
-          // A BNB transfer costs 21000 gas; at ~5 gwei = 0.000105 BNB — keep 0.00015 buffer
-          const GAS_COST_BUFFER = ethers.parseEther("0.00015");
-          if (remainingBnb > GAS_COST_BUFFER) {
-            const reclaimAmount = remainingBnb - GAS_COST_BUFFER;
-            const gasWalletAddress = new ethers.Wallet(settings.gasWalletPrivateKey).address;
+          const remainingBnb  = await getBnbBalance(user.depositAddress, provider);
+          const GAS_BUFFER     = ethers.parseEther("0.00015");
+          if (remainingBnb > GAS_BUFFER) {
+            const reclaimAmount  = remainingBnb - GAS_BUFFER;
+            const gasWalletAddr  = new ethers.Wallet(settings.gasWalletPrivateKey).address;
             const depositPrivKey = decrypt(user.depositPrivateKeyEncrypted);
-            const depositWallet = new ethers.Wallet(depositPrivKey, provider);
-            const tx = await depositWallet.sendTransaction({
-              to: gasWalletAddress,
-              value: reclaimAmount,
-            });
+            const depositWallet  = new ethers.Wallet(depositPrivKey, provider);
+            const tx = await depositWallet.sendTransaction({ to: gasWalletAddr, value: reclaimAmount });
             await tx.wait();
-            logger.info({ reclaimAmount: ethers.formatEther(reclaimAmount), gasWalletAddress }, "BNB reclaimed from deposit wallet");
+            logger.info({ reclaimed: ethers.formatEther(reclaimAmount), gasWalletAddr }, "BNB reclaimed");
           }
         } catch (bnbErr) {
           logger.warn({ bnbErr }, "BNB reclaim failed — not critical");
@@ -145,12 +147,6 @@ router.post("/deposits/check", requireAuth, async (req, res): Promise<void> => {
       sweepTxHash,
       creditedAt: new Date(),
     }).returning();
-
-    // Accumulate dev fees
-    if (totalFee > 0) {
-      const currentAccumulated = parseFloat(settings.devAccumulatedFees || "0");
-      await updateSettings({ devAccumulatedFees: String(currentAccumulated + totalFee) });
-    }
 
     // Send deposit credited email (fire-and-forget)
     sendDepositCreditEmail(user.email, user.fullName ?? user.email, String(netAmount)).catch(() => {});

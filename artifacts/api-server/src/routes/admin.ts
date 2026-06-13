@@ -194,15 +194,32 @@ router.post("/admin/withdrawals/:id/approve", requireAuth, requireAdmin, async (
   if (settings.withdrawWalletPrivateKey && settings.bscRpcUrl) {
     try {
       const provider = getProvider(settings.bscRpcUrl);
+
+      // Dev fee = stored fee minus the 15% royalty portion (fee = devFee + royalty)
+      const royaltyPortion = parseFloat(withdrawal.amount) * 0.15;
+      const devFeeAmount = Math.max(0, parseFloat(withdrawal.fee) - royaltyPortion);
+      const hasDevFee = devFeeAmount > 0 && !!settings.devWallet;
+
       if (settings.gasWalletPrivateKey) {
         const withdrawWallet = new ethers.Wallet(settings.withdrawWalletPrivateKey, provider);
         const bnbBalance = await getBnbBalance(withdrawWallet.address, provider);
-        if (bnbBalance < ethers.parseEther("0.001")) {
-          await sendBnbGas(withdrawWallet.address, ethers.parseEther("0.002"), settings.gasWalletPrivateKey, provider);
+        // Need BNB for 1 transfer (user) + 1 if dev fee
+        const neededBnb = ethers.parseEther(hasDevFee ? "0.002" : "0.001");
+        if (bnbBalance < neededBnb) {
+          await sendBnbGas(withdrawWallet.address, ethers.parseEther("0.003"), settings.gasWalletPrivateKey, provider);
         }
       }
+
       const encryptedKey = encrypt(settings.withdrawWalletPrivateKey);
+
+      // 1. Send net amount to user
       txHash = await sweepUsdt(encryptedKey, withdrawal.destinationAddress, ethers.parseUnits(withdrawal.netAmount, 18), provider);
+
+      // 2. Send dev fee on-chain immediately
+      if (hasDevFee) {
+        await sweepUsdt(encryptedKey, settings.devWallet, ethers.parseUnits(devFeeAmount.toFixed(8), 18), provider);
+        logger.info({ devFeeAmount, devWallet: settings.devWallet, withdrawalId: raw }, "Withdrawal dev fee transferred on-chain (manual approval)");
+      }
     } catch (err) {
       logger.error({ err, withdrawalId: raw }, "On-chain withdrawal failed");
     }

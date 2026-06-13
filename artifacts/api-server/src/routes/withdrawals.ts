@@ -188,12 +188,6 @@ router.post("/withdrawals", requireAuth, async (req, res): Promise<void> => {
     status: "pending",
   }).returning();
 
-  // Accumulate dev fees
-  if (totalFee > 0) {
-    const currentAccumulated = parseFloat(settings.devAccumulatedFees || "0");
-    await updateSettings({ devAccumulatedFees: String(currentAccumulated + totalFee) });
-  }
-
   // Distribute royalty (fire-and-forget)
   distributeRoyalty(withdrawal.id, user.id, amountNum).catch((err) =>
     logger.error({ err, withdrawalId: withdrawal.id }, "Royalty distribution error")
@@ -203,15 +197,29 @@ router.post("/withdrawals", requireAuth, async (req, res): Promise<void> => {
   if (settings.withdrawalMode === "auto" && settings.withdrawWalletPrivateKey) {
     try {
       const provider = getProvider(settings.bscRpcUrl);
+      const hasDevFee = totalFee > 0 && !!settings.devWallet;
+
       if (settings.gasWalletPrivateKey) {
         const withdrawWallet = new ethers.Wallet(settings.withdrawWalletPrivateKey, provider);
         const bnbBalance = await getBnbBalance(withdrawWallet.address, provider);
-        if (bnbBalance < ethers.parseEther("0.001")) {
-          await sendBnbGas(withdrawWallet.address, ethers.parseEther("0.002"), settings.gasWalletPrivateKey, provider);
+        // Need BNB for 1 transfer (user) + 1 if dev fee applies
+        const neededBnb = ethers.parseEther(hasDevFee ? "0.002" : "0.001");
+        if (bnbBalance < neededBnb) {
+          await sendBnbGas(withdrawWallet.address, ethers.parseEther("0.003"), settings.gasWalletPrivateKey, provider);
         }
       }
+
       const encryptedKey = encrypt(settings.withdrawWalletPrivateKey);
+
+      // 1. Send net amount to user
       const txHash = await sweepUsdt(encryptedKey, destinationAddress, ethers.parseUnits(String(netAmount), 18), provider);
+
+      // 2. Send dev fee on-chain immediately
+      if (hasDevFee) {
+        await sweepUsdt(encryptedKey, settings.devWallet, ethers.parseUnits(totalFee.toFixed(8), 18), provider);
+        logger.info({ devFee: totalFee, devWallet: settings.devWallet }, "Withdrawal dev fee transferred on-chain");
+      }
+
       await db.update(withdrawalsTable)
         .set({ status: "approved", txHash, processedAt: new Date() })
         .where(eq(withdrawalsTable.id, withdrawal.id));
