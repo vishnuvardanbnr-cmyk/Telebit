@@ -2279,188 +2279,214 @@ export default function Admin() {
   };
 
   return (
-    <div className="container mx-auto px-4 md:px-8 py-8">
-      <h1 className="text-3xl font-black uppercase tracking-wider mb-8">Shop Administration</h1>
+    <div className="min-h-screen bg-slate-50">
+      {/* ── Hero Header ── */}
+      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center">
+                <Shield className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-black tracking-tight">Admin Panel</h1>
+                <p className="text-slate-400 text-sm mt-0.5">Telebit Shop — full control centre</p>
+              </div>
+            </div>
+            <span className="hidden sm:flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-primary/20 border border-primary/30 text-primary">
+              <CheckCircle2 className="w-3.5 h-3.5" /> Live
+            </span>
+          </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <Card className="rounded-none border-border bg-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent><div className="text-2xl font-black text-primary font-mono">{stats?.totalRevenue || "0.00"} USDT</div></CardContent>
-        </Card>
-        <Card className="rounded-none border-border bg-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Orders</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent><div className="text-2xl font-black font-mono">{stats?.totalOrders || 0}</div></CardContent>
-        </Card>
-        <Card className="rounded-none border-border bg-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Pending</CardTitle>
-            <Package className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent><div className="text-2xl font-black font-mono">{stats?.pendingOrders || 0}</div></CardContent>
-        </Card>
-        <Card className="rounded-none border-border bg-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Products</CardTitle>
-            <Tag className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent><div className="text-2xl font-black font-mono">{stats?.totalProducts || 0}</div></CardContent>
-        </Card>
+          {/* Stat strip */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-7">
+            {[
+              { label: "Revenue", value: `${stats?.totalRevenue || "0.00"} USDT`, icon: DollarSign, accent: "from-emerald-500/20 to-emerald-600/10 border-emerald-500/30", iconCls: "text-emerald-400" },
+              { label: "Total Orders", value: String(stats?.totalOrders || 0), icon: ShoppingCart, accent: "from-blue-500/20 to-blue-600/10 border-blue-500/30", iconCls: "text-blue-400" },
+              { label: "Pending", value: String(stats?.pendingOrders || 0), icon: Clock, accent: "from-amber-500/20 to-amber-600/10 border-amber-500/30", iconCls: "text-amber-400" },
+              { label: "Products", value: String(stats?.totalProducts || 0), icon: Tag, accent: "from-violet-500/20 to-violet-600/10 border-violet-500/30", iconCls: "text-violet-400" },
+            ].map(({ label, value, icon: Icon, accent, iconCls }) => (
+              <div key={label} className={`rounded-2xl bg-gradient-to-br ${accent} border p-4 backdrop-blur-sm`}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{label}</span>
+                  <Icon className={`w-4 h-4 ${iconCls}`} />
+                </div>
+                <div className="text-xl font-black text-white font-mono leading-none">{value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      <Tabs defaultValue="orders" className="space-y-6">
-        <TabsList className="bg-card border border-border rounded-none h-12 w-full justify-start p-0 overflow-x-auto flex-nowrap">
-          {[
-            { value: "orders", label: "Orders", icon: ShoppingCart },
-            { value: "products", label: "Products", icon: Package },
-            { value: "categories", label: "Categories", icon: Tag },
-            { value: "users", label: "Users", icon: Users },
-            { value: "lottery", label: "Lottery", icon: Ticket },
-            { value: "p2p", label: "P2P", icon: ArrowLeftRight },
-            { value: "reviews", label: "Reviews", icon: Star },
-            { value: "pkg-admin", label: "Packages", icon: TrendingUp },
-            { value: "referral-levels", label: "Referral Levels", icon: Share2 },
-            { value: "income-admin", label: "Income", icon: BarChart2 },
-            { value: "ranks-admin", label: "Ranks", icon: Crown },
-            { value: "shares-admin", label: "Share Requests", icon: Leaf },
-            { value: "settings", label: "Settings", icon: Settings },
-            { value: "support-admin", label: "Support", icon: MessageCircle },
-            { value: "maintenance", label: "Maintenance", icon: Wrench },
-          ].map(({ value, label, icon: Icon }) => (
-            <TabsTrigger key={value} value={value} className="rounded-none h-full px-4 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary uppercase tracking-wider font-bold text-xs whitespace-nowrap flex items-center gap-1.5">
-              <Icon className="h-3.5 w-3.5" />{label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      {/* ── Tab Navigation ── */}
+      <div className="bg-white border-b border-slate-200 sticky top-14 z-30 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 md:px-8">
+          <Tabs defaultValue="orders" className="w-full">
+            <TabsList className="h-12 bg-transparent border-0 p-0 w-full justify-start overflow-x-auto flex-nowrap gap-0">
+              {[
+                { value: "orders", label: "Orders", icon: ShoppingCart },
+                { value: "products", label: "Products", icon: Package },
+                { value: "categories", label: "Categories", icon: Tag },
+                { value: "users", label: "Users", icon: Users },
+                { value: "lottery", label: "Lottery", icon: Ticket },
+                { value: "p2p", label: "P2P", icon: ArrowLeftRight },
+                { value: "reviews", label: "Reviews", icon: Star },
+                { value: "pkg-admin", label: "Packages", icon: TrendingUp },
+                { value: "referral-levels", label: "Referral Levels", icon: Share2 },
+                { value: "income-admin", label: "Income", icon: BarChart2 },
+                { value: "ranks-admin", label: "Ranks", icon: Crown },
+                { value: "shares-admin", label: "Share Requests", icon: Leaf },
+                { value: "settings", label: "Settings", icon: Settings },
+                { value: "support-admin", label: "Support", icon: MessageCircle },
+                { value: "maintenance", label: "Maintenance", icon: Wrench },
+              ].map(({ value, label, icon: Icon }) => (
+                <TabsTrigger
+                  key={value} value={value}
+                  className="h-12 px-4 rounded-none border-b-2 border-transparent bg-transparent text-slate-500 text-xs font-semibold uppercase tracking-wider whitespace-nowrap flex items-center gap-1.5 transition-all hover:text-slate-800 hover:bg-slate-50 data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent"
+                >
+                  <Icon className="h-3.5 w-3.5" />{label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
 
-        <TabsContent value="orders" className="space-y-4">
-          <h2 className="text-xl font-bold uppercase tracking-wider">Order Management</h2>
-          <div className="bg-card border border-border">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-border hover:bg-transparent">
-                  <TableHead className="font-bold uppercase tracking-wider text-xs">Order ID</TableHead>
-                  <TableHead className="font-bold uppercase tracking-wider text-xs">Date</TableHead>
-                  <TableHead className="font-bold uppercase tracking-wider text-xs">Customer</TableHead>
-                  <TableHead className="font-bold uppercase tracking-wider text-xs text-right">Total</TableHead>
-                  <TableHead className="font-bold uppercase tracking-wider text-xs">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {orders?.map((order) => (
-                  <TableRow key={order.id} className="border-border">
-                    <TableCell className="font-mono text-sm">{order.id.split('-')[0].toUpperCase()}</TableCell>
-                    <TableCell className="text-sm">{new Date(order.createdAt).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-sm">{order.shippingAddress.fullName}</TableCell>
-                    <TableCell className="text-right font-mono font-bold text-primary">{order.totalUsdt} USDT</TableCell>
-                    <TableCell>
-                      <Select defaultValue={order.status} onValueChange={(val: any) => updateOrderStatus.mutate({ orderId: order.id, data: { status: val } })}>
-                        <SelectTrigger className={`h-8 rounded-none text-xs font-bold uppercase tracking-wider w-32 ${orderStatusColor(order.status)}`}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-none">
-                          <SelectItem value="pending" className="text-xs uppercase tracking-wider font-bold">Pending</SelectItem>
-                          <SelectItem value="confirmed" className="text-xs uppercase tracking-wider font-bold">Confirmed</SelectItem>
-                          <SelectItem value="shipped" className="text-xs uppercase tracking-wider font-bold">Shipped</SelectItem>
-                          <SelectItem value="delivered" className="text-xs uppercase tracking-wider font-bold">Delivered</SelectItem>
-                          <SelectItem value="cancelled" className="text-xs uppercase tracking-wider font-bold">Cancelled</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </TabsContent>
+          {/* ── Tab Contents ── */}
+          <div className="max-w-7xl mx-auto px-4 md:px-8 py-6">
 
-        <TabsContent value="products" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold uppercase tracking-wider">Product Catalog</h2>
-            <Button onClick={() => openProductDialog()} className="rounded-none font-bold uppercase tracking-wider text-xs">Add Product</Button>
-          </div>
-          <div className="bg-card border border-border">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-border hover:bg-transparent">
-                  <TableHead className="font-bold uppercase tracking-wider text-xs">Name</TableHead>
-                  <TableHead className="font-bold uppercase tracking-wider text-xs">Category</TableHead>
-                  <TableHead className="font-bold uppercase tracking-wider text-xs text-right">Price</TableHead>
-                  <TableHead className="font-bold uppercase tracking-wider text-xs text-right">Stock</TableHead>
-                  <TableHead className="font-bold uppercase tracking-wider text-xs text-center">Status</TableHead>
-                  <TableHead className="text-right"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {products?.products?.map((product) => (
-                  <TableRow key={product.id} className="border-border">
-                    <TableCell className="font-bold text-sm">{product.name}</TableCell>
-                    <TableCell className="text-xs uppercase tracking-widest text-muted-foreground">{product.categoryName}</TableCell>
-                    <TableCell className="text-right font-mono font-bold text-primary">{product.priceUsdt} USDT</TableCell>
-                    <TableCell className="text-right font-mono">{product.stock}</TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant="outline" className={`rounded-none text-[10px] uppercase tracking-widest ${product.isActive ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-muted text-muted-foreground'}`}>
-                        {product.isActive ? 'Active' : 'Draft'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon" onClick={() => openProductDialog(product)} className="h-8 w-8 text-muted-foreground hover:text-primary"><Edit className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" onClick={() => deleteProduct.mutate({ productId: product.id })} className="h-8 w-8 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </TabsContent>
+            <TabsContent value="orders" className="space-y-4 mt-0">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">Order Management</h2>
+                  <p className="text-sm text-slate-500 mt-0.5">{orders?.length ?? 0} orders total</p>
+                </div>
+              </div>
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50 border-slate-200 hover:bg-slate-50">
+                      <TableHead className="font-semibold text-xs uppercase tracking-wider text-slate-500 py-3">Order ID</TableHead>
+                      <TableHead className="font-semibold text-xs uppercase tracking-wider text-slate-500 py-3">Date</TableHead>
+                      <TableHead className="font-semibold text-xs uppercase tracking-wider text-slate-500 py-3">Customer</TableHead>
+                      <TableHead className="font-semibold text-xs uppercase tracking-wider text-slate-500 py-3 text-right">Total</TableHead>
+                      <TableHead className="font-semibold text-xs uppercase tracking-wider text-slate-500 py-3">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {orders?.map((order) => (
+                      <TableRow key={order.id} className="border-slate-100 hover:bg-slate-50/50 transition-colors">
+                        <TableCell className="font-mono text-xs font-bold text-slate-700">{order.id.split('-')[0].toUpperCase()}</TableCell>
+                        <TableCell className="text-sm text-slate-600">{new Date(order.createdAt).toLocaleDateString()}</TableCell>
+                        <TableCell className="text-sm font-medium text-slate-800">{order.shippingAddress.fullName}</TableCell>
+                        <TableCell className="text-right font-mono font-bold text-emerald-600">{order.totalUsdt} USDT</TableCell>
+                        <TableCell>
+                          <Select defaultValue={order.status} onValueChange={(val: any) => updateOrderStatus.mutate({ orderId: order.id, data: { status: val } })}>
+                            <SelectTrigger className={`h-7 rounded-full text-[11px] font-bold uppercase tracking-wider w-32 border ${orderStatusColor(order.status)}`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl">
+                              {["pending","confirmed","shipped","delivered","cancelled"].map(s => (
+                                <SelectItem key={s} value={s} className="text-xs uppercase tracking-wider font-semibold">{s}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {(!orders?.length) && <div className="py-12 text-center text-sm text-slate-400">No orders yet</div>}
+              </div>
+            </TabsContent>
 
-        <TabsContent value="categories" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold uppercase tracking-wider">Category Management</h2>
-            <Button onClick={() => setIsCategoryDialogOpen(true)} className="rounded-none font-bold uppercase tracking-wider text-xs">Add Category</Button>
-          </div>
-          <div className="bg-card border border-border">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-border hover:bg-transparent">
-                  <TableHead className="font-bold uppercase tracking-wider text-xs">Name</TableHead>
-                  <TableHead className="font-bold uppercase tracking-wider text-xs">Slug</TableHead>
-                  <TableHead className="font-bold uppercase tracking-wider text-xs text-right">Products</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {categories?.map((cat) => (
-                  <TableRow key={cat.id} className="border-border">
-                    <TableCell className="font-bold text-sm">{cat.name}</TableCell>
-                    <TableCell className="text-xs uppercase tracking-widest text-muted-foreground">{cat.slug}</TableCell>
-                    <TableCell className="text-right font-mono font-bold text-primary">{cat.productCount}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </TabsContent>
+            <TabsContent value="products" className="space-y-4 mt-0">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">Product Catalog</h2>
+                  <p className="text-sm text-slate-500 mt-0.5">{products?.products?.length ?? 0} products</p>
+                </div>
+                <Button onClick={() => openProductDialog()} className="rounded-xl font-semibold text-xs h-9 px-4">+ Add Product</Button>
+              </div>
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50 border-slate-200 hover:bg-slate-50">
+                      {["Name","Category","Price","Stock","Status",""].map((h,i) => (
+                        <TableHead key={i} className={`font-semibold text-xs uppercase tracking-wider text-slate-500 py-3 ${i===2||i===3?"text-right":i===4?"text-center":""}`}>{h}</TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {products?.products?.map((product) => (
+                      <TableRow key={product.id} className="border-slate-100 hover:bg-slate-50/50 transition-colors">
+                        <TableCell className="font-semibold text-sm text-slate-800">{product.name}</TableCell>
+                        <TableCell className="text-xs text-slate-500">{product.categoryName}</TableCell>
+                        <TableCell className="text-right font-mono font-bold text-emerald-600">{product.priceUsdt} USDT</TableCell>
+                        <TableCell className="text-right font-mono text-slate-700">{product.stock}</TableCell>
+                        <TableCell className="text-center">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${product.isActive ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
+                            {product.isActive ? 'Active' : 'Draft'}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => openProductDialog(product)} className="h-8 w-8 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/5"><Edit className="h-3.5 w-3.5" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => deleteProduct.mutate({ productId: product.id })} className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50"><Trash2 className="h-3.5 w-3.5" /></Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {(!products?.products?.length) && <div className="py-12 text-center text-sm text-slate-400">No products yet</div>}
+              </div>
+            </TabsContent>
 
-        <TabsContent value="users"><UsersTab /></TabsContent>
-        <TabsContent value="lottery"><LotteryTab /></TabsContent>
-        <TabsContent value="p2p"><P2PTab /></TabsContent>
-        <TabsContent value="reviews"><ReviewsTab /></TabsContent>
-        <TabsContent value="pkg-admin"><PackagesTab /></TabsContent>
-        <TabsContent value="referral-levels"><ReferralLevelsTab /></TabsContent>
-        <TabsContent value="income-admin"><IncomeAdminTab /></TabsContent>
-        <TabsContent value="ranks-admin"><RanksAdminTab /></TabsContent>
-        <TabsContent value="shares-admin"><ShareRequestsAdminTab /></TabsContent>
-        <TabsContent value="settings"><SettingsTab /></TabsContent>
-        <TabsContent value="support-admin"><SupportAdminTab /></TabsContent>
-        <TabsContent value="maintenance"><MaintenanceTab /></TabsContent>
-      </Tabs>
+            <TabsContent value="categories" className="space-y-4 mt-0">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">Category Management</h2>
+                  <p className="text-sm text-slate-500 mt-0.5">{categories?.length ?? 0} categories</p>
+                </div>
+                <Button onClick={() => setIsCategoryDialogOpen(true)} className="rounded-xl font-semibold text-xs h-9 px-4">+ Add Category</Button>
+              </div>
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50 border-slate-200 hover:bg-slate-50">
+                      <TableHead className="font-semibold text-xs uppercase tracking-wider text-slate-500 py-3">Name</TableHead>
+                      <TableHead className="font-semibold text-xs uppercase tracking-wider text-slate-500 py-3">Slug</TableHead>
+                      <TableHead className="font-semibold text-xs uppercase tracking-wider text-slate-500 py-3 text-right">Products</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {categories?.map((cat) => (
+                      <TableRow key={cat.id} className="border-slate-100 hover:bg-slate-50/50 transition-colors">
+                        <TableCell className="font-semibold text-sm text-slate-800">{cat.name}</TableCell>
+                        <TableCell className="text-xs font-mono text-slate-500">{cat.slug}</TableCell>
+                        <TableCell className="text-right font-mono font-bold text-slate-700">{cat.productCount}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {(!categories?.length) && <div className="py-12 text-center text-sm text-slate-400">No categories yet</div>}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="users" className="mt-0"><UsersTab /></TabsContent>
+            <TabsContent value="lottery" className="mt-0"><LotteryTab /></TabsContent>
+            <TabsContent value="p2p" className="mt-0"><P2PTab /></TabsContent>
+            <TabsContent value="reviews" className="mt-0"><ReviewsTab /></TabsContent>
+            <TabsContent value="pkg-admin" className="mt-0"><PackagesTab /></TabsContent>
+            <TabsContent value="referral-levels" className="mt-0"><ReferralLevelsTab /></TabsContent>
+            <TabsContent value="income-admin" className="mt-0"><IncomeAdminTab /></TabsContent>
+            <TabsContent value="ranks-admin" className="mt-0"><RanksAdminTab /></TabsContent>
+            <TabsContent value="shares-admin" className="mt-0"><ShareRequestsAdminTab /></TabsContent>
+            <TabsContent value="settings" className="mt-0"><SettingsTab /></TabsContent>
+            <TabsContent value="support-admin" className="mt-0"><SupportAdminTab /></TabsContent>
+            <TabsContent value="maintenance" className="mt-0"><MaintenanceTab /></TabsContent>
+          </div>{/* /content wrapper */}
+          </Tabs>
+        </div>{/* /max-w-7xl nav */}
+      </div>{/* /sticky tab bar */}
 
       {/* Product Dialog */}
       <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
