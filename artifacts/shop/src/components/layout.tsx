@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { ShoppingCart, ShieldCheck, Menu, X, Zap, Wallet, Home, Gift, Share2, ListOrdered, TrendingUp, Trophy, BarChart2 } from "lucide-react";
+import { ShoppingCart, ShieldCheck, Menu, X, Zap, Wallet, Home, Gift, Share2, ListOrdered, TrendingUp, Trophy, BarChart2, MessageCircle } from "lucide-react";
 import { useGetCart } from "@workspace/api-client-react";
 import { useAuth } from "@/lib/auth-context";
 import { fmtUsdt } from "@/lib/utils";
@@ -65,6 +65,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       {cartCount > 9 ? "9+" : cartCount}
                     </span>
                   )}
+                </Link>
+
+                {/* Support icon */}
+                <Link href="/support" className={cn("p-1.5 rounded-md transition-colors hover:bg-muted/50", location.startsWith("/support") ? "text-primary" : "text-muted-foreground hover:text-primary")}>
+                  <MessageCircle className="h-5 w-5" />
                 </Link>
 
                 {/* Profile + switcher — all signed-in users */}
