@@ -40,7 +40,7 @@ const TYPE_META: Record<IncomeType, {
   },
   royalty: {
     label: "Royalty Income",
-    desc: "15% of upline network withdrawals split over 15 days",
+    desc: "Profit share based on sales",
     dot: "bg-amber-500",
     accent: "text-amber-600",
     bg: "bg-amber-50",
