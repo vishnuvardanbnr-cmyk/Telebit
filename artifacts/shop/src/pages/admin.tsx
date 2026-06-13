@@ -223,6 +223,7 @@ function UsersTab() {
   const { toast } = useToast();
   const { data: users, isLoading } = useAdminListUsers({});
 
+  const [filter, setFilter] = useState<"all" | "admin-activated">("all");
   const [balanceTarget, setBalanceTarget] = useState<{ id: string; name: string; email: string; balance: string } | null>(null);
   const [balanceAmount, setBalanceAmount] = useState("");
   const [balanceNote, setBalanceNote] = useState("");
@@ -269,9 +270,31 @@ function UsersTab() {
     return { label: "Active", cls: "bg-green-500/10 text-green-500 border-green-500/20" };
   };
 
+  const allUsers = (users as AdminUser[] | undefined) ?? [];
+  const adminActivatedUsers = allUsers.filter((u) => u.subscriptionActive);
+  const filteredUsers = filter === "admin-activated" ? adminActivatedUsers : allUsers;
+
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-bold uppercase tracking-wider">User Management</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold uppercase tracking-wider">User Management</h2>
+        <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
+          <button
+            onClick={() => setFilter("all")}
+            className={`px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider transition-all ${filter === "all" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+          >
+            All Users
+            <span className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full ${filter === "all" ? "bg-slate-100 text-slate-600" : "bg-slate-200 text-slate-500"}`}>{allUsers.length}</span>
+          </button>
+          <button
+            onClick={() => setFilter("admin-activated")}
+            className={`px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider transition-all ${filter === "admin-activated" ? "bg-white text-emerald-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+          >
+            Admin Activated
+            <span className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full ${filter === "admin-activated" ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-500"}`}>{adminActivatedUsers.length}</span>
+          </button>
+        </div>
+      </div>
       <div className="bg-card border border-border">
         <Table>
           <TableHeader>
@@ -289,7 +312,12 @@ function UsersTab() {
             {isLoading && (
               <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Loading users...</TableCell></TableRow>
             )}
-            {(users as AdminUser[] | undefined)?.map((user) => {
+            {!isLoading && filteredUsers.length === 0 && (
+              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                {filter === "admin-activated" ? "No admin-activated users yet." : "No users found."}
+              </TableCell></TableRow>
+            )}
+            {filteredUsers.map((user) => {
               const status = getOverallStatus(user);
               const isPending = activateMutation.isPending && (activateMutation.variables as any)?.userId === user.id;
               return (
