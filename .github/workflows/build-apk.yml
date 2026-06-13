@@ -30,18 +30,39 @@ jobs:
           version: 10
 
       - name: Install workspace dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Build shop web app
-        working-directory: artifacts/shop
-        run: pnpm run build
+        run: pnpm --filter @workspace/shop run build
         env:
           BASE_PATH: /
           PORT: 3000
 
-      - name: Sync Capacitor (copy web assets into android folder)
+      - name: Remove stale android platform
+        run: rm -rf artifacts/shop/android
+
+      - name: Add Capacitor Android platform
         working-directory: artifacts/shop
-        run: node_modules/.bin/cap sync android
+        run: npx cap add android
+
+      - name: Apply custom app icon
+        run: |
+          ICON="artifacts/shop/public/logo.png"
+          BASE="artifacts/shop/android/app/src/main/res"
+          magick "$ICON" -resize 48x48   "$BASE/mipmap-mdpi/ic_launcher.png"
+          magick "$ICON" -resize 72x72   "$BASE/mipmap-hdpi/ic_launcher.png"
+          magick "$ICON" -resize 96x96   "$BASE/mipmap-xhdpi/ic_launcher.png"
+          magick "$ICON" -resize 144x144 "$BASE/mipmap-xxhdpi/ic_launcher.png"
+          magick "$ICON" -resize 192x192 "$BASE/mipmap-xxxhdpi/ic_launcher.png"
+          magick "$ICON" -resize 48x48   "$BASE/mipmap-mdpi/ic_launcher_round.png"
+          magick "$ICON" -resize 72x72   "$BASE/mipmap-hdpi/ic_launcher_round.png"
+          magick "$ICON" -resize 96x96   "$BASE/mipmap-xhdpi/ic_launcher_round.png"
+          magick "$ICON" -resize 144x144 "$BASE/mipmap-xxhdpi/ic_launcher_round.png"
+          magick "$ICON" -resize 192x192 "$BASE/mipmap-xxxhdpi/ic_launcher_round.png"
+
+      - name: Sync Capacitor
+        working-directory: artifacts/shop
+        run: npx cap sync android
 
       - name: Build debug APK
         working-directory: artifacts/shop/android
