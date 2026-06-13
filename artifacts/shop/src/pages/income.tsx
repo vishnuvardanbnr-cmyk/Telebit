@@ -37,7 +37,7 @@ const INCOME_TYPES = [
   {
     type: "royalty" as const,
     label: "Royalty Income",
-    sublabel: "15% of upline withdrawals · 15 days",
+    sublabel: "Profit share based on sales",
     dot: "bg-amber-500",
     bg: "bg-amber-50",
     border: "border-amber-100",
