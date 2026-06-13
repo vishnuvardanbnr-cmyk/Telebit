@@ -99,13 +99,13 @@ router.post("/support/tickets/:id/messages", requireAuth, async (req, res) => {
 
 /* ─── Admin routes ─────────────────────────────────────────────── */
 
-router.get("/support/admin/tickets", requireAdmin, async (_req, res) => {
+router.get("/support/admin/tickets", requireAuth, requireAdmin, async (_req, res) => {
   const tickets = await db.select().from(supportTicketsTable)
     .orderBy(desc(supportTicketsTable.updatedAt));
   res.json({ data: tickets.map(ticketOut) });
 });
 
-router.get("/support/admin/tickets/:id", requireAdmin, async (req, res) => {
+router.get("/support/admin/tickets/:id", requireAuth, requireAdmin, async (req, res) => {
   const id = parseInt(req.params["id"] as string);
   const [ticket] = await db.select().from(supportTicketsTable)
     .where(eq(supportTicketsTable.id, id));
@@ -116,7 +116,7 @@ router.get("/support/admin/tickets/:id", requireAdmin, async (req, res) => {
   res.json({ ticket: ticketOut(ticket), messages: messages.map(msgOut) });
 });
 
-router.put("/support/admin/tickets/:id/status", requireAdmin, async (req, res) => {
+router.put("/support/admin/tickets/:id/status", requireAuth, requireAdmin, async (req, res) => {
   const id = parseInt(req.params["id"] as string);
   const { status } = req.body as { status: string };
   if (!["open", "in_progress", "closed"].includes(status)) {
@@ -130,7 +130,7 @@ router.put("/support/admin/tickets/:id/status", requireAdmin, async (req, res) =
   res.json(ticketOut(updated));
 });
 
-router.post("/support/admin/tickets/:id/messages", requireAdmin, async (req, res) => {
+router.post("/support/admin/tickets/:id/messages", requireAuth, requireAdmin, async (req, res) => {
   const id = parseInt(req.params["id"] as string);
   const { message } = req.body as { message: string };
   if (!message?.trim()) { res.status(400).json({ error: "Message required" }); return; }
