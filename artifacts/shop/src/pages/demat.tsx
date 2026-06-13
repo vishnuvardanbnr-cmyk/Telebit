@@ -80,7 +80,7 @@ export default function DematPage() {
         </Link>
         <div>
           <h1 className="text-lg font-black tracking-tight">Demat & Share Transfers</h1>
-          <p className="text-[11px] text-muted-foreground">Athnol Bio Fuel Company shares</p>
+          <p className="text-[11px] text-muted-foreground">Ethnol Bio Fuel Company shares</p>
         </div>
       </div>
 
@@ -122,7 +122,7 @@ export default function DematPage() {
             <div className="space-y-4">
               {!demat && !editing && (
                 <p className="text-xs text-muted-foreground">
-                  Add your demat account details to receive Athnol Bio Fuel shares directly into your demat account.
+                  Add your demat account details to receive Ethnol Bio Fuel shares directly into your demat account.
                 </p>
               )}
               <div className="space-y-3">

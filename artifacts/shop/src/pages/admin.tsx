@@ -1303,7 +1303,7 @@ function SettingsTab() {
 
       {/* Share Guarantee */}
       <div className="bg-card border border-border p-5 space-y-4">
-        <h3 className="font-bold uppercase tracking-wider text-sm">Athnol Bio Fuel — Share Guarantee</h3>
+        <h3 className="font-bold uppercase tracking-wider text-sm">Ethnol Bio Fuel — Share Guarantee</h3>
         <p className="text-xs text-muted-foreground">Displayed on the user dashboard. Each package purchase rewards the buyer with shares at the current value below.</p>
         <div className="grid grid-cols-2 gap-4">
           <SettingField label="Shares per Package Purchase" value={cfg.sharesPerPackage} onChange={set("sharesPerPackage")} />

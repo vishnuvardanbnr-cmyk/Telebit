@@ -58,7 +58,7 @@ export default function Home() {
         </UserProfileCard>
       )}
 
-      {/* ── Athnol Bio Fuel Share Guarantee ── */}
+      {/* ── Ethnol Bio Fuel Share Guarantee ── */}
       {(() => {
         const sharesPerPkg = parseInt(settings?.sharesPerPackage ?? "50");
         const shareVal = parseFloat(settings?.shareValueUsdt ?? "0");
@@ -75,7 +75,7 @@ export default function Home() {
                   </div>
                   <div>
                     <p className="text-[9px] font-bold text-green-200 uppercase tracking-widest">Package Guarantee</p>
-                    <p className="text-sm font-black text-white leading-tight">Athnol Bio Fuel Company</p>
+                    <p className="text-sm font-black text-white leading-tight">Ethnol Bio Fuel Company</p>
                   </div>
                 </div>
                 <Link href="/demat">
@@ -108,7 +108,7 @@ export default function Home() {
             </div>
             <div className="bg-white px-5 py-4 space-y-4">
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Every <strong className="text-foreground">$125 package</strong> awards <strong className="text-green-700">{sharesPerPkg} shares</strong> — backed by real equity in Athnol Bio Fuel Company.
+                Every <strong className="text-foreground">$125 package</strong> awards <strong className="text-green-700">{sharesPerPkg} shares</strong> — backed by real equity in Ethnol Bio Fuel Company.
               </p>
 
               <Link href="/demat">
