@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   webDir: "dist/public",
   server: {
     androidScheme: "https",
-    url: "https://telebittest.replit.app",
+    url: "https://telebit-1.replit.app",
     cleartext: false,
   },
 };
