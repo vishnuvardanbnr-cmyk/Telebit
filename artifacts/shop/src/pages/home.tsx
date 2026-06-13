@@ -12,7 +12,7 @@ import { fmtUsdt } from "@/lib/utils";
 import {
   Wallet, ShoppingBag, ChevronRight, Trophy,
   Copy, TrendingUp, Users, Percent, Crown,
-  ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Leaf,
+  ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Leaf, Ticket,
 } from "lucide-react";
 import { toast } from "sonner";
 import { UserProfileCard } from "@/components/user-profile-card";
@@ -124,12 +124,12 @@ export default function Home() {
 
       {/* ── Quick action buttons ── */}
       <div className="flex gap-3">
-        <Link href="/products" className="flex-1">
+        <Link href="/lottery" className="flex-1">
           <div className="flex items-center justify-center gap-2.5 rounded-2xl border border-border bg-white shadow-sm px-4 py-4 hover:bg-muted/30 transition-colors cursor-pointer">
-            <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
-              <ShoppingBag className="w-4 h-4 text-blue-600" />
+            <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+              <Ticket className="w-4 h-4 text-amber-600" />
             </div>
-            <span className="text-sm font-bold text-foreground">Shop</span>
+            <span className="text-sm font-bold text-foreground">Lucky Draw</span>
           </div>
         </Link>
         <Link href="/p2p" className="flex-1">
