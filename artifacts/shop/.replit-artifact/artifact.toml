@@ -18,9 +18,14 @@ localPort = 24349
 run = "pnpm --filter @workspace/shop run dev"
 
 [services.production]
-build = [ "pnpm", "--filter", "@workspace/shop", "run", "build" ]
 publicDir = "artifacts/shop/dist/public"
 serve = "static"
+
+[services.production.build]
+args = ["pnpm", "--filter", "@workspace/shop", "run", "build"]
+
+[services.production.build.env]
+NODE_ENV = "production"
 
 [[services.production.rewrites]]
 from = "/*"
