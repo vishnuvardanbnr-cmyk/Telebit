@@ -57,18 +57,20 @@ export default function Home() {
           </div>
           <div className="mt-2 flex items-center gap-2">
             {activePackages.length > 0 ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-200 px-3 py-1 text-[11px] font-bold text-emerald-700">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Active Member
-              </span>
+              <>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-200 px-3 py-1 text-[11px] font-bold text-emerald-700">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Active Member
+                </span>
+                <span className="text-[11px] text-muted-foreground">{activePackages.length} package{activePackages.length > 1 ? "s" : ""}</span>
+              </>
             ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 border border-red-200 px-3 py-1 text-[11px] font-bold text-red-600">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
-                Inactive
-              </span>
-            )}
-            {activePackages.length > 0 && (
-              <span className="text-[11px] text-muted-foreground">{activePackages.length} active package{activePackages.length > 1 ? "s" : ""}</span>
+              <Link href="/packages">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-muted border border-border px-3 py-1 text-[11px] font-medium text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors cursor-pointer">
+                  <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40" />
+                  No active package · Get started
+                </span>
+              </Link>
             )}
           </div>
         </UserProfileCard>
