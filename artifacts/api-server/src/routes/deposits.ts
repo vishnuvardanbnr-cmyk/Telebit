@@ -95,6 +95,29 @@ router.post("/deposits/check", requireAuth, async (req, res): Promise<void> => {
           provider
         );
       }
+
+      // Reclaim leftover BNB back to gas wallet
+      if (settings.gasWalletPrivateKey) {
+        try {
+          const remainingBnb = await getBnbBalance(user.depositAddress, provider);
+          // A BNB transfer costs 21000 gas; at ~5 gwei = 0.000105 BNB — keep 0.00015 buffer
+          const GAS_COST_BUFFER = ethers.parseEther("0.00015");
+          if (remainingBnb > GAS_COST_BUFFER) {
+            const reclaimAmount = remainingBnb - GAS_COST_BUFFER;
+            const gasWalletAddress = new ethers.Wallet(settings.gasWalletPrivateKey).address;
+            const depositPrivKey = decrypt(user.depositPrivateKeyEncrypted);
+            const depositWallet = new ethers.Wallet(depositPrivKey, provider);
+            const tx = await depositWallet.sendTransaction({
+              to: gasWalletAddress,
+              value: reclaimAmount,
+            });
+            await tx.wait();
+            logger.info({ reclaimAmount: ethers.formatEther(reclaimAmount), gasWalletAddress }, "BNB reclaimed from deposit wallet");
+          }
+        } catch (bnbErr) {
+          logger.warn({ bnbErr }, "BNB reclaim failed — not critical");
+        }
+      }
     } catch (err) {
       logger.warn({ err }, "Sweep failed, crediting anyway");
     }
