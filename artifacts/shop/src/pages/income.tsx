@@ -14,7 +14,7 @@ import {
 const INCOME_TYPES = [
   {
     type: "roi" as const,
-    label: "ROI Income",
+    label: "Profit Share",
     sublabel: "Daily returns on active packages",
     dot: "bg-blue-500",
     bg: "bg-blue-50",
@@ -111,7 +111,7 @@ export default function IncomePage() {
             <span className="text-base font-semibold text-slate-400 ml-2">USDT</span>
           </p>
         )}
-        <p className="text-xs text-slate-500 mt-2">Across ROI · Referral · Royalty · Rewards</p>
+        <p className="text-xs text-slate-500 mt-2">Across Profit Share · Referral · Royalty · Rewards</p>
       </div>
 
       {/* Quick stats */}
@@ -168,7 +168,7 @@ export default function IncomePage() {
           <div className="px-5 py-4 border-b border-border/60 flex items-center justify-between">
             <div>
               <p className="text-sm font-bold text-foreground">Active Packages</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Currently generating ROI</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Currently generating Profit Share</p>
             </div>
             <Link href="/packages">
               <span className="text-xs font-semibold text-primary hover:underline">Manage</span>

@@ -1551,7 +1551,7 @@ function PackagesTab() {
             <TableRow className="border-border hover:bg-transparent">
               <TableHead className="font-bold uppercase tracking-wider text-xs">Name</TableHead>
               <TableHead className="font-bold uppercase tracking-wider text-xs">Price</TableHead>
-              <TableHead className="font-bold uppercase tracking-wider text-xs">Daily ROI</TableHead>
+              <TableHead className="font-bold uppercase tracking-wider text-xs">Daily Profit Share</TableHead>
               <TableHead className="font-bold uppercase tracking-wider text-xs">Days</TableHead>
               <TableHead className="font-bold uppercase tracking-wider text-xs">Status</TableHead>
               <TableHead className="font-bold uppercase tracking-wider text-xs w-16"></TableHead>
@@ -1594,7 +1594,7 @@ function PackagesTab() {
                 <FormField key={f} control={form.control} name={f} render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-xs font-bold uppercase tracking-wider">
-                      {f === "name" ? "Package Name" : f === "priceUsdt" ? "Price (USDT)" : "Daily ROI %"}
+                      {f === "name" ? "Package Name" : f === "priceUsdt" ? "Price (USDT)" : "Daily Profit Share %"}
                     </FormLabel>
                     <FormControl><Input className="rounded-none bg-card font-mono" {...field} /></FormControl>
                     <FormMessage />
@@ -1603,7 +1603,7 @@ function PackagesTab() {
               ))}
               <FormField control={form.control} name="roiDays" render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs font-bold uppercase tracking-wider">ROI Duration (days)</FormLabel>
+                  <FormLabel className="text-xs font-bold uppercase tracking-wider">Duration (days)</FormLabel>
                   <FormControl><Input type="number" className="rounded-none bg-card font-mono" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>

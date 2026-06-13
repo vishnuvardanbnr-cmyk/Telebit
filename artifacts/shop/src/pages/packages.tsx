@@ -63,7 +63,7 @@ export default function PackagesPage() {
     purchase.mutate(
       { data: { packageId: pkgId } },
       {
-        onSuccess: () => { toast.success("Package purchased! ROI will be credited daily."); setBuying(null); },
+        onSuccess: () => { toast.success("Package purchased! Profit Share will be credited daily."); setBuying(null); },
         onError: (err: any) => { toast.error(err?.message ?? "Failed to purchase package"); setBuying(null); },
       }
     );
@@ -116,7 +116,7 @@ export default function PackagesPage() {
               </div>
               <div>
                 <p className="text-xs font-semibold text-slate-300">Total Income Earned</p>
-                <p className="text-[10px] text-slate-500 mt-0.5">ROI · Referral · Royalty · Rewards</p>
+                <p className="text-[10px] text-slate-500 mt-0.5">Profit Share · Referral · Royalty · Rewards</p>
               </div>
             </div>
             <div className="text-right">
@@ -159,7 +159,7 @@ export default function PackagesPage() {
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div className="rounded-xl bg-white/5 px-3 py-2">
-                        <p className="text-[10px] text-slate-500">ROI Credited</p>
+                        <p className="text-[10px] text-slate-500">Profit Share Credited</p>
                         <p className="text-xs font-bold text-white tabular-nums">{fmtUsdt(p.totalRoiCredited)} USDT</p>
                       </div>
                       <div className="rounded-xl bg-white/5 px-3 py-2">
@@ -222,7 +222,7 @@ export default function PackagesPage() {
                 <div className="mt-4 rounded-2xl bg-white/10 border border-white/20 px-4 py-3 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Activity className="w-4 h-4 text-white/70" />
-                    <span className="text-sm font-semibold text-white/80">Total ROI Return</span>
+                    <span className="text-sm font-semibold text-white/80">Total Profit Share Return</span>
                   </div>
                   <div className="text-right">
                     <span className="text-base font-black text-emerald-300 tabular-nums">+{fmtUsdt(totalReturn)} USDT</span>
@@ -237,7 +237,7 @@ export default function PackagesPage() {
                 {/* Key metrics */}
                 <div className="grid grid-cols-3 gap-2.5">
                   {[
-                    { label: "Daily ROI", value: `${pkg.roiPercent}%`, sub: "per day" },
+                    { label: "Daily Profit Share", value: `${pkg.roiPercent}%`, sub: "per day" },
                     { label: "Duration", value: `${pkg.roiDays}`, sub: "days" },
                     { label: "Daily Earn", value: `$${dailyRoi.toFixed(2)}`, sub: "USDT/day" },
                   ].map(({ label, value, sub }) => (

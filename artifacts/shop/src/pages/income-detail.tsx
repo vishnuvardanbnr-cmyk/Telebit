@@ -23,7 +23,7 @@ const TYPE_META: Record<IncomeType, {
   Icon: any;
 }> = {
   roi: {
-    label: "ROI Income",
+    label: "Profit Share",
     desc: "Daily returns credited from active packages",
     dot: "bg-blue-500",
     accent: "text-blue-600",
@@ -76,7 +76,7 @@ function RoiPackageBreakdown() {
     <div className="rounded-2xl border border-border bg-white overflow-hidden">
       <div className="px-5 py-4 border-b border-border/60">
         <p className="text-sm font-bold text-foreground">Package Breakdown</p>
-        <p className="text-xs text-muted-foreground mt-0.5">ROI progress per active package</p>
+        <p className="text-xs text-muted-foreground mt-0.5">Profit Share progress per active package</p>
       </div>
       <div className="divide-y divide-border/50">
         {pkgs.map((pkg, i) => {
@@ -124,7 +124,7 @@ function RoiPackageBreakdown() {
                 {[
                   { label: "Earned", value: fmtUsdt(earned), color: "text-blue-600" },
                   { label: "Pending", value: fmtUsdt(pending), color: "text-amber-600" },
-                  { label: "Daily ROI", value: fmtUsdt(daily), color: "text-foreground" },
+                  { label: "Daily Profit Share", value: fmtUsdt(daily), color: "text-foreground" },
                 ].map(({ label, value, color }) => (
                   <div key={label} className="rounded-xl bg-muted/40 px-3 py-2.5 text-center">
                     <p className={cn("text-sm font-black tabular-nums", color)}>{value}</p>
@@ -206,7 +206,7 @@ export default function IncomeDetailPage() {
             </div>
             <p className="text-sm font-semibold text-foreground">No transactions yet</p>
             <p className="text-xs text-muted-foreground mt-1">
-              {type === "roi" && "Purchase a package to start earning daily ROI"}
+              {type === "roi" && "Purchase a package to start earning daily Profit Share"}
               {type === "referral" && "Invite users to earn referral commissions"}
               {type === "royalty" && "Royalty income is credited when your uplines withdraw"}
               {type === "rank_reward" && "Achieve a rank to earn one-time rewards"}
@@ -227,7 +227,7 @@ export default function IncomeDetailPage() {
                 // "ROI Day 3/30" → "Day 3 of 30"
                 const m = note.match(/Day (\d+)\/(\d+)/);
                 title = m ? `Day ${m[1]} of ${m[2]}` : note;
-                subtitle = "Daily ROI credit";
+                subtitle = "Daily Profit Share credit";
               } else if (type === "referral") {
                 // "Level 2 referral commission"
                 const m = note.match(/Level (\d+)/);

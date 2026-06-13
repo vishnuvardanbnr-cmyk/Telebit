@@ -158,7 +158,7 @@ export default function Home() {
         ) : (
           <>
             {[
-              { label: "ROI Income",       sub: "Daily returns from packages",       value: income?.roi ?? "0",        dot: "bg-blue-500",   href: "/income/roi" },
+              { label: "Profit Share",     sub: "Daily returns from packages",       value: income?.roi ?? "0",        dot: "bg-blue-500",   href: "/income/roi" },
               { label: "Spot Referral",    sub: "10-level network commissions",      value: income?.referral ?? "0",   dot: "bg-violet-500", href: "/income/referral" },
               { label: "Royalty Income",   sub: "Profit share based on sales",       value: income?.royalty ?? "0",    dot: "bg-amber-500",  href: "/income/royalty" },
               { label: "Rank Rewards",     sub: "One-time rank achievement bonuses", value: income?.rankReward ?? "0", dot: "bg-emerald-500",href: "/income/rank_reward" },
