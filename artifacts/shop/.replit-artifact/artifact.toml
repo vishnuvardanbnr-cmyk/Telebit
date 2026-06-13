@@ -26,6 +26,8 @@ args = ["pnpm", "--filter", "@workspace/shop", "run", "build"]
 
 [services.production.build.env]
 NODE_ENV = "production"
+PORT = "24349"
+BASE_PATH = "/"
 
 [[services.production.rewrites]]
 from = "/*"
