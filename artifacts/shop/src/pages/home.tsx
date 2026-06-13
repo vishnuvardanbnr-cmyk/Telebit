@@ -110,25 +110,7 @@ export default function Home() {
               <p className="text-xs text-muted-foreground leading-relaxed">
                 Every <strong className="text-foreground">$125 package</strong> awards <strong className="text-green-700">{sharesPerPkg} shares</strong> — backed by real equity in Athnol Bio Fuel Company.
               </p>
-              <div className="grid grid-cols-3 gap-2">
-                <div className="rounded-xl bg-green-50 border border-green-100 px-3 py-3 text-center">
-                  <p className="text-[9px] text-green-600 font-semibold uppercase tracking-wide mb-0.5">Per Package</p>
-                  <p className="text-base font-black text-green-800 tabular-nums">{sharesPerPkg}</p>
-                  <p className="text-[9px] text-green-600 mt-0.5">shares</p>
-                </div>
-                <div className="rounded-xl bg-green-50 border border-green-100 px-3 py-3 text-center">
-                  <p className="text-[9px] text-green-600 font-semibold uppercase tracking-wide mb-0.5">Share Price</p>
-                  <p className="text-base font-black text-green-800 tabular-nums">
-                    {shareVal > 0 ? `$${shareVal.toFixed(2)}` : "—"}
-                  </p>
-                  <p className="text-[9px] text-green-600 mt-0.5">USDT/share</p>
-                </div>
-                <div className="rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-3 text-center">
-                  <p className="text-[9px] text-emerald-600 font-semibold uppercase tracking-wide mb-0.5">Confirmed</p>
-                  <p className="text-base font-black text-emerald-800 tabular-nums">{confirmedShares.toLocaleString()}</p>
-                  <p className="text-[9px] text-emerald-600 mt-0.5">shares held</p>
-                </div>
-              </div>
+
               <Link href="/demat">
                 <div className="flex items-center justify-center gap-2 rounded-xl bg-green-700 hover:bg-green-800 transition-colors px-4 py-3 cursor-pointer">
                   <Leaf className="w-4 h-4 text-white" />
