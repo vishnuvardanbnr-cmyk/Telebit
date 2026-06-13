@@ -19,10 +19,15 @@ function serializeUser(user: any) {
     parentUserId: user.parentUserId ?? null,
     walletBalance: user.walletBalance,
     earningsBalance: user.earningsBalance,
+    incomeBalance: user.incomeBalance ?? "0",
+    investedUsdt: user.investedUsdt ?? "0",
+    totalIncomeEarned: user.totalIncomeEarned ?? "0",
+    subscriptionActive: user.subscriptionActive ?? false,
     depositAddress: user.depositAddress,
     referralCode: user.referralCode,
     isAdmin: user.isAdmin,
     withdrawalBlocked: user.withdrawalBlocked,
+    uplineId: user.uplineId ?? null,
     createdAt: user.createdAt,
   };
 }

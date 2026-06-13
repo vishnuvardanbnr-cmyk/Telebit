@@ -26,6 +26,7 @@ export default function Home() {
   const { data: shareData } = useGetMyShareRequests();
 
   const activePackages = myPackages?.filter((p) => p.isActive) ?? [];
+  const isActiveMember = (user?.subscriptionActive ?? false) || activePackages.length > 0;
   const totalInvested = activePackages.reduce((s, p) => s + parseFloat(p.principalUsdt), 0);
   const totalEarned = income
     ? parseFloat(income.roi) + parseFloat(income.referral) + parseFloat(income.royalty) + parseFloat(income.rankReward)
@@ -56,13 +57,15 @@ export default function Home() {
             </button>
           </div>
           <div className="mt-2 flex items-center gap-2">
-            {activePackages.length > 0 ? (
+            {isActiveMember ? (
               <>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-200 px-3 py-1 text-[11px] font-bold text-emerald-700">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   Active Member
                 </span>
-                <span className="text-[11px] text-muted-foreground">{activePackages.length} package{activePackages.length > 1 ? "s" : ""}</span>
+                {activePackages.length > 0 && (
+                  <span className="text-[11px] text-muted-foreground">{activePackages.length} package{activePackages.length > 1 ? "s" : ""}</span>
+                )}
               </>
             ) : (
               <Link href="/packages">

@@ -59,10 +59,12 @@ async function payReferralCommissions(purchaserId: string, userPackageId: string
       continue;
     }
 
-    // Count direct activated referrals of upline (users with at least 1 active package)
-    const directs = await db.select({ userId: usersTable.id }).from(usersTable).where(eq(usersTable.uplineId, uplineId));
+    // Count active directs of upline: either has an active package OR is admin-activated
+    const directs = await db.select({ userId: usersTable.id, subscriptionActive: usersTable.subscriptionActive })
+      .from(usersTable).where(eq(usersTable.uplineId, uplineId));
     let activatedCount = 0;
     for (const d of directs) {
+      if (d.subscriptionActive) { activatedCount++; continue; }
       const [pkg] = await db.select({ id: userPackagesTable.id }).from(userPackagesTable)
         .where(and(eq(userPackagesTable.userId, d.userId), eq(userPackagesTable.isActive, true)))
         .limit(1);
