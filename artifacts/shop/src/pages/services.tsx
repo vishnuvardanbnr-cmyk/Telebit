@@ -90,9 +90,9 @@ const TYPE_BG: Record<string, string> = {
 
 /* ─── Service Form (modal body) ──────────────────────────────── */
 function ServiceForm({
-  svc, walletBalance, onClose, onSuccess,
+  svc, incomeBalance, onClose, onSuccess,
 }: {
-  svc: typeof SERVICES[0]; walletBalance: number;
+  svc: typeof SERVICES[0]; incomeBalance: number;
   onClose: () => void; onSuccess: () => void;
 }) {
   const [operators, setOperators] = useState<Op[]>([]);
@@ -139,8 +139,8 @@ function ServiceForm({
   const handlePay = async () => {
     const amt = Number(amount);
     if (!isValid) return;
-    if (amt / usdToInrRate > walletBalance) {
-      toast.error("Insufficient wallet balance. Please top up first.");
+    if (amt / usdToInrRate > incomeBalance) {
+      toast.error("Insufficient income balance. Earn more to use this service.");
       return;
     }
     setBusy(true);
@@ -211,7 +211,7 @@ function ServiceForm({
       <div className="px-5 py-4 space-y-4">
         {/* Balance + rate */}
         <div className="flex items-center justify-between text-xs bg-muted/40 rounded-lg px-3 py-2.5">
-          <span className="text-muted-foreground">Wallet: <span className="font-semibold text-foreground">{fmtUsdt(walletBalance)} USDT</span></span>
+          <span className="text-muted-foreground">Income Balance: <span className="font-semibold text-foreground">{fmtUsdt(incomeBalance)} USDT</span></span>
           <span className="text-muted-foreground">Rate: <span className="font-semibold text-foreground">$1 = ₹{usdToInrRate}</span></span>
         </div>
 
@@ -351,7 +351,7 @@ function ServiceForm({
 /* ─── Main Services Page ─────────────────────────────────────── */
 export default function Services() {
   const { data: user } = useGetMe();
-  const walletBalance = Number(user?.walletBalance ?? 0);
+  const incomeBalance = Number(user?.biddingProfitBalance ?? 0);
 
   const [activeService, setActiveService] = useState<ServiceType | null>(null);
   const [txs, setTxs] = useState<UtilTx[]>([]);
@@ -375,14 +375,15 @@ export default function Services() {
         {/* Header */}
         <div>
           <h1 className="text-xl font-bold tracking-tight">Services</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Pay bills & recharge using your USDT wallet balance</p>
+          <p className="text-sm text-muted-foreground mt-0.5">Pay bills & recharge using your income balance</p>
         </div>
 
-        {/* Wallet balance */}
-        <div className="flex items-center justify-between bg-primary/5 border border-primary/20 rounded-xl px-4 py-3">
+        {/* Income balance */}
+        <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
           <div>
-            <p className="text-xs text-muted-foreground font-medium">Wallet Balance</p>
-            <p className="font-bold text-lg text-primary mt-0.5">{fmtUsdt(walletBalance)} <span className="text-sm font-normal text-muted-foreground">USDT</span></p>
+            <p className="text-xs text-emerald-700 font-medium">Income Balance</p>
+            <p className="text-[10px] text-emerald-600 mt-0.5">Withdrawable · Min $10 · 1st &amp; 15th only · Max 2/month</p>
+            <p className="font-bold text-lg text-emerald-700 mt-1">{fmtUsdt(incomeBalance)} <span className="text-sm font-normal text-emerald-600">USDT</span></p>
           </div>
         </div>
 
@@ -471,7 +472,7 @@ export default function Services() {
             </div>
             <ServiceForm
               svc={activeSvc}
-              walletBalance={walletBalance}
+              incomeBalance={incomeBalance}
               onClose={() => setActiveService(null)}
               onSuccess={loadTxs}
             />
