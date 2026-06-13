@@ -187,17 +187,6 @@ export interface P2PTransferRequest {
   note?: string | null;
 }
 
-export interface SubscriptionStatus {
-  active: boolean;
-}
-
-export interface SubscriptionResult {
-  success: boolean;
-  message: string;
-  newWalletBalance: string;
-  referralBonusPaid: number;
-}
-
 export type PublicSettingsWithdrawFeeMode = typeof PublicSettingsWithdrawFeeMode[keyof typeof PublicSettingsWithdrawFeeMode];
 
 

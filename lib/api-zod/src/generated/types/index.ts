@@ -128,8 +128,6 @@ export * from './shareTransferRequestStatus';
 export * from './shippingAddress';
 export * from './shopStats';
 export * from './subAccount';
-export * from './subscriptionResult';
-export * from './subscriptionStatus';
 export * from './telegramConfig';
 export * from './user';
 export * from './userNftActivation';

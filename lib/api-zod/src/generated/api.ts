@@ -285,25 +285,6 @@ export const GetSettingsResponse = zod.object({
 
 
 /**
- * @summary Get subscription status
- */
-export const GetSubscriptionStatusResponse = zod.object({
-  "active": zod.boolean()
-})
-
-
-/**
- * @summary Activate subscription ($35)
- */
-export const ActivateSubscriptionResponse = zod.object({
-  "success": zod.boolean(),
-  "message": zod.string(),
-  "newWalletBalance": zod.string(),
-  "referralBonusPaid": zod.number()
-})
-
-
-/**
  * @summary List products
  */
 export const listProductsQuerySortDefault = `newest`;
