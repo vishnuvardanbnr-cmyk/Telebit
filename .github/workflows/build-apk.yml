@@ -8,6 +8,8 @@ on:
 jobs:
   build-apk:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
     steps:
       - name: Checkout
@@ -19,8 +21,15 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Install pnpm
-        run: npm install -g pnpm@10
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install pnpm via standalone script
+        run: |
+          curl -fsSL https://get.pnpm.io/install.sh | PNPM_VERSION=10 sh -
+          echo "$HOME/.local/share/pnpm" >> $GITHUB_PATH
 
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
