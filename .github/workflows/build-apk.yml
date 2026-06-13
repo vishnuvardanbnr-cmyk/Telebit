@@ -22,7 +22,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -38,12 +38,13 @@ jobs:
           BASE_PATH: /
           PORT: 3000
 
-      - name: Remove stale android platform
+      - name: Remove android platform if previously committed
         run: rm -rf artifacts/shop/android
 
-      - name: Add Capacitor Android platform
-        working-directory: artifacts/shop
-        run: npx cap add android
+      - name: Initialise Capacitor Android platform
+        run: |
+          cd artifacts/shop
+          npx cap add android
 
       - name: Apply custom app icon
         run: |
@@ -61,12 +62,13 @@ jobs:
           magick "$ICON" -resize 192x192 "$BASE/mipmap-xxxhdpi/ic_launcher_round.png"
 
       - name: Sync Capacitor
-        working-directory: artifacts/shop
-        run: npx cap sync android
+        run: |
+          cd artifacts/shop
+          npx cap sync android
 
       - name: Build debug APK
-        working-directory: artifacts/shop/android
         run: |
+          cd artifacts/shop/android
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
