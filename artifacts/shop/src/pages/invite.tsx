@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useGetMe, useGetMyNetwork } from "@workspace/api-client-react";
 import {
   Copy, Check, Users, Link as LinkIcon, Gift, UserPlus,
-  ChevronDown, ChevronRight, TrendingUp, Package,
+  ChevronDown, ChevronRight, TrendingUp, Package, Globe, Smartphone,
 } from "lucide-react";
 import { toast } from "sonner";
 import { fmtUsdt } from "@/lib/utils";
@@ -135,22 +135,34 @@ function LevelRow({ level, count, members, referralIncome }: {
   );
 }
 
+const APP_PACKAGE = "com.telebit.shop";
+
+function buildDeeplink(origin: string, basePath: string, ref: string) {
+  const webPath = `${origin}${basePath}/sign-in?ref=${ref}`;
+  // Strip protocol for intent host
+  const host = origin.replace(/^https?:\/\//, "");
+  const intentPath = `${host}${basePath}/sign-in?ref=${ref}`;
+  const deeplink = `intent://${intentPath}#Intent;scheme=https;package=${APP_PACKAGE};S.browser_fallback_url=${encodeURIComponent(webPath)};end`;
+  return { webLink: webPath, deeplink };
+}
+
 export default function InvitePage() {
   const { data: user } = useGetMe();
   const { data: network, isLoading: loadNetwork } = useGetMyNetwork({});
-  const [copied, setCopied] = useState(false);
+  const [copiedWeb, setCopiedWeb] = useState(false);
+  const [copiedApp, setCopiedApp] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
 
-  const inviteLink = user
-    ? `${window.location.origin}${BASE}/sign-in?ref=${user.referralCode}`
-    : "";
+  const { webLink, deeplink } = user
+    ? buildDeeplink(window.location.origin, BASE, user.referralCode)
+    : { webLink: "", deeplink: "" };
 
-  const handleCopyLink = () => {
-    if (!inviteLink) return;
-    navigator.clipboard.writeText(inviteLink).then(() => {
-      setCopied(true);
-      toast.success("Invite link copied!");
-      setTimeout(() => setCopied(false), 2000);
+  const handleCopy = (text: string, setter: (v: boolean) => void, msg: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+      setter(true);
+      toast.success(msg);
+      setTimeout(() => setter(false), 2000);
     });
   };
 
@@ -201,34 +213,73 @@ export default function InvitePage() {
           </div>
         </div>
 
-        {/* Invite link */}
-        <div className="rounded-2xl bg-white/5 border border-white/10 p-4 space-y-3">
-          <div className="flex items-center gap-2 mb-1">
-            <LinkIcon className="w-3.5 h-3.5 text-slate-400" />
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Your Invite Link</p>
-          </div>
-          <div className="flex items-center gap-2 bg-white/5 rounded-xl px-3 py-2.5">
-            <span className="flex-1 text-xs font-mono text-slate-300 truncate">
-              {inviteLink || "Loading…"}
-            </span>
+        {/* Invite links — Website + App */}
+        <div className="space-y-3">
+
+          {/* Website link */}
+          <div className="rounded-2xl bg-white/5 border border-white/10 p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Globe className="w-3.5 h-3.5 text-blue-400" />
+              <p className="text-xs font-semibold text-blue-300 uppercase tracking-wide">Website Link</p>
+              <span className="ml-auto text-[10px] text-slate-500">Opens in browser</span>
+            </div>
+            <div className="flex items-center gap-2 bg-white/5 rounded-xl px-3 py-2.5">
+              <span className="flex-1 text-xs font-mono text-slate-300 truncate">
+                {webLink || "Loading…"}
+              </span>
+              <button
+                onClick={() => handleCopy(webLink, setCopiedWeb, "Website link copied!")}
+                disabled={!webLink}
+                className="shrink-0 p-1 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-40"
+              >
+                {copiedWeb
+                  ? <Check className="w-4 h-4 text-emerald-400" />
+                  : <Copy className="w-4 h-4 text-slate-400" />}
+              </button>
+            </div>
             <button
-              onClick={handleCopyLink}
-              disabled={!inviteLink}
-              className="shrink-0 p-1 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-40"
+              onClick={() => handleCopy(webLink, setCopiedWeb, "Website link copied!")}
+              disabled={!webLink}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition-colors disabled:opacity-50"
             >
-              {copied
-                ? <Check className="w-4 h-4 text-emerald-400" />
-                : <Copy className="w-4 h-4 text-slate-400" />}
+              {copiedWeb ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              {copiedWeb ? "Copied!" : "Copy Website Link"}
             </button>
           </div>
-          <button
-            onClick={handleCopyLink}
-            disabled={!inviteLink}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition-colors disabled:opacity-50"
-          >
-            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            {copied ? "Copied!" : "Copy Invite Link"}
-          </button>
+
+          {/* App deeplink */}
+          <div className="rounded-2xl bg-white/5 border border-emerald-500/20 p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
+              <p className="text-xs font-semibold text-emerald-300 uppercase tracking-wide">App Link</p>
+              <span className="ml-auto text-[10px] text-slate-500">Opens Telebit app</span>
+            </div>
+            <div className="flex items-center gap-2 bg-white/5 rounded-xl px-3 py-2.5">
+              <span className="flex-1 text-xs font-mono text-slate-300 truncate">
+                {deeplink
+                  ? deeplink.replace(/#Intent.*/, "…")
+                  : "Loading…"}
+              </span>
+              <button
+                onClick={() => handleCopy(deeplink, setCopiedApp, "App link copied!")}
+                disabled={!deeplink}
+                className="shrink-0 p-1 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-40"
+              >
+                {copiedApp
+                  ? <Check className="w-4 h-4 text-emerald-400" />
+                  : <Copy className="w-4 h-4 text-slate-400" />}
+              </button>
+            </div>
+            <button
+              onClick={() => handleCopy(deeplink, setCopiedApp, "App link copied!")}
+              disabled={!deeplink}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm transition-colors disabled:opacity-50"
+            >
+              {copiedApp ? <Check className="w-4 h-4" /> : <Smartphone className="w-4 h-4" />}
+              {copiedApp ? "Copied!" : "Copy App Link"}
+            </button>
+          </div>
+
         </div>
 
         {/* Referral code */}
