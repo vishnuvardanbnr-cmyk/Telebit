@@ -32,19 +32,22 @@ jobs:
       - name: Install ImageMagick
         run: sudo apt-get install -y imagemagick
 
+      - name: Install Capacitor CLI globally
+        run: npm install -g @capacitor/cli@8
+
       - name: Install workspace dependencies
         run: pnpm install
 
       - name: Build shop web app
-        run: pnpm --filter @workspace/shop run build
+        working-directory: artifacts/shop
+        run: pnpm run build
         env:
           BASE_PATH: /
           PORT: 3000
 
-      - name: Initialise Capacitor Android platform
-        run: |
-          cd artifacts/shop
-          pnpm exec cap add android
+      - name: Add Capacitor Android platform
+        working-directory: artifacts/shop
+        run: cap add android
 
       - name: Apply custom app icon
         run: |
@@ -62,13 +65,12 @@ jobs:
           convert "$ICON" -resize 192x192 "$BASE/mipmap-xxxhdpi/ic_launcher_round.png"
 
       - name: Sync Capacitor
-        run: |
-          cd artifacts/shop
-          pnpm exec cap sync android
+        working-directory: artifacts/shop
+        run: cap sync android
 
       - name: Build debug APK
+        working-directory: artifacts/shop/android
         run: |
-          cd artifacts/shop/android
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
