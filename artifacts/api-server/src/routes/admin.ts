@@ -382,7 +382,7 @@ router.post("/admin/regenerate-addresses", requireAuth, requireAdmin, async (req
     return;
   }
 
-  const users = await db.select().from(usersTable).where(eq(usersTable.isAdmin, false));
+  const users = await db.select().from(usersTable);
   let regenerated = 0;
 
   for (const user of users) {
