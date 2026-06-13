@@ -119,11 +119,11 @@ export async function checkAndAwardRanks(userId: string): Promise<void> {
 
       const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
       if (user) {
-        const newBalance = parseFloat(user.biddingProfitBalance) + reward;
+        const newBalance = parseFloat(user.incomeBalance) + reward;
         const newTotal   = parseFloat(user.totalIncomeEarned) + reward;
         await db.update(usersTable)
           .set({
-            biddingProfitBalance: String(newBalance),
+            incomeBalance: String(newBalance),
             totalIncomeEarned:    String(newTotal),
           } as any)
           .where(eq(usersTable.id, userId));

@@ -34,7 +34,7 @@ export async function runDailyRoiCredit() {
     if (!user) continue;
 
     await db.update(usersTable)
-      .set({ biddingProfitBalance: String(parseFloat(user.biddingProfitBalance) + dailyRoi) } as any)
+      .set({ incomeBalance: String(parseFloat(user.incomeBalance) + dailyRoi) } as any)
       .where(eq(usersTable.id, pkg.userId));
 
     // Update package
@@ -87,7 +87,7 @@ export async function runRoyaltyDailyPayout() {
 
     // Credit upline
     await db.update(usersTable)
-      .set({ biddingProfitBalance: String(parseFloat(upline.biddingProfitBalance) + amount) } as any)
+      .set({ incomeBalance: String(parseFloat(upline.incomeBalance) + amount) } as any)
       .where(eq(usersTable.id, dist.uplineUserId));
 
     // Mark payout as paid

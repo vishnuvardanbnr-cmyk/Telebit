@@ -1995,7 +1995,7 @@ components:
         walletBalance: { type: string }
         earningsBalance: { type: string }
         investedUsdt: { type: string }
-        biddingProfitBalance: { type: string }
+        incomeBalance: { type: string }
         biddingRewardEarned: { type: string }
         totalIncomeEarned: { type: string }
         subscriptionActive: { type: boolean }

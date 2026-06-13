@@ -19,7 +19,7 @@ export const usersTable = pgTable("users", {
   uplineId: text("upline_id"),
   investedUsdt: numeric("invested_usdt", { precision: 20, scale: 8 }).notNull().default("0"),
   userDepositedAmount: numeric("user_deposited_amount", { precision: 20, scale: 8 }).notNull().default("0"),
-  biddingProfitBalance: numeric("bidding_profit_balance", { precision: 20, scale: 8 }).notNull().default("0"),
+  incomeBalance: numeric("income_balance", { precision: 20, scale: 8 }).notNull().default("0"),
   biddingRewardEarned: numeric("bidding_reward_earned", { precision: 20, scale: 8 }).notNull().default("0"),
   totalIncomeEarned: numeric("total_income_earned", { precision: 20, scale: 8 }).notNull().default("0"),
   subscriptionActive: boolean("subscription_active").notNull().default(false),

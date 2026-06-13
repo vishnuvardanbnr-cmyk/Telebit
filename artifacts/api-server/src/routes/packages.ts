@@ -75,7 +75,7 @@ async function payReferralCommissions(purchaserId: string, userPackageId: string
         const [upline] = await db.select().from(usersTable).where(eq(usersTable.id, uplineId));
         if (upline) {
           await db.update(usersTable)
-            .set({ biddingProfitBalance: String(parseFloat(upline.biddingProfitBalance) + commission) } as any)
+            .set({ incomeBalance: String(parseFloat(upline.incomeBalance) + commission) } as any)
             .where(eq(usersTable.id, uplineId));
 
           await db.insert(incomeLogTable).values({

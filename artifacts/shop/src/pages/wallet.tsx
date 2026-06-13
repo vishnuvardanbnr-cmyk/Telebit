@@ -161,7 +161,7 @@ function WithdrawSheet({ open, onClose }: { open: boolean; onClose: () => void }
 
   const watchAmount = form.watch("amount");
   const parsedAmount = parseFloat(watchAmount) || 0;
-  const balance = parseFloat(user?.biddingProfitBalance ?? "0");
+  const balance = parseFloat(user?.incomeBalance ?? "0");
 
   let fee = 0;
   if (settings) {
@@ -253,7 +253,7 @@ function WithdrawSheet({ open, onClose }: { open: boolean; onClose: () => void }
                 <p className="text-xs text-muted-foreground font-medium">Income Balance (Withdrawable)</p>
                 <p className="text-[11px] text-muted-foreground/70 mt-0.5">Min $10 · 1st & 15th only · Max 2/month</p>
               </div>
-              <p className="text-base font-bold text-foreground">{fmtUsdt(user?.biddingProfitBalance ?? "0")} <span className="text-xs font-normal text-muted-foreground">USDT</span></p>
+              <p className="text-base font-bold text-foreground">{fmtUsdt(user?.incomeBalance ?? "0")} <span className="text-xs font-normal text-muted-foreground">USDT</span></p>
             </div>
 
             {/* Withdrawal rules info */}
@@ -575,7 +575,7 @@ export default function Wallet() {
           <p className="text-[11px] text-green-600/80 mt-0.5">Withdrawable · Min $10 · 1st &amp; 15th only · Max 2/month</p>
         </div>
         <div className="text-right">
-          <p className="text-xl font-black text-green-800 tabular-nums">{fmtUsdt(user?.biddingProfitBalance ?? "0")}</p>
+          <p className="text-xl font-black text-green-800 tabular-nums">{fmtUsdt(user?.incomeBalance ?? "0")}</p>
           <p className="text-[11px] text-green-600">USDT</p>
         </div>
       </div>

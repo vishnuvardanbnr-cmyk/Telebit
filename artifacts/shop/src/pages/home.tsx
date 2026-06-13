@@ -32,7 +32,7 @@ export default function Home() {
     : 0;
 
   const walletBal = parseFloat(user?.walletBalance ?? "0");
-  const incomeBal = parseFloat(user?.biddingProfitBalance ?? "0");
+  const incomeBal = parseFloat(user?.incomeBalance ?? "0");
 
   if (userLoading) {
     return (

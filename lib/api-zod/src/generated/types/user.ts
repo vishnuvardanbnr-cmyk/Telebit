@@ -23,7 +23,7 @@ export interface User {
   walletBalance: string;
   earningsBalance: string;
   investedUsdt?: string;
-  biddingProfitBalance?: string;
+  incomeBalance?: string;
   biddingRewardEarned?: string;
   totalIncomeEarned?: string;
   subscriptionActive?: boolean;

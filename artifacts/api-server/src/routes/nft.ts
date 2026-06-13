@@ -620,11 +620,11 @@ router.post("/nft/pools/:poolId/bid", requireAuth, async (req, res): Promise<voi
       reward = Math.min(reward, incomeCap - totalIncomeEarned);
 
       if (reward > 0) {
-        const newBiddingProfit = parseFloat(user.biddingProfitBalance) + reward;
+        const newIncomeBalance = parseFloat(user.incomeBalance) + reward;
         const newBiddingReward = biddingRewardEarned + reward;
         const newTotalIncome = totalIncomeEarned + reward;
         await db.update(usersTable).set({
-          biddingProfitBalance: String(newBiddingProfit),
+          incomeBalance: String(newIncomeBalance),
           biddingRewardEarned: String(newBiddingReward),
           totalIncomeEarned: String(newTotalIncome),
         } as any).where(eq(usersTable.id, user.id));

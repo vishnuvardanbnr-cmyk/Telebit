@@ -237,7 +237,7 @@ router.post("/utility/pay", async (req, res) => {
     const usdToInrRate = rateSetting ? Number(rateSetting.value) : 85;
     const amountUsdt = amount / usdToInrRate;
 
-    if (Number(user.biddingProfitBalance) < amountUsdt) {
+    if (Number(user.incomeBalance) < amountUsdt) {
       res.status(400).json({ error: "Insufficient income balance" });
       return;
     }
@@ -275,7 +275,7 @@ router.post("/utility/pay", async (req, res) => {
     }
 
     await db.update(usersTable).set({
-      biddingProfitBalance: sql`bidding_profit_balance - ${amountUsdt.toFixed(8)}`,
+      incomeBalance: sql`income_balance - ${amountUsdt.toFixed(8)}`,
       updatedAt: new Date(),
     }).where(eq(usersTable.id, userId));
 

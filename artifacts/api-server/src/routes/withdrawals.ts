@@ -142,8 +142,8 @@ router.post("/withdrawals", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  // Draw from income balance (biddingProfitBalance)
-  const incomeBalance = parseFloat(user.biddingProfitBalance);
+  // Draw from income balance
+  const incomeBalance = parseFloat(user.incomeBalance);
   if (incomeBalance < amountNum) {
     res.status(400).json({ error: `Insufficient income balance. Required: ${amountNum.toFixed(4)} USDT, available: ${incomeBalance.toFixed(4)} USDT` });
     return;
@@ -176,7 +176,7 @@ router.post("/withdrawals", requireAuth, async (req, res): Promise<void> => {
 
   // Deduct from income balance
   await db.update(usersTable)
-    .set({ biddingProfitBalance: String(incomeBalance - deductFrom), lastWithdrawalAt: new Date() } as any)
+    .set({ incomeBalance: String(incomeBalance - deductFrom), lastWithdrawalAt: new Date() } as any)
     .where(eq(usersTable.id, user.id));
 
   const [withdrawal] = await db.insert(withdrawalsTable).values({

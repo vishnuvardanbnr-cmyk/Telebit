@@ -351,7 +351,7 @@ function ServiceForm({
 /* ─── Main Services Page ─────────────────────────────────────── */
 export default function Services() {
   const { data: user } = useGetMe();
-  const incomeBalance = Number(user?.biddingProfitBalance ?? 0);
+  const incomeBalance = Number(user?.incomeBalance ?? 0);
 
   const [activeService, setActiveService] = useState<ServiceType | null>(null);
   const [txs, setTxs] = useState<UtilTx[]>([]);

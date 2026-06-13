@@ -249,10 +249,10 @@ router.post("/admin/withdrawals/:id/reject", requireAuth, requireAdmin, async (r
 
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, withdrawal.userId));
   if (user) {
-    const currentBalance = parseFloat(user.biddingProfitBalance);
+    const currentBalance = parseFloat(user.incomeBalance);
     const refundAmount = parseFloat(withdrawal.amount);
     await db.update(usersTable)
-      .set({ biddingProfitBalance: String(currentBalance + refundAmount) } as any)
+      .set({ incomeBalance: String(currentBalance + refundAmount) } as any)
       .where(eq(usersTable.id, user.id));
   }
 
@@ -470,7 +470,7 @@ router.post("/admin/reset-for-live", requireAuth, requireAdmin, async (req, res)
       walletBalance: "0",
       earningsBalance: "0",
       totalIncomeEarned: "0",
-      biddingProfitBalance: "0",
+      incomeBalance: "0",
     } as any)
     .where(eq(usersTable.isAdmin, true));
 
