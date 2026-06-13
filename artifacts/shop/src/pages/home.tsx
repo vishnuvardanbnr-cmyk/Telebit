@@ -55,6 +55,22 @@ export default function Home() {
               <Copy className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
             </button>
           </div>
+          <div className="mt-2 flex items-center gap-2">
+            {activePackages.length > 0 ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-200 px-3 py-1 text-[11px] font-bold text-emerald-700">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Active Member
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 border border-red-200 px-3 py-1 text-[11px] font-bold text-red-600">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                Inactive
+              </span>
+            )}
+            {activePackages.length > 0 && (
+              <span className="text-[11px] text-muted-foreground">{activePackages.length} active package{activePackages.length > 1 ? "s" : ""}</span>
+            )}
+          </div>
         </UserProfileCard>
       )}
 
