@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, usersTable, withdrawalsTable, royaltyDistributionsTable, royaltyDailyPayoutsTable, incomeLogTable } from "@workspace/db";
+import { db, usersTable, withdrawalsTable, royaltyDistributionsTable, royaltyDailyPayoutsTable, incomeLogTable, userPackagesTable } from "@workspace/db";
 import { eq, desc, and, gte, count } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../lib/auth";
 import { getSettings, updateSettings } from "../lib/settings";
@@ -101,6 +101,15 @@ router.post("/withdrawals", requireAuth, async (req, res): Promise<void> => {
 
   if (user.withdrawalBlocked) {
     res.status(400).json({ error: "Your account has a withdrawal block. Contact support." });
+    return;
+  }
+
+  // Must have at least one active package to withdraw
+  const [activePkg] = await db.select({ id: userPackagesTable.id }).from(userPackagesTable)
+    .where(and(eq(userPackagesTable.userId, user.id), eq(userPackagesTable.isActive, true)))
+    .limit(1);
+  if (!activePkg) {
+    res.status(400).json({ error: "You must have an active investment package to withdraw. Please purchase a package first." });
     return;
   }
 

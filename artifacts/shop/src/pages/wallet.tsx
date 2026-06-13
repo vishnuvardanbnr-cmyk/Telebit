@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
   useGetMe, useCheckDeposit, useGetSettings, useCreateWithdrawal,
-  useListDeposits, useListWithdrawals, useListOrders,
+  useListDeposits, useListWithdrawals, useListOrders, useListMyPackages,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -150,7 +150,9 @@ type WithdrawForm = z.infer<typeof withdrawSchema>;
 function WithdrawSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { data: user } = useGetMe();
   const { data: settings, isLoading } = useGetSettings();
+  const { data: myPackages } = useListMyPackages({});
   const createWithdrawal = useCreateWithdrawal();
+  const hasActivePackage = (myPackages ?? []).some((p) => p.isActive);
 
   const form = useForm<WithdrawForm>({
     resolver: zodResolver(withdrawSchema),
@@ -186,6 +188,7 @@ function WithdrawSheet({ open, onClose }: { open: boolean; onClose: () => void }
 
   const blocked = user?.withdrawalBlocked;
   const disabled = !settings?.withdrawalEnabled;
+  const noPackage = myPackages !== undefined && !hasActivePackage;
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
@@ -230,6 +233,18 @@ function WithdrawSheet({ open, onClose }: { open: boolean; onClose: () => void }
           </div>
         )}
 
+        {!isLoading && !disabled && !blocked && noPackage && (
+          <div className="flex items-start gap-3 px-4 py-4 bg-amber-50 border border-amber-200 rounded-xl">
+            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-amber-800">Active Package Required</p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                You need an active investment package to withdraw. <a href="/packages" className="underline font-semibold">Purchase a package</a> to unlock withdrawals.
+              </p>
+            </div>
+          </div>
+        )}
+
         {!isLoading && !disabled && !blocked && (
           <div className="space-y-4">
             {/* Balance pill - income balance (withdrawable) */}
@@ -246,7 +261,7 @@ function WithdrawSheet({ open, onClose }: { open: boolean; onClose: () => void }
               <AlertCircle className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
               <div className="text-xs text-blue-800 space-y-0.5">
                 <p className="font-semibold">Withdrawal Rules</p>
-                <p>Withdrawals open on the <strong>1st and 15th</strong> of each month. Maximum <strong>2 withdrawals/month</strong>. Minimum <strong>$10 USDT</strong>. A <strong>15% royalty fee</strong> is distributed to your uplines on each withdrawal.</p>
+                <p>Requires an <strong>active investment package</strong>. Opens on the <strong>1st and 15th</strong> of each month. Max <strong>2 withdrawals/month</strong>. Min <strong>$10 USDT</strong>. A <strong>15% royalty fee</strong> is distributed to your uplines on each withdrawal.</p>
               </div>
             </div>
 
@@ -315,7 +330,7 @@ function WithdrawSheet({ open, onClose }: { open: boolean; onClose: () => void }
                 <Button
                   type="submit"
                   className="w-full h-12 rounded-xl font-bold text-sm"
-                  disabled={createWithdrawal.isPending || overBalance || underMinimum}
+                  disabled={createWithdrawal.isPending || overBalance || underMinimum || noPackage}
                 >
                   {createWithdrawal.isPending ? (
                     <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Submitting…</>
