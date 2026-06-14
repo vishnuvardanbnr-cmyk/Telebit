@@ -13,55 +13,40 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build APK
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # Install ONLY the mobile app deps using plain npm.
+      # No pnpm needed — @workspace/* deps have been removed.
+      - name: Install mobile dependencies
+        working-directory: artifacts/mobile
+        run: npm install
+
+      # Generate the native Android project from the Expo config
+      - name: Expo prebuild (Android)
+        working-directory: artifacts/mobile
+        env:
+          EXPO_PUBLIC_API_URL: https://telebit-1.replit.app
+        run: npx expo prebuild --platform android --clean --no-install
+
+      # Build the debug APK (no signing required)
+      - name: Build debug APK
+        working-directory: artifacts/mobile/android
         run: |
-          set -e
-
-          # ── Node.js 24 via apt ──────────────────────────────────────────
-          curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
-          sudo apt-get install -y nodejs
-          echo "Node: $(node --version)  npm: $(npm --version)"
-
-          # ── pnpm 10 (sudo → goes to /usr/local/bin, always in PATH) ────
-          sudo npm install -g pnpm@10
-          echo "pnpm: $(pnpm --version)"
-
-          # ── Java 21 (pre-installed on ubuntu-latest) ────────────────────
-          export JAVA_HOME="$JAVA_HOME_21_X64"
-          export PATH="$JAVA_HOME/bin:$PATH"
-          echo "Java: $(java --version 2>&1 | head -1)"
-
-          # ── Install workspace deps ──────────────────────────────────────
-          pnpm install --frozen-lockfile
-
-          # ── Build web app ───────────────────────────────────────────────
-          BASE_PATH=/ PORT=3000 pnpm --filter @workspace/shop run build
-
-          # ── Capacitor Android ───────────────────────────────────────────
-          rm -rf artifacts/shop/android
-          cd artifacts/shop && npx cap add android && cd "$GITHUB_WORKSPACE"
-
-          # ── Custom app icon ─────────────────────────────────────────────
-          ICON="artifacts/shop/public/logo.png"
-          BASE="artifacts/shop/android/app/src/main/res"
-          for size_dpi in "48:mdpi" "72:hdpi" "96:xhdpi" "144:xxhdpi" "192:xxxhdpi"; do
-            px="${size_dpi%%:*}"
-            dpi="${size_dpi##*:}"
-            magick "$ICON" -resize "${px}x${px}" "$BASE/mipmap-$dpi/ic_launcher.png"
-            magick "$ICON" -resize "${px}x${px}" "$BASE/mipmap-$dpi/ic_launcher_round.png"
-          done
-
-          # ── Capacitor sync ──────────────────────────────────────────────
-          cd artifacts/shop && npx cap sync android && cd "$GITHUB_WORKSPACE"
-
-          # ── Gradle build ────────────────────────────────────────────────
-          cd artifacts/shop/android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --no-daemon -x lint
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: telebit-shop-debug
-          path: artifacts/shop/android/app/build/outputs/apk/debug/app-debug.apk
+          name: telebit-debug-${{ github.run_number }}
+          path: artifacts/mobile/android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30

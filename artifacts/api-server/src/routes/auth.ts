@@ -281,7 +281,9 @@ router.post("/auth/register", async (req, res): Promise<void> => {
   // Send welcome email (fire-and-forget)
   sendWelcomeEmail(user.email, user.fullName ?? user.email).catch(() => {});
 
+  const { signToken: signTok } = await import("../lib/auth.js");
   res.status(201).json({
+    token: signTok(user.id),
     user: {
       id: user.id,
       email: user.email,
@@ -364,7 +366,9 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   }
 
   setAuthCookie(res, user.id);
+  const { signToken } = await import("../lib/auth.js");
   res.json({
+    token: signToken(user.id),
     user: {
       id: user.id,
       email: user.email,
@@ -414,7 +418,9 @@ router.post("/auth/demo", async (req, res): Promise<void> => {
   }
 
   setAuthCookie(res, user.id);
+  const { signToken: signDemoTok } = await import("../lib/auth.js");
   res.json({
+    token: signDemoTok(user.id),
     user: {
       id: user.id,
       email: user.email,

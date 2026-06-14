@@ -44,7 +44,15 @@ export function clearAuthCookie(res: Response): void {
 }
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const token = (req as any).cookies?.sid as string | undefined;
+  let token = (req as any).cookies?.sid as string | undefined;
+
+  if (!token) {
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith("Bearer ")) {
+      token = authHeader.slice(7);
+    }
+  }
+
   if (!token) {
     res.status(401).json({ error: "Unauthorized" });
     return;
