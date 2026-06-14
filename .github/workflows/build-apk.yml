@@ -13,68 +13,54 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Node.js 24 and pnpm
+      - name: Build APK
         run: |
+          set -e
+
+          # ── Node.js 24 via apt ──────────────────────────────────────────
           curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
           sudo apt-get install -y nodejs
-          node --version
-          npm --version
+          node --version && npm --version
+
+          # ── pnpm 10 (same shell → same PATH, no persistence needed) ────
           npm install -g pnpm@10
-          # Add npm global bin to PATH for all subsequent steps
-          echo "$(npm prefix -g)/bin" >> $GITHUB_PATH
+          export PATH="$(npm prefix -g)/bin:$PATH"
+          pnpm --version
 
-      - name: Verify pnpm in PATH
-        run: pnpm --version
+          # ── Java 21 (pre-installed on ubuntu-latest) ────────────────────
+          export JAVA_HOME="$JAVA_HOME_21_X64"
+          export PATH="$JAVA_HOME/bin:$PATH"
+          java --version
 
-      - name: Configure Java 21
-        run: |
-          echo "JAVA_HOME=$JAVA_HOME_21_X64" >> $GITHUB_ENV
-          echo "$JAVA_HOME_21_X64/bin" >> $GITHUB_PATH
+          # ── Install workspace deps ──────────────────────────────────────
+          pnpm install --frozen-lockfile
 
-      - name: Install workspace dependencies
-        run: pnpm install --frozen-lockfile
+          # ── Build web app ───────────────────────────────────────────────
+          BASE_PATH=/ PORT=3000 pnpm --filter @workspace/shop run build
 
-      - name: Build shop web app
-        run: pnpm --filter @workspace/shop run build
-        env:
-          BASE_PATH: /
-          PORT: 3000
+          # ── Capacitor Android ───────────────────────────────────────────
+          rm -rf artifacts/shop/android
+          cd artifacts/shop && npx cap add android && cd "$GITHUB_WORKSPACE"
 
-      - name: Remove android platform if previously committed
-        run: rm -rf artifacts/shop/android
-
-      - name: Initialise Capacitor Android platform
-        run: |
-          cd artifacts/shop
-          npx cap add android
-
-      - name: Apply custom app icon
-        run: |
+          # ── Custom app icon ─────────────────────────────────────────────
           ICON="artifacts/shop/public/logo.png"
           BASE="artifacts/shop/android/app/src/main/res"
-          magick "$ICON" -resize 48x48   "$BASE/mipmap-mdpi/ic_launcher.png"
-          magick "$ICON" -resize 72x72   "$BASE/mipmap-hdpi/ic_launcher.png"
-          magick "$ICON" -resize 96x96   "$BASE/mipmap-xhdpi/ic_launcher.png"
-          magick "$ICON" -resize 144x144 "$BASE/mipmap-xxhdpi/ic_launcher.png"
-          magick "$ICON" -resize 192x192 "$BASE/mipmap-xxxhdpi/ic_launcher.png"
-          magick "$ICON" -resize 48x48   "$BASE/mipmap-mdpi/ic_launcher_round.png"
-          magick "$ICON" -resize 72x72   "$BASE/mipmap-hdpi/ic_launcher_round.png"
-          magick "$ICON" -resize 96x96   "$BASE/mipmap-xhdpi/ic_launcher_round.png"
-          magick "$ICON" -resize 144x144 "$BASE/mipmap-xxhdpi/ic_launcher_round.png"
-          magick "$ICON" -resize 192x192 "$BASE/mipmap-xxxhdpi/ic_launcher_round.png"
+          for size_dpi in "48:mdpi" "72:hdpi" "96:xhdpi" "144:xxhdpi" "192:xxxhdpi"; do
+            px="${size_dpi%%:*}"
+            dpi="${size_dpi##*:}"
+            magick "$ICON" -resize "${px}x${px}" "$BASE/mipmap-$dpi/ic_launcher.png"
+            magick "$ICON" -resize "${px}x${px}" "$BASE/mipmap-$dpi/ic_launcher_round.png"
+          done
 
-      - name: Sync Capacitor
-        run: |
-          cd artifacts/shop
-          npx cap sync android
+          # ── Capacitor sync ──────────────────────────────────────────────
+          cd artifacts/shop && npx cap sync android && cd "$GITHUB_WORKSPACE"
 
-      - name: Build debug APK
-        run: |
+          # ── Gradle build ────────────────────────────────────────────────
           cd artifacts/shop/android
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
-      - name: Upload APK artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: telebit-shop-debug
