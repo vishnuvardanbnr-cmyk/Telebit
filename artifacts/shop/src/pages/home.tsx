@@ -99,11 +99,6 @@ export default function Home() {
                     <p className="text-sm font-black text-white leading-tight">Ethnol Bio Fuel Company</p>
                   </div>
                 </div>
-                <Link href="/demat">
-                  <div className="bg-white/20 hover:bg-white/30 transition-colors rounded-lg px-3 py-1.5 cursor-pointer">
-                    <p className="text-[10px] font-black text-white uppercase tracking-widest">Manage →</p>
-                  </div>
-                </Link>
               </div>
               <div className="rounded-2xl bg-white/10 border border-white/20 px-4 py-4">
                 <p className="text-[10px] font-semibold text-green-200 uppercase tracking-widest mb-1">Your Share Holdings</p>
