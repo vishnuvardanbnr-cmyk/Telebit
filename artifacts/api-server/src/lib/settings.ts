@@ -71,13 +71,13 @@ const DEFAULTS: Settings = {
   smtpUser: "",
   smtpPass: "",
   smtpFromEmail: "",
-  smtpFromName: "Telebit Shop",
+  smtpFromName: "Televerse Shop",
   adminExcessWallet: "0",
   shareValueUsdt: "0",
   sharesPerPackage: "50",
   devWallet: "",
   devAccumulatedFees: "0",
-  devPanelPassword: "telebit-dev-2024",
+  devPanelPassword: "televerse-dev-2024",
 };
 
 export async function getSettings(): Promise<Settings> {

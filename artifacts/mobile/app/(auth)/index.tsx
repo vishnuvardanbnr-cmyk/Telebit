@@ -224,7 +224,7 @@ export default function AuthScreen() {
       >
         <View style={s.logoRow}>
           <Image source={require("../../assets/images/icon.png")} style={s.logo} />
-          <Text style={s.appName}>TELEBIT</Text>
+          <Text style={s.appName}>TELEVERSE</Text>
           <Text style={s.tagline}>Crypto Investment Platform</Text>
         </View>
 

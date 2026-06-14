@@ -144,7 +144,7 @@ router.post("/users/accounts", requireAuth, async (req, res): Promise<void> => {
 
   const { address, privateKeyEncrypted } = generateWallet();
   const referralCode = generateReferralCode();
-  const subEmail = `sub_${crypto.randomUUID()}@telebit.internal`;
+  const subEmail = `sub_${crypto.randomUUID()}@televerse.internal`;
 
   const [subAccount] = await db.insert(usersTable).values({
     email: subEmail,

@@ -20,7 +20,7 @@ async function buildTransport() {
       secure: Number(s.smtpPort) === 465,
       auth: { user: s.smtpUser, pass: s.smtpPass },
     }),
-    from: `"${s.smtpFromName || "Telebit Shop"}" <${s.smtpFromEmail || s.smtpUser}>`,
+    from: `"${s.smtpFromName || "Televerse Shop"}" <${s.smtpFromEmail || s.smtpUser}>`,
     settings: s,
   };
 }
@@ -35,14 +35,14 @@ function wrap(body: string) {
       <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;max-width:520px;width:100%;box-shadow:0 2px 16px rgba(0,0,0,0.08);">
         <tr>
           <td style="background:linear-gradient(135deg,#4f46e5,#6366f1);padding:24px 32px;">
-            <h1 style="margin:0;color:#fff;font-size:18px;font-weight:800;letter-spacing:1px;">Telebit Shop</h1>
+            <h1 style="margin:0;color:#fff;font-size:18px;font-weight:800;letter-spacing:1px;">Televerse Shop</h1>
             <p style="margin:4px 0 0;color:rgba(255,255,255,0.65);font-size:12px;">Secure USDT Marketplace</p>
           </td>
         </tr>
         ${body}
         <tr>
           <td style="padding:16px 32px 24px;border-top:1px solid #f0f0f0;">
-            <p style="color:#aaa;font-size:11px;margin:0;text-align:center;">© ${new Date().getFullYear()} Telebit Shop. All rights reserved.<br>If you didn't expect this email, you can safely ignore it.</p>
+            <p style="color:#aaa;font-size:11px;margin:0;text-align:center;">© ${new Date().getFullYear()} Televerse Shop. All rights reserved.<br>If you didn't expect this email, you can safely ignore it.</p>
           </td>
         </tr>
       </table>
@@ -68,7 +68,7 @@ export async function sendOtpEmail(
   await ctx.transport.sendMail({
     from: ctx.from,
     to,
-    subject: `Telebit Shop — Your ${label} Verification Code`,
+    subject: `Televerse Shop — Your ${label} Verification Code`,
     html: wrap(`
       <tr><td style="padding:32px;">
         <p style="color:#333;font-size:15px;margin:0 0 8px;">Hello,</p>
@@ -78,7 +78,7 @@ export async function sendOtpEmail(
             <span style="font-size:42px;font-weight:800;letter-spacing:12px;font-family:'Courier New',monospace;color:#4f46e5;">${code}</span>
           </td></tr>
         </table>
-        <p style="color:#999;font-size:12px;margin:20px 0 0;text-align:center;">Never share this code with anyone. Telebit will never ask for it.</p>
+        <p style="color:#999;font-size:12px;margin:20px 0 0;text-align:center;">Never share this code with anyone. Televerse will never ask for it.</p>
       </td></tr>
     `),
   });
@@ -94,11 +94,11 @@ export async function sendWelcomeEmail(to: string, name: string): Promise<void> 
   await ctx.transport.sendMail({
     from: ctx.from,
     to,
-    subject: "Welcome to Telebit Shop!",
+    subject: "Welcome to Televerse Shop!",
     html: wrap(`
       <tr><td style="padding:32px;">
         <p style="color:#333;font-size:15px;margin:0 0 8px;">Hi ${safeName},</p>
-        <p style="color:#555;font-size:14px;margin:0 0 24px;">Welcome to <strong style="color:#4f46e5;">Telebit Shop</strong>! Your account has been created successfully.</p>
+        <p style="color:#555;font-size:14px;margin:0 0 24px;">Welcome to <strong style="color:#4f46e5;">Televerse Shop</strong>! Your account has been created successfully.</p>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
           <tr><td style="background:#f9f9ff;border:1px solid #e8e8ff;border-radius:10px;padding:24px;">
             <p style="color:#555;font-size:13px;margin:0 0 10px;font-weight:600;">Here's what you can do next:</p>
@@ -141,7 +141,7 @@ export async function sendOrderConfirmEmail(
   await ctx.transport.sendMail({
     from: ctx.from,
     to,
-    subject: `Telebit Shop — Order #${shortId} Confirmed`,
+    subject: `Televerse Shop — Order #${shortId} Confirmed`,
     html: wrap(`
       <tr><td style="padding:32px;">
         <p style="color:#333;font-size:15px;margin:0 0 8px;">Hi ${safeName},</p>
@@ -182,7 +182,7 @@ export async function sendDepositCreditEmail(
   await ctx.transport.sendMail({
     from: ctx.from,
     to,
-    subject: "Telebit Shop — Deposit Credited to Your Wallet",
+    subject: "Televerse Shop — Deposit Credited to Your Wallet",
     html: wrap(`
       <tr><td style="padding:32px;">
         <p style="color:#333;font-size:15px;margin:0 0 8px;">Hi ${safeName},</p>
@@ -235,7 +235,7 @@ export async function sendWithdrawalStatusEmail(
   await ctx.transport.sendMail({
     from: ctx.from,
     to,
-    subject: `Telebit Shop — Withdrawal ${isApproved ? "Approved" : "Rejected"}`,
+    subject: `Televerse Shop — Withdrawal ${isApproved ? "Approved" : "Rejected"}`,
     html: wrap(`
       <tr><td style="padding:32px;">
         <p style="color:#333;font-size:15px;margin:0 0 8px;">Hi ${safeName},</p>

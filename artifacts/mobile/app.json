@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Telebit",
+    "name": "Televerse",
     "slug": "mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "telebit",
+    "scheme": "televerse",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
@@ -15,10 +15,10 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.telebit.shop"
+      "bundleIdentifier": "com.televerse.shop"
     },
     "android": {
-      "package": "com.telebit.shop",
+      "package": "com.televerse.shop",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#0A0B0F"

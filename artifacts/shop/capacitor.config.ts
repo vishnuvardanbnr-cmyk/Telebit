@@ -1,12 +1,12 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: "com.telebit.shop",
-  appName: "Telebit Shop",
+  appId: "com.televerse.shop",
+  appName: "Televerse Shop",
   webDir: "dist/public",
   server: {
     androidScheme: "https",
-    url: "https://telebit-1.replit.app",
+    url: "https://televerse-1.replit.app",
     cleartext: false,
   },
 };

@@ -3,7 +3,7 @@ import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { api, User, setTokenGetter } from "@/lib/api";
 
-const TOKEN_KEY = "telebit_token";
+const TOKEN_KEY = "televerse_token";
 
 async function getStored(): Promise<string | null> {
   if (Platform.OS === "web") return localStorage.getItem(TOKEN_KEY);

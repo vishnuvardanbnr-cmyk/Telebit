@@ -43,8 +43,8 @@ export default defineConfig({
         ],
       },
       manifest: {
-        name: "Telebit Shop",
-        short_name: "Telebit",
+        name: "Televerse Shop",
+        short_name: "Televerse",
         description: "Pay with USDT on BNB Smart Chain",
         theme_color: "#1a56db",
         background_color: "#ffffff",

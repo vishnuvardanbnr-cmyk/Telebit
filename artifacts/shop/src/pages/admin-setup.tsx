@@ -78,7 +78,7 @@ export default function AdminSetupPage() {
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="demo@telebit.app"
+              placeholder="demo@televerse.app"
               className="font-mono text-xs rounded-xl"
               required
             />

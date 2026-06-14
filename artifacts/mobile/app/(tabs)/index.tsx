@@ -154,7 +154,7 @@ export default function HomeScreen() {
     <View style={s.container}>
       <View style={s.header}>
         <View>
-          <Text style={s.headerTitle}>TELEBIT</Text>
+          <Text style={s.headerTitle}>TELEVERSE</Text>
           <Text style={s.headerSub}>Welcome back{user?.fullName ? `, ${user.fullName.split(" ")[0]}` : ""}</Text>
         </View>
         <TouchableOpacity onPress={() => router.push("/(tabs)/more")}>

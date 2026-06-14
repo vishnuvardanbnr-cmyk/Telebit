@@ -1449,7 +1449,7 @@ function SettingsTab() {
         />
         <SettingField
           label="Bot Username"
-          hint="Without the @ symbol, e.g. TelebitShopBot"
+          hint="Without the @ symbol, e.g. TeleverseShopBot"
           value={cfg.telegramBotUsername}
           onChange={set("telegramBotUsername")}
         />
@@ -1646,7 +1646,7 @@ function SettingsTab() {
             <SettingField
               label="From Name"
               hint="Display name"
-              value={cfg.smtpFromName ?? "Telebit Shop"}
+              value={cfg.smtpFromName ?? "Televerse Shop"}
               onChange={set("smtpFromName")}
             />
           </div>
@@ -2351,7 +2351,7 @@ export default function Admin() {
               </div>
               <div>
                 <h1 className="text-2xl font-black tracking-tight">Admin Panel</h1>
-                <p className="text-slate-400 text-sm mt-0.5">Telebit Shop — full control centre</p>
+                <p className="text-slate-400 text-sm mt-0.5">Televerse Shop — full control centre</p>
               </div>
             </div>
             <span className="hidden sm:flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-primary/20 border border-primary/30 text-primary">

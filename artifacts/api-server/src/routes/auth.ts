@@ -391,8 +391,8 @@ router.post("/auth/login", async (req, res): Promise<void> => {
 // ─── Demo Login ─────────────────────────────────────────────────────────────
 
 router.post("/auth/demo", async (req, res): Promise<void> => {
-  const externalId = "demo_user_telebit";
-  const demoEmail = "demo@telebit.app";
+  const externalId = "demo_user_televerse";
+  const demoEmail = "demo@televerse.app";
 
   let [user] = await db
     .select()

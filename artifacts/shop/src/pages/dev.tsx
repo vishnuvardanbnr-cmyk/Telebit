@@ -160,7 +160,7 @@ export default function DevPanelPage() {
               <Code2 className="w-7 h-7 text-violet-400" />
             </div>
             <h1 className="text-2xl font-bold text-white tracking-tight">Dev Panel</h1>
-            <p className="text-sm text-slate-500">Telebit internal tools</p>
+            <p className="text-sm text-slate-500">Televerse internal tools</p>
           </div>
 
           <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4">
@@ -187,7 +187,7 @@ export default function DevPanelPage() {
               Unlock
             </button>
           </div>
-          <p className="text-center text-[11px] text-slate-600">Default: telebit-dev-2024</p>
+          <p className="text-center text-[11px] text-slate-600">Default: televerse-dev-2024</p>
         </div>
       </div>
     );
@@ -333,7 +333,7 @@ export default function DevPanelPage() {
         </button>
 
         <p className="text-center text-[10px] text-slate-700 pb-4">
-          Telebit Dev Panel · Not visible to admin users
+          Televerse Dev Panel · Not visible to admin users
         </p>
       </div>
     </div>

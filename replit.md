@@ -1,4 +1,4 @@
-# Telebit Exchange
+# Televerse Exchange
 
 A full-featured institutional-grade USDT (BEP-20) investment platform on BSC. Users can deposit USDT to an isolated wallet, withdraw to external addresses, send P2P transfers to other users, and view full history. Includes an admin panel for user management, withdrawal approvals, and platform settings.
 

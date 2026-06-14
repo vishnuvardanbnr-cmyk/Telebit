@@ -1,7 +1,7 @@
 const BASE =
   typeof process !== "undefined"
-    ? (process.env.EXPO_PUBLIC_API_URL ?? "https://telebit-1.replit.app")
-    : "https://telebit-1.replit.app";
+    ? (process.env.EXPO_PUBLIC_API_URL ?? "https://televerse-1.replit.app")
+    : "https://televerse-1.replit.app";
 
 let tokenGetter: (() => Promise<string | null>) | null = null;
 

@@ -135,7 +135,7 @@ function LevelRow({ level, count, members, referralIncome }: {
   );
 }
 
-const APP_PACKAGE = "com.telebit.shop";
+const APP_PACKAGE = "com.televerse.shop";
 
 function buildDeeplink(origin: string, basePath: string, ref: string) {
   const webPath = `${origin}${basePath}/sign-in?ref=${ref}`;
@@ -252,7 +252,7 @@ export default function InvitePage() {
             <div className="flex items-center gap-2">
               <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
               <p className="text-xs font-semibold text-emerald-300 uppercase tracking-wide">App Link</p>
-              <span className="ml-auto text-[10px] text-slate-500">Opens Telebit app</span>
+              <span className="ml-auto text-[10px] text-slate-500">Opens Televerse app</span>
             </div>
             <div className="flex items-center gap-2 bg-white/5 rounded-xl px-3 py-2.5">
               <span className="flex-1 text-xs font-mono text-slate-300 truncate">

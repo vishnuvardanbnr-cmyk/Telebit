@@ -42,7 +42,7 @@ export default function MoreScreen() {
   });
 
   const activePackages = myPackages?.filter((p) => p.status === "active").length ?? 0;
-  const refLink = `https://telebit-1.replit.app?ref=${user?.referralCode ?? ""}`;
+  const refLink = `https://televerse-1.replit.app?ref=${user?.referralCode ?? ""}`;
 
   const handleCopyRef = async () => {
     if (!user?.referralCode) return;
@@ -54,7 +54,7 @@ export default function MoreScreen() {
   const handleShareRef = async () => {
     try {
       await Share.share({
-        message: `Join Telebit and earn crypto! Use my referral link: ${refLink}`,
+        message: `Join Televerse and earn crypto! Use my referral link: ${refLink}`,
         url: refLink,
       });
     } catch {}
@@ -194,7 +194,7 @@ export default function MoreScreen() {
 
         {/* Menu items */}
         <View style={s.menuCard}>
-          <TouchableOpacity style={s.menuItem} onPress={() => Alert.alert("Support", "Email: support@telebit.app")}>
+          <TouchableOpacity style={s.menuItem} onPress={() => Alert.alert("Support", "Email: support@televerse.app")}>
             <Feather name="help-circle" size={18} color={colors.mutedForeground} />
             <Text style={s.menuText}>Support</Text>
             <Feather name="chevron-right" size={16} color={colors.mutedForeground} />

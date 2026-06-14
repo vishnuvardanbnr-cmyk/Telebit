@@ -291,7 +291,7 @@ export default function ShopSignInPage() {
 
   const headerTitle = () => {
     if (mode === "forgot") return "Reset Password";
-    if (mode === "login") return "Sign In to Telebit";
+    if (mode === "login") return "Sign In to Televerse";
     return "Create Account";
   };
 
@@ -301,16 +301,16 @@ export default function ShopSignInPage() {
       if (forgotStep === "otp") return "Enter the code and choose a new password";
       return "Your password has been reset";
     }
-    if (mode === "login") return "Welcome back to Telebit Shop";
-    return "Join Telebit and start shopping";
+    if (mode === "login") return "Welcome back to Televerse Shop";
+    return "Join Televerse and start shopping";
   };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="flex items-center px-4 sm:px-6 py-4 border-b border-border bg-card">
         <div className="flex items-center gap-2 font-semibold text-foreground text-lg">
-          <img src="/logo.png" alt="Telebit" className="h-6 w-6 rounded-md object-cover" />
-          Telebit Shop
+          <img src="/logo.png" alt="Televerse" className="h-6 w-6 rounded-md object-cover" />
+          Televerse Shop
         </div>
       </header>
 
@@ -322,7 +322,7 @@ export default function ShopSignInPage() {
             <div className="p-6 sm:p-8">
               <div className="flex flex-col items-center mb-6">
                 <div className="w-14 h-14 rounded-2xl overflow-hidden mb-4 shadow-md">
-                  <img src="/logo.png" alt="Telebit" className="w-full h-full object-cover" />
+                  <img src="/logo.png" alt="Televerse" className="w-full h-full object-cover" />
                 </div>
                 <h1 className="text-xl font-bold text-foreground text-center">
                   {headerTitle()}
