@@ -26,10 +26,8 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
+      - name: Install pnpm 10 via npm
+        run: npm install -g pnpm@10
 
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
