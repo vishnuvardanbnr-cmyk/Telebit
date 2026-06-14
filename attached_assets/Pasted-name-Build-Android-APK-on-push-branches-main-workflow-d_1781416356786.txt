@@ -1,0 +1,67 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build APK
+        run: |
+          set -e
+
+          # ── Node.js 24 via apt ──────────────────────────────────────────
+          curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
+          sudo apt-get install -y nodejs
+          echo "Node: $(node --version)  npm: $(npm --version)"
+
+          # ── pnpm 10 (sudo → goes to /usr/local/bin, always in PATH) ────
+          sudo npm install -g pnpm@10
+          echo "pnpm: $(pnpm --version)"
+
+          # ── Java 21 (pre-installed on ubuntu-latest) ────────────────────
+          export JAVA_HOME="$JAVA_HOME_21_X64"
+          export PATH="$JAVA_HOME/bin:$PATH"
+          echo "Java: $(java --version 2>&1 | head -1)"
+
+          # ── Install workspace deps ──────────────────────────────────────
+          pnpm install --frozen-lockfile
+
+          # ── Build web app ───────────────────────────────────────────────
+          BASE_PATH=/ PORT=3000 pnpm --filter @workspace/shop run build
+
+          # ── Capacitor Android ───────────────────────────────────────────
+          rm -rf artifacts/shop/android
+          cd artifacts/shop && npx cap add android && cd "$GITHUB_WORKSPACE"
+
+          # ── Custom app icon ─────────────────────────────────────────────
+          ICON="artifacts/shop/public/logo.png"
+          BASE="artifacts/shop/android/app/src/main/res"
+          for size_dpi in "48:mdpi" "72:hdpi" "96:xhdpi" "144:xxhdpi" "192:xxxhdpi"; do
+            px="${size_dpi%%:*}"
+            dpi="${size_dpi##*:}"
+            magick "$ICON" -resize "${px}x${px}" "$BASE/mipmap-$dpi/ic_launcher.png"
+            magick "$ICON" -resize "${px}x${px}" "$BASE/mipmap-$dpi/ic_launcher_round.png"
+          done
+
+          # ── Capacitor sync ──────────────────────────────────────────────
+          cd artifacts/shop && npx cap sync android && cd "$GITHUB_WORKSPACE"
+
+          # ── Gradle build ────────────────────────────────────────────────
+          cd artifacts/shop/android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: telebit-shop-debug
+          path: artifacts/shop/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
