@@ -1,6 +1,5 @@
 import { Link } from "wouter";
 import {
-  useGetMe,
   useGetIncomeSummary,
   useListMyPackages,
   useGetMyRankProgress,
@@ -16,9 +15,10 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { UserProfileCard } from "@/components/user-profile-card";
+import { useAuth } from "@/lib/auth-context";
 
 export default function Home() {
-  const { data: user, isLoading: userLoading } = useGetMe();
+  const { user, isLoading: userLoading } = useAuth();
   const { data: income, isLoading: incomeLoading } = useGetIncomeSummary();
   const { data: myPackages } = useListMyPackages({});
   const { data: rankProgress } = useGetMyRankProgress();
