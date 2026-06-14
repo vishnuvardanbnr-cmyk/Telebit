@@ -20,17 +20,16 @@ jobs:
           # ── Node.js 24 via apt ──────────────────────────────────────────
           curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
           sudo apt-get install -y nodejs
-          node --version && npm --version
+          echo "Node: $(node --version)  npm: $(npm --version)"
 
-          # ── pnpm 10 (same shell → same PATH, no persistence needed) ────
-          npm install -g pnpm@10
-          export PATH="$(npm prefix -g)/bin:$PATH"
-          pnpm --version
+          # ── pnpm 10 (sudo → goes to /usr/local/bin, always in PATH) ────
+          sudo npm install -g pnpm@10
+          echo "pnpm: $(pnpm --version)"
 
           # ── Java 21 (pre-installed on ubuntu-latest) ────────────────────
           export JAVA_HOME="$JAVA_HOME_21_X64"
           export PATH="$JAVA_HOME/bin:$PATH"
-          java --version
+          echo "Java: $(java --version 2>&1 | head -1)"
 
           # ── Install workspace deps ──────────────────────────────────────
           pnpm install --frozen-lockfile
