@@ -13,22 +13,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Node.js 24 via apt
+      - name: Install Node.js 24 and pnpm
         run: |
           curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
           sudo apt-get install -y nodejs
           node --version
           npm --version
+          npm install -g pnpm@10
+          # Add npm global bin to PATH for all subsequent steps
+          echo "$(npm prefix -g)/bin" >> $GITHUB_PATH
 
-      - name: Install Java 21 (pre-installed, just set JAVA_HOME)
+      - name: Verify pnpm in PATH
+        run: pnpm --version
+
+      - name: Configure Java 21
         run: |
           echo "JAVA_HOME=$JAVA_HOME_21_X64" >> $GITHUB_ENV
           echo "$JAVA_HOME_21_X64/bin" >> $GITHUB_PATH
-
-      - name: Install pnpm 10
-        run: |
-          npm install -g pnpm@10
-          pnpm --version
 
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
