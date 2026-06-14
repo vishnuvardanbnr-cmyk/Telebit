@@ -107,12 +107,6 @@ export default function Home() {
                     <p className="text-3xl font-black text-white tabular-nums leading-none">{confirmedShares.toLocaleString()}</p>
                     <p className="text-xs text-green-200 mt-1">confirmed shares transferred</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-lg font-black text-emerald-200 tabular-nums">
-                      {confirmedValue > 0 ? `$${confirmedValue.toFixed(2)}` : shareVal > 0 ? "$0.00" : "—"}
-                    </p>
-                    <p className="text-[10px] text-green-300 mt-0.5">USDT value</p>
-                  </div>
                 </div>
                 {pendingShares > 0 && (
                   <p className="text-[10px] text-amber-300 mt-2">⏳ {pendingShares} shares pending admin transfer</p>
